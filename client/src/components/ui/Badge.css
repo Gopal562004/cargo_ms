@@ -1,0 +1,81 @@
+/* ─── Badge ─────────────────────────────────────────── */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: var(--font-medium);
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.badge--sm {
+  padding: 2px 8px;
+  font-size: 10px;
+}
+
+.badge--md {
+  padding: 3px 10px;
+  font-size: var(--text-xs);
+}
+
+.badge--lg {
+  padding: 4px 14px;
+  font-size: var(--text-sm);
+}
+
+.badge__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Status variants */
+.badge--draft { background: var(--status-draft-bg); color: var(--status-draft); }
+.badge--draft .badge__dot { background: var(--status-draft); }
+
+.badge--validated { background: var(--status-validated-bg); color: var(--status-validated); }
+.badge--validated .badge__dot { background: var(--status-validated); }
+
+.badge--issued { background: var(--status-issued-bg); color: var(--status-issued); }
+.badge--issued .badge__dot { background: var(--status-issued); }
+
+.badge--booked { background: var(--status-booked-bg); color: var(--status-booked); }
+.badge--booked .badge__dot { background: var(--status-booked); }
+
+.badge--departed { background: var(--status-departed-bg); color: var(--status-departed); }
+.badge--departed .badge__dot { background: var(--status-departed); }
+
+.badge--in-transit { background: var(--status-in-transit-bg); color: var(--status-in-transit); }
+.badge--in-transit .badge__dot { background: var(--status-in-transit); animation: pulse 2s infinite; }
+
+.badge--arrived { background: var(--status-arrived-bg); color: var(--status-arrived); }
+.badge--arrived .badge__dot { background: var(--status-arrived); }
+
+.badge--delivered { background: var(--status-delivered-bg); color: var(--status-delivered); }
+.badge--delivered .badge__dot { background: var(--status-delivered); }
+
+.badge--completed { background: var(--status-completed-bg); color: var(--status-completed); }
+.badge--completed .badge__dot { background: var(--status-completed); }
+
+.badge--cancelled { background: var(--status-cancelled-bg); color: var(--status-cancelled); }
+.badge--cancelled .badge__dot { background: var(--status-cancelled); }
+
+/* Generic variants */
+.badge--default { background: var(--bg-elevated); color: var(--text-secondary); }
+.badge--default .badge__dot { background: var(--text-tertiary); }
+
+.badge--info { background: var(--info-bg); color: var(--info); }
+.badge--info .badge__dot { background: var(--info); }
+
+.badge--success { background: var(--success-bg); color: var(--success); }
+.badge--success .badge__dot { background: var(--success); }
+
+.badge--warning { background: var(--warning-bg); color: var(--warning); }
+.badge--warning .badge__dot { background: var(--warning); }
+
+.badge--error { background: var(--error-bg); color: var(--error); }
+.badge--error .badge__dot { background: var(--error); }
