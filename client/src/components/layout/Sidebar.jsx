@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
-import './Sidebar.css';
 
 const NAV_SECTIONS = [
   {
@@ -48,20 +47,38 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
+  const isLinkActive = (itemPath) => {
+    const currentPathWithQuery = location.pathname + location.search;
+    if (itemPath.includes('?')) {
+      return currentPathWithQuery === itemPath;
+    }
+    if (itemPath === '/') {
+      return location.pathname === '/';
+    }
+    return location.pathname === itemPath && !location.search;
+  };
+
   return (
-    <aside className={`sidebar ${collapsed ? 'sidebar--collapsed' : ''}`}>
+    <aside className={`h-screen sticky top-0 flex flex-col bg-slate-900/80 backdrop-blur-xl border-r border-slate-800/80 transition-all duration-300 z-40 select-none ${
+      collapsed ? 'w-16' : 'w-64'
+    }`}>
       {/* Logo */}
-      <div className="sidebar__logo">
-        <div className="sidebar__logo-icon">✈</div>
-        {!collapsed && <span className="sidebar__logo-text">AWB Editor</span>}
+      <div className="h-14 flex items-center justify-between px-4 border-b border-slate-800/80">
+        <div className="flex items-center gap-3 overflow-hidden">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold shadow-md shadow-indigo-500/20 shrink-0">
+            ✈
+          </div>
+          {!collapsed && <span className="font-bold text-base text-slate-100 whitespace-nowrap">AWB Editor</span>}
+        </div>
         <button
-          className="sidebar__toggle"
+          className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors text-sm"
           onClick={() => setCollapsed(!collapsed)}
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
@@ -70,50 +87,60 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="sidebar__nav">
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
         {NAV_SECTIONS.map((section) => (
-          <div key={section.title} className="sidebar__section">
-            {!collapsed && <p className="sidebar__section-title">{section.title}</p>}
-            {section.items.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) =>
-                  `sidebar__link ${isActive ? 'sidebar__link--active' : ''}`
-                }
-                end={item.path === '/'}
-                title={collapsed ? item.label : undefined}
-              >
-                <span className="sidebar__link-icon">{item.icon}</span>
-                {!collapsed && <span className="sidebar__link-label">{item.label}</span>}
-              </NavLink>
-            ))}
+          <div key={section.title} className="space-y-1">
+            {!collapsed && (
+              <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">
+                {section.title}
+              </p>
+            )}
+            {section.items.map((item) => {
+              const active = isLinkActive(item.path);
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={
+                    `flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                      active
+                        ? 'bg-indigo-600/15 text-indigo-400 border border-indigo-500/30'
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent'
+                    } ${collapsed ? 'justify-center px-0' : ''}`
+                  }
+                  title={collapsed ? item.label : undefined}
+                >
+                  <span className="text-base leading-none">{item.icon}</span>
+                  {!collapsed && <span className="truncate">{item.label}</span>}
+                </NavLink>
+              );
+            })}
           </div>
         ))}
       </nav>
 
       {/* User info */}
-      <div className="sidebar__footer">
-        <div className="sidebar__user">
-          <div className="sidebar__user-avatar">
+      <div className="p-3 border-t border-slate-800/80 bg-slate-900/40 space-y-2">
+        <div className={`flex items-center gap-3 p-2 rounded-lg ${collapsed ? 'justify-center' : ''}`}>
+          <div className="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-400 font-semibold border border-indigo-500/30 flex items-center justify-center text-xs shrink-0">
             {user?.name?.charAt(0)?.toUpperCase() || 'U'}
           </div>
           {!collapsed && (
-            <div className="sidebar__user-info">
-              <p className="sidebar__user-name">{user?.name || 'User'}</p>
-              <p className="sidebar__user-role">{user?.role || 'Operator'}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium text-slate-200 truncate">{user?.name || 'User'}</p>
+              <p className="text-[10px] text-slate-500 truncate">{user?.role || 'Operator'}</p>
             </div>
           )}
         </div>
         {!collapsed && (
-          <div className="sidebar__actions">
-            <NavLink to="/settings" className="sidebar__link">
-              <span className="sidebar__link-icon">⚙️</span>
-              <span className="sidebar__link-label">Settings</span>
+          <div className="grid grid-cols-2 gap-1 pt-1">
+            <NavLink to="/settings" className="flex items-center justify-center gap-1.5 py-1.5 text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 rounded-md transition-colors">
+              <span>⚙️</span>
+              <span>Settings</span>
             </NavLink>
-            <button className="sidebar__link sidebar__logout" onClick={handleLogout}>
-              <span className="sidebar__link-icon">🚪</span>
-              <span className="sidebar__link-label">Log Out</span>
+            <button className="flex items-center justify-center gap-1.5 py-1.5 text-xs text-rose-400 hover:bg-rose-500/10 rounded-md transition-colors" onClick={handleLogout}>
+              <span>🚪</span>
+              <span>Logout</span>
             </button>
           </div>
         )}

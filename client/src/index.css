@@ -1,176 +1,53 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-@import './styles/variables.css';
+@import "tailwindcss";
 
-/* ─── Global Reset ──────────────────────────────────── */
+@layer base {
+  :root {
+    --bg-primary: #0a0e1a;
+    --text-primary: #f1f5f9;
+  }
 
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+  html.light {
+    --bg-primary: #f3f4f6;
+    --text-primary: #1f2937;
+  }
+
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    transition: background-color 200ms ease, color 200ms ease;
+  }
 }
 
-html {
-  font-size: 16px;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-}
+/* Off-white light theme overrides (Slate / Warm Neutral tint, no pure white) */
+html.light .bg-slate-950 { background-color: #f1f5f9 !important; }
+html.light .bg-slate-900\/80 { background-color: rgba(226, 232, 240, 0.85) !important; }
+html.light .bg-slate-900\/60 { background-color: rgba(226, 232, 240, 0.65) !important; }
+html.light .bg-slate-900\/40 { background-color: rgba(241, 245, 249, 0.5) !important; }
+html.light .bg-slate-900 { background-color: #e2e8f0 !important; }
+html.light .bg-slate-800 { background-color: #cbd5e1 !important; }
+html.light .bg-slate-800\/60 { background-color: rgba(203, 213, 225, 0.7) !important; }
 
-body {
-  font-family: var(--font-family);
-  font-size: var(--text-base);
-  font-weight: var(--font-normal);
-  line-height: var(--leading-normal);
-  color: var(--text-primary);
-  background-color: var(--bg-primary);
-  min-height: 100vh;
-  overflow-x: hidden;
-}
+html.light .border-slate-800\/80 { border-color: rgba(203, 213, 225, 0.8) !important; }
+html.light .border-slate-800 { border-color: #cbd5e1 !important; }
+html.light .border-slate-700 { border-color: #94a3b8 !important; }
 
-/* ─── Links ─────────────────────────────────────────── */
+html.light .text-slate-100 { color: #0f172a !important; }
+html.light .text-slate-200 { color: #1e293b !important; }
+html.light .text-slate-300 { color: #334155 !important; }
+html.light .text-slate-400 { color: #475569 !important; }
+html.light .text-slate-500 { color: #64748b !important; }
 
-a {
-  color: var(--accent-primary);
-  text-decoration: none;
-  transition: color var(--duration-fast) var(--ease-out);
-}
-
-a:hover {
-  color: var(--accent-primary-hover);
-}
-
-/* ─── Headings ──────────────────────────────────────── */
-
-h1, h2, h3, h4, h5, h6 {
-  color: var(--text-primary);
-  font-weight: var(--font-semibold);
-  line-height: var(--leading-tight);
-}
-
-h1 { font-size: var(--text-3xl); }
-h2 { font-size: var(--text-2xl); }
-h3 { font-size: var(--text-xl); }
-h4 { font-size: var(--text-lg); }
-h5 { font-size: var(--text-md); }
-h6 { font-size: var(--text-base); }
-
-/* ─── Lists ─────────────────────────────────────────── */
-
-ul, ol {
-  list-style: none;
-}
-
-/* ─── Images ────────────────────────────────────────── */
-
-img, svg {
-  display: block;
-  max-width: 100%;
-}
-
-/* ─── Buttons ───────────────────────────────────────── */
-
-button {
-  cursor: pointer;
-  border: none;
-  background: none;
-  font-family: inherit;
-  font-size: inherit;
-  color: inherit;
-}
-
-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-/* ─── Inputs ────────────────────────────────────────── */
-
-input, textarea, select {
-  font-family: inherit;
-  font-size: inherit;
-  color: inherit;
-  background: transparent;
-  border: none;
-  outline: none;
-}
-
-input::placeholder,
-textarea::placeholder {
-  color: var(--text-muted);
-}
-
-/* ─── Tables ────────────────────────────────────────── */
-
-table {
-  border-collapse: collapse;
-  width: 100%;
-}
-
-/* ─── Scrollbar ─────────────────────────────────────── */
-
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--text-muted);
-  border-radius: var(--radius-full);
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--text-tertiary);
-}
-
-/* Firefox */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--text-muted) transparent;
-}
-
-/* ─── Selection ─────────────────────────────────────── */
-
-::selection {
-  background: var(--accent-primary-muted);
-  color: var(--text-primary);
-}
-
-/* ─── Focus Visible ─────────────────────────────────── */
-
-:focus-visible {
-  outline: 2px solid var(--accent-primary);
-  outline-offset: 2px;
-}
-
-/* ─── Utility Classes ───────────────────────────────── */
-
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border-width: 0;
-}
-
-.truncate {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* ─── Animations ────────────────────────────────────── */
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @keyframes fadeInUp {
@@ -184,54 +61,19 @@ table {
   }
 }
 
-@keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(16px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-@keyframes slideInLeft {
-  from {
-    opacity: 0;
-    transform: translateX(-16px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+.animate-scale-in {
+  animation: scaleIn 250ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-@keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+.animate-fade-in-up {
+  animation: fadeInUp 350ms cubic-bezier(0.33, 1, 0.68, 1);
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+.animate-fade-in {
+  animation: fadeIn 250ms cubic-bezier(0.33, 1, 0.68, 1);
 }
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-.animate-fade-in { animation: fadeIn var(--duration-normal) var(--ease-out); }
-.animate-fade-in-up { animation: fadeInUp var(--duration-slow) var(--ease-out); }
-.animate-slide-in-right { animation: slideInRight var(--duration-normal) var(--ease-out); }
-.animate-scale-in { animation: scaleIn var(--duration-normal) var(--ease-spring); }

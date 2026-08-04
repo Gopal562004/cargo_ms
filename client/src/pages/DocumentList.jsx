@@ -4,7 +4,6 @@ import { useDocumentStore } from '../store/documentStore';
 import { downloadDocumentPDF } from '../services/documentService';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
-import './DocumentList.css';
 
 const CATEGORY_OPTIONS = [
   { value: '', label: 'All Categories' },
@@ -57,11 +56,11 @@ export default function DocumentList() {
   };
 
   return (
-    <div className="document-list">
-      <div className="document-list__header">
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="document-list__title">Documents</h1>
-          <p className="document-list__count">{pagination.total} total documents</p>
+          <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Documents</h1>
+          <p className="text-xs text-slate-400 mt-1">{pagination.total} total documents</p>
         </div>
         <Link to="/new">
           <Button variant="primary" icon="➕">New Document</Button>
@@ -69,76 +68,84 @@ export default function DocumentList() {
       </div>
 
       {/* Filters */}
-      <div className="document-list__filters">
-        <div className="filter-search">
-          <span className="filter-search__icon">🔍</span>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="relative flex items-center">
+          <span className="absolute left-3 text-slate-400 text-xs pointer-events-none">🔍</span>
           <input
             type="text"
-            className="filter-search__input"
+            className="w-full pl-8 pr-3 py-2 bg-slate-900/60 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
             placeholder="Search by document number or title..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <select className="filter-select" value={category} onChange={(e) => setCategory(e.target.value)}>
+        <select 
+          className="w-full px-3 py-2 bg-slate-900/60 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors" 
+          value={category} 
+          onChange={(e) => setCategory(e.target.value)}
+        >
           {CATEGORY_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
+            <option key={opt.value} value={opt.value} className="bg-slate-900">{opt.label}</option>
           ))}
         </select>
-        <select className="filter-select" value={status} onChange={(e) => setStatus(e.target.value)}>
+        <select 
+          className="w-full px-3 py-2 bg-slate-900/60 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors" 
+          value={status} 
+          onChange={(e) => setStatus(e.target.value)}
+        >
           {STATUS_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
+            <option key={opt.value} value={opt.value} className="bg-slate-900">{opt.label}</option>
           ))}
         </select>
       </div>
 
       {/* Table */}
-      <div className="document-table">
+      <div className="bg-slate-900/60 border border-slate-800/80 rounded-xl overflow-hidden shadow-xl">
         {isLoading ? (
-          <div className="document-table__loading">
-            {[...Array(8)].map((_, i) => <div key={i} className="skeleton-row" />)}
+          <div className="p-4 space-y-2">
+            {[...Array(8)].map((_, i) => <div key={i} className="h-10 bg-slate-800/50 rounded-lg animate-pulse" />)}
           </div>
         ) : documents.length === 0 ? (
-          <div className="document-table__empty">
-            <p>No documents found</p>
+          <div className="p-12 text-center text-sm text-slate-400">
+            No documents found
           </div>
         ) : (
-          <table>
+          <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr>
-                <th>Document #</th>
-                <th>Type</th>
-                <th>Title</th>
-                <th>Category</th>
-                <th>Status</th>
-                <th>Created</th>
-                <th>Actions</th>
+              <tr className="border-b border-slate-800 bg-slate-900/80 text-slate-400 font-medium">
+                <th className="py-3.5 px-4">Document #</th>
+                <th className="py-3.5 px-4">Type</th>
+                <th className="py-3.5 px-4">Title</th>
+                <th className="py-3.5 px-4">Category</th>
+                <th className="py-3.5 px-4">Status</th>
+                <th className="py-3.5 px-4">Created</th>
+                <th className="py-3.5 px-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-slate-800/60">
               {documents.map((doc) => (
-                <tr key={doc.id}>
-                  <td>
-                    <Link to={`/documents/${doc.id}`} className="doc-link">
+                <tr key={doc.id} className="hover:bg-slate-800/40 transition-colors">
+                  <td className="py-3 px-4 font-mono font-medium">
+                    <Link to={`/documents/${doc.id}`} className="text-indigo-400 hover:text-indigo-300">
                       {doc.documentNumber || '—'}
                     </Link>
                   </td>
-                  <td><span className="doc-type-label">{doc.documentType}</span></td>
-                  <td className="truncate" style={{ maxWidth: '200px' }}>{doc.title || '—'}</td>
-                  <td><span className="doc-category-label">{doc.category?.replace(/_/g, ' ')}</span></td>
-                  <td><Badge status={doc.status} size="sm" /></td>
-                  <td className="doc-date">{new Date(doc.createdAt).toLocaleDateString()}</td>
-                  <td>
-                    <div className="doc-actions">
-                      <Link to={`/documents/${doc.id}`} className="doc-actions__btn" title="View / Edit">✏️</Link>
+                  <td className="py-3 px-4 text-slate-300 font-medium">{doc.documentType}</td>
+                  <td className="py-3 px-4 text-slate-300 max-w-xs truncate">{doc.title || '—'}</td>
+                  <td className="py-3 px-4 text-slate-400">{doc.category?.replace(/_/g, ' ')}</td>
+                  <td className="py-3 px-4"><Badge status={doc.status} size="sm" /></td>
+                  <td className="py-3 px-4 text-slate-400">{new Date(doc.createdAt).toLocaleDateString()}</td>
+                  <td className="py-3 px-4 text-right">
+                    <div className="inline-flex items-center gap-1.5">
+                      <Link to={`/documents/${doc.id}`} className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors" title="View / Edit">✏️</Link>
                       <button
-                        className="doc-actions__btn"
+                        className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors"
                         title="Download PDF"
                         onClick={() => downloadDocumentPDF(doc.id, `${doc.documentNumber || 'document'}.pdf`)}
                       >
                         📥
                       </button>
-                      <button className="doc-actions__btn doc-actions__btn--danger" onClick={(e) => handleDelete(doc.id, e)} title="Delete">🗑️</button>
+                      <button className="p-1.5 text-slate-400 hover:text-rose-400 rounded hover:bg-rose-500/10 transition-colors" onClick={(e) => handleDelete(doc.id, e)} title="Delete">🗑️</button>
                     </div>
                   </td>
                 </tr>
@@ -150,19 +157,19 @@ export default function DocumentList() {
 
       {/* Pagination */}
       {pagination.totalPages > 1 && (
-        <div className="document-pagination">
+        <div className="flex items-center justify-between pt-2">
           <button
-            className="pagination-btn"
+            className="px-3 py-1.5 border border-slate-800 rounded-lg text-xs text-slate-300 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             disabled={pagination.page <= 1}
             onClick={() => handlePageChange(pagination.page - 1)}
           >
             ← Previous
           </button>
-          <span className="pagination-info">
+          <span className="text-xs text-slate-400 font-medium">
             Page {pagination.page} of {pagination.totalPages}
           </span>
           <button
-            className="pagination-btn"
+            className="px-3 py-1.5 border border-slate-800 rounded-lg text-xs text-slate-300 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             disabled={pagination.page >= pagination.totalPages}
             onClick={() => handlePageChange(pagination.page + 1)}
           >

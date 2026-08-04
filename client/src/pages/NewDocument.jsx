@@ -1,6 +1,5 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import './NewDocument.css';
+import { useNavigate } from 'react-router-dom';
 
 const DOCUMENT_CATEGORIES = [
   {
@@ -62,31 +61,31 @@ export default function NewDocument() {
   const navigate = useNavigate();
 
   return (
-    <div className="new-document">
-      <div className="new-document__header">
-        <h1 className="new-document__title">New Document</h1>
-        <p className="new-document__subtitle">Select a document type to get started</p>
+    <div className="space-y-8 animate-fade-in">
+      <div>
+        <h1 className="text-2xl font-bold text-slate-100 tracking-tight">New Document</h1>
+        <p className="text-xs text-slate-400 mt-1">Select a document type to get started</p>
       </div>
 
       {DOCUMENT_CATEGORIES.map((category) => (
-        <div key={category.title} className="doc-category">
-          <h2 className="doc-category__title">
-            <span className="doc-category__icon">{category.icon}</span>
+        <div key={category.title} className="space-y-3">
+          <h2 className="text-base font-semibold text-slate-200 flex items-center gap-2">
+            <span>{category.icon}</span>
             {category.title}
           </h2>
-          <div className="doc-category__grid">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {category.items.map((item) => (
               <button
                 key={item.type}
-                className="doc-type-card"
+                className="flex items-start gap-3 p-4 bg-slate-900/60 border border-slate-800/80 rounded-xl hover:bg-slate-800/60 hover:border-slate-700 transition-all text-left group"
                 onClick={() => navigate(`/documents/new/${item.type}`)}
               >
-                <span className="doc-type-card__icon">{item.icon}</span>
-                <div className="doc-type-card__content">
-                  <h3 className="doc-type-card__name">{item.name}</h3>
-                  <p className="doc-type-card__desc">{item.desc}</p>
+                <span className="text-xl group-hover:scale-110 transition-transform shrink-0 mt-0.5">{item.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-xs font-semibold text-slate-200 group-hover:text-indigo-400 transition-colors">{item.name}</h3>
+                  <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-2">{item.desc}</p>
                 </div>
-                <span className="doc-type-card__arrow">→</span>
+                <span className="text-slate-500 group-hover:text-indigo-400 group-hover:translate-x-0.5 transition-all text-xs">→</span>
               </button>
             ))}
           </div>

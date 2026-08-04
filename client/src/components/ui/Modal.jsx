@@ -1,8 +1,7 @@
 import React, { useEffect, useRef } from 'react';
-import './Modal.css';
 
 /**
- * Glassmorphic modal with backdrop blur and animation.
+ * Glassmorphic modal with backdrop blur and animation styled using Tailwind CSS.
  */
 export default function Modal({
   isOpen,
@@ -34,27 +33,41 @@ export default function Modal({
 
   if (!isOpen) return null;
 
+  const sizeClasses = {
+    sm: 'max-w-sm',
+    md: 'max-w-lg',
+    lg: 'max-w-2xl',
+    xl: 'max-w-4xl',
+  };
+
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in"
+      onClick={onClose}
+    >
       <div
         ref={modalRef}
-        className={`modal modal--${size} ${className}`}
+        className={`w-full ${sizeClasses[size] || sizeClasses.md} bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-scale-in ${className}`}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
       >
         {(title || showClose) && (
-          <div className="modal__header">
-            {title && <h3 id="modal-title" className="modal__title">{title}</h3>}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800/80">
+            {title && <h3 id="modal-title" className="text-lg font-semibold text-slate-100">{title}</h3>}
             {showClose && (
-              <button className="modal__close" onClick={onClose} aria-label="Close">
+              <button 
+                className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors" 
+                onClick={onClose} 
+                aria-label="Close"
+              >
                 ✕
               </button>
             )}
           </div>
         )}
-        <div className="modal__body">
+        <div className="p-6 max-h-[80vh] overflow-y-auto">
           {children}
         </div>
       </div>

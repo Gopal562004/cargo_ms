@@ -6,7 +6,6 @@ import { downloadDocumentPDF } from '../services/documentService';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Badge from '../components/ui/Badge';
-import './DocumentEditorPage.css';
 
 export default function DocumentEditorPage() {
   const { type, id } = useParams();
@@ -25,7 +24,6 @@ export default function DocumentEditorPage() {
   const [errors, setErrors] = useState({});
   const [activeSection, setActiveSection] = useState(0);
 
-  // Load document for editing
   useEffect(() => {
     if (isEdit) {
       fetchDocument(id).then((doc) => {
@@ -38,11 +36,9 @@ export default function DocumentEditorPage() {
 
   if (!schema) {
     return (
-      <div className="editor-page">
-        <div className="editor-page__error">
-          <h2>Unknown document type: {documentType}</h2>
-          <Button onClick={() => navigate('/new')}>Choose a document type</Button>
-        </div>
+      <div className="p-8 text-center space-y-4">
+        <h2 className="text-lg font-semibold text-slate-200">Unknown document type: {documentType}</h2>
+        <Button onClick={() => navigate('/new')}>Choose a document type</Button>
       </div>
     );
   }
@@ -130,17 +126,19 @@ export default function DocumentEditorPage() {
   };
 
   return (
-    <div className="editor-page">
+    <div className="space-y-6 animate-fade-in">
       {/* Toolbar */}
-      <div className="editor-toolbar">
-        <div className="editor-toolbar__left">
-          <button className="editor-toolbar__back" onClick={() => navigate(-1)}>← Back</button>
-          <h1 className="editor-toolbar__title">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+        <div className="flex items-center gap-3">
+          <button className="text-xs text-slate-400 hover:text-white transition-colors" onClick={() => navigate(-1)}>
+            ← Back
+          </button>
+          <h1 className="text-xl font-bold text-slate-100">
             {isEdit ? 'Edit' : 'New'} {schema.name}
           </h1>
           {isEdit && currentDocument && <Badge status={currentDocument.status} />}
         </div>
-        <div className="editor-toolbar__right">
+        <div className="flex items-center gap-2">
           {isEdit && (
             <Button
               variant="secondary"
@@ -159,25 +157,30 @@ export default function DocumentEditorPage() {
       </div>
 
       {errors._form && (
-        <div className="editor-error">{errors._form}</div>
+        <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg text-xs text-rose-400">
+          {errors._form}
+        </div>
       )}
 
       {/* Title */}
-      <div className="editor-title-row">
+      <div>
         <Input
           label="Document Title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="editor-title-input"
         />
       </div>
 
       {/* Section tabs */}
-      <div className="editor-sections-nav">
+      <div className="flex items-center gap-2 border-b border-slate-800 overflow-x-auto pb-px">
         {schema.sections.map((section, i) => (
           <button
             key={section.id}
-            className={`editor-section-tab ${activeSection === i ? 'editor-section-tab--active' : ''}`}
+            className={`px-4 py-2 text-xs font-medium border-b-2 whitespace-nowrap transition-colors ${
+              activeSection === i
+                ? 'border-indigo-500 text-indigo-400'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
             onClick={() => setActiveSection(i)}
           >
             {section.title}
@@ -185,7 +188,11 @@ export default function DocumentEditorPage() {
         ))}
         {schema.hasPackages && (
           <button
-            className={`editor-section-tab ${activeSection === schema.sections.length ? 'editor-section-tab--active' : ''}`}
+            className={`px-4 py-2 text-xs font-medium border-b-2 whitespace-nowrap transition-colors ${
+              activeSection === schema.sections.length
+                ? 'border-indigo-500 text-indigo-400'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
             onClick={() => setActiveSection(schema.sections.length)}
           >
             Packages ({packages.length})
@@ -194,77 +201,88 @@ export default function DocumentEditorPage() {
       </div>
 
       {/* Active Section Form */}
-      <div className="editor-form animate-fade-in">
+      <div className="bg-slate-900/60 border border-slate-800/80 rounded-xl p-6 shadow-xl">
         {activeSection < schema.sections.length ? (
-          <div className="editor-section">
-            <h2 className="editor-section__title">{schema.sections[activeSection].title}</h2>
-            <div className="editor-section__grid">
-              {schema.sections[activeSection].fields.map((field) => (
-                <div key={field.name} className={`editor-field editor-field--${field.width || 'full'}`}>
-                  {field.type === 'select' ? (
-                    <div className="input-group">
-                      <label className="editor-field__label">{field.label}{field.required && <span className="input-required">*</span>}</label>
-                      <select
-                        className="filter-select editor-select"
+          <div className="space-y-6">
+            <h2 className="text-base font-semibold text-slate-200">{schema.sections[activeSection].title}</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {schema.sections[activeSection].fields.map((field) => {
+                const isFullWidth = field.width === 'full';
+                const gridSpan = isFullWidth ? 'md:col-span-2 lg:col-span-3' : '';
+
+                return (
+                  <div key={field.name} className={gridSpan}>
+                    {field.type === 'select' ? (
+                      <div className="flex flex-col gap-1 w-full">
+                        <label className="text-xs text-slate-400 font-medium">
+                          {field.label}{field.required && <span className="text-rose-400 ml-0.5">*</span>}
+                        </label>
+                        <select
+                          className="w-full px-3 py-2.5 bg-slate-900/60 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors"
+                          value={formData[field.name] || ''}
+                          onChange={(e) => handleFieldChange(field.name, e.target.value)}
+                        >
+                          <option value="" className="bg-slate-900">Select {field.label}...</option>
+                          {(field.options || []).map((opt) => (
+                            <option key={typeof opt === 'string' ? opt : opt.value} value={typeof opt === 'string' ? opt : opt.value} className="bg-slate-900">
+                              {typeof opt === 'string' ? opt : opt.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    ) : field.type === 'textarea' ? (
+                      <div className="flex flex-col gap-1 w-full">
+                        <label className="text-xs text-slate-400 font-medium">
+                          {field.label}{field.required && <span className="text-rose-400 ml-0.5">*</span>}
+                        </label>
+                        <textarea
+                          className="w-full p-3 bg-slate-900/60 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+                          value={formData[field.name] || ''}
+                          onChange={(e) => handleFieldChange(field.name, e.target.value)}
+                          rows={3}
+                          placeholder={field.placeholder || ''}
+                        />
+                      </div>
+                    ) : (
+                      <Input
+                        label={field.label}
+                        type={field.type === 'number' ? 'number' : 'text'}
                         value={formData[field.name] || ''}
                         onChange={(e) => handleFieldChange(field.name, e.target.value)}
-                      >
-                        <option value="">Select {field.label}...</option>
-                        {(field.options || []).map((opt) => (
-                          <option key={typeof opt === 'string' ? opt : opt.value} value={typeof opt === 'string' ? opt : opt.value}>
-                            {typeof opt === 'string' ? opt : opt.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  ) : field.type === 'textarea' ? (
-                    <div className="input-group">
-                      <label className="editor-field__label">{field.label}{field.required && <span className="input-required">*</span>}</label>
-                      <textarea
-                        className="editor-textarea"
-                        value={formData[field.name] || ''}
-                        onChange={(e) => handleFieldChange(field.name, e.target.value)}
-                        rows={3}
-                        placeholder={field.placeholder || ''}
+                        required={field.required}
+                        error={errors[field.name]}
                       />
-                    </div>
-                  ) : (
-                    <Input
-                      label={field.label}
-                      type={field.type === 'number' ? 'number' : 'text'}
-                      value={formData[field.name] || ''}
-                      onChange={(e) => handleFieldChange(field.name, e.target.value)}
-                      required={field.required}
-                      error={errors[field.name]}
-                    />
-                  )}
-                </div>
-              ))}
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         ) : (
           /* Packages Tab */
-          <div className="editor-section">
-            <div className="editor-section__header">
-              <h2 className="editor-section__title">Packages</h2>
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-semibold text-slate-200">Packages</h2>
               <Button variant="secondary" size="sm" onClick={addPackage} icon="➕">Add Package</Button>
             </div>
             {packages.length === 0 ? (
-              <div className="editor-packages__empty">
-                <p>No packages added yet</p>
+              <div className="p-8 text-center space-y-3">
+                <p className="text-xs text-slate-400">No packages added yet</p>
                 <Button variant="secondary" onClick={addPackage}>Add First Package</Button>
               </div>
             ) : (
-              <div className="editor-packages">
+              <div className="space-y-3">
                 {packages.map((pkg, i) => (
-                  <div key={i} className="package-row">
-                    <div className="package-row__number">#{pkg.pieceNumber}</div>
-                    <Input label="Length" type="number" value={pkg.length} onChange={(e) => updatePackage(i, 'length', e.target.value)} />
-                    <Input label="Width" type="number" value={pkg.width} onChange={(e) => updatePackage(i, 'width', e.target.value)} />
-                    <Input label="Height" type="number" value={pkg.height} onChange={(e) => updatePackage(i, 'height', e.target.value)} />
-                    <Input label="Weight" type="number" value={pkg.weight} onChange={(e) => updatePackage(i, 'weight', e.target.value)} required />
-                    <Input label="Description" value={pkg.description} onChange={(e) => updatePackage(i, 'description', e.target.value)} />
-                    <button className="package-row__delete" onClick={() => removePackage(i)} title="Remove">🗑️</button>
+                  <div key={i} className="flex flex-col sm:flex-row items-end gap-3 p-4 bg-slate-900/40 border border-slate-800 rounded-xl">
+                    <div className="text-xs font-bold text-indigo-400 pb-3 shrink-0">#{pkg.pieceNumber}</div>
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 flex-1">
+                      <Input label="Length" type="number" value={pkg.length} onChange={(e) => updatePackage(i, 'length', e.target.value)} />
+                      <Input label="Width" type="number" value={pkg.width} onChange={(e) => updatePackage(i, 'width', e.target.value)} />
+                      <Input label="Height" type="number" value={pkg.height} onChange={(e) => updatePackage(i, 'height', e.target.value)} />
+                      <Input label="Weight" type="number" value={pkg.weight} onChange={(e) => updatePackage(i, 'weight', e.target.value)} required />
+                      <Input label="Description" value={pkg.description} onChange={(e) => updatePackage(i, 'description', e.target.value)} />
+                    </div>
+                    <button className="p-2 text-slate-400 hover:text-rose-400 transition-colors shrink-0" onClick={() => removePackage(i)} title="Remove">🗑️</button>
                   </div>
                 ))}
               </div>

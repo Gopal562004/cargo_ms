@@ -3,12 +3,14 @@ import { RouterProvider } from 'react-router-dom';
 import { router } from './router';
 import { ToastProvider } from './components/ui/Toast';
 import { useAuthStore } from './store/authStore';
-import './App.css';
+import { useThemeStore } from './store/themeStore';
 
 function App() {
   const checkAuth = useAuthStore((s) => s.checkAuth);
+  const initTheme = useThemeStore((s) => s.initTheme);
 
   useEffect(() => {
+    initTheme();
     checkAuth();
   }, []);
 

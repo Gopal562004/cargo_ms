@@ -1,9 +1,15 @@
 import React, { useState, useEffect, createContext, useContext, useCallback } from 'react';
-import './Toast.css';
 
 const ToastContext = createContext(null);
 
 let toastId = 0;
+
+const TYPE_STYLES = {
+  success: 'bg-emerald-950/90 border-emerald-800/80 text-emerald-200 icon-bg-emerald-500/20',
+  error: 'bg-rose-950/90 border-rose-800/80 text-rose-200 icon-bg-rose-500/20',
+  warning: 'bg-amber-950/90 border-amber-800/80 text-amber-200 icon-bg-amber-500/20',
+  info: 'bg-indigo-950/90 border-indigo-800/80 text-indigo-200 icon-bg-indigo-500/20',
+};
 
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
@@ -35,20 +41,28 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={toast}>
       {children}
-      <div className="toast-container">
+      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none">
         {toasts.map((t) => (
-          <div key={t.id} className={`toast toast--${t.type}`}>
-            <div className="toast__icon">
+          <div 
+            key={t.id} 
+            className={`pointer-events-auto flex items-start gap-3 p-4 border rounded-xl shadow-xl backdrop-blur-md animate-fade-in-up ${TYPE_STYLES[t.type] || TYPE_STYLES.info}`}
+          >
+            <div className="flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold shrink-0 bg-white/10">
               {t.type === 'success' && '✓'}
               {t.type === 'error' && '✕'}
               {t.type === 'warning' && '⚠'}
               {t.type === 'info' && 'ℹ'}
             </div>
-            <div className="toast__content">
-              {t.title && <p className="toast__title">{t.title}</p>}
-              {t.message && <p className="toast__message">{t.message}</p>}
+            <div className="flex-1 min-w-0">
+              {t.title && <p className="text-sm font-semibold text-slate-100">{t.title}</p>}
+              {t.message && <p className="text-xs text-slate-300 mt-0.5">{t.message}</p>}
             </div>
-            <button className="toast__close" onClick={() => removeToast(t.id)}>✕</button>
+            <button 
+              className="text-slate-400 hover:text-white text-xs p-1" 
+              onClick={() => removeToast(t.id)}
+            >
+              ✕
+            </button>
           </div>
         ))}
       </div>
