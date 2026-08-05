@@ -40,6 +40,19 @@ export function getDocumentTypes() {
   return api.get('/documents/types');
 }
 
+export async function previewDocumentPDF(id) {
+  const token = localStorage.getItem('accessToken');
+  const response = await fetch(`http://localhost:5000/api/documents/${id}/pdf`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) throw new Error('Failed to generate PDF');
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  window.open(url, '_blank');
+}
+
 export async function downloadDocumentPDF(id, filename = 'document.pdf') {
   const token = localStorage.getItem('accessToken');
   const response = await fetch(`http://localhost:5000/api/documents/${id}/pdf`, {
@@ -58,4 +71,3 @@ export async function downloadDocumentPDF(id, filename = 'document.pdf') {
   a.remove();
   window.URL.revokeObjectURL(url);
 }
-

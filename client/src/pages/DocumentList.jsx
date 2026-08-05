@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useDocumentStore } from '../store/documentStore';
-import { downloadDocumentPDF } from '../services/documentService';
+import { downloadDocumentPDF, previewDocumentPDF } from '../services/documentService';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 
@@ -137,7 +137,13 @@ export default function DocumentList() {
                   <td className="py-3 px-4 text-slate-400">{new Date(doc.createdAt).toLocaleDateString()}</td>
                   <td className="py-3 px-4 text-right">
                     <div className="inline-flex items-center gap-1.5">
-                      <Link to={`/documents/${doc.id}`} className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors" title="View / Edit">✏️</Link>
+                      <button
+                        className="p-1.5 text-slate-400 hover:text-indigo-400 rounded hover:bg-slate-800 transition-colors"
+                        title="Preview PDF in New Tab"
+                        onClick={() => previewDocumentPDF(doc.id)}
+                      >
+                        👁️
+                      </button>
                       <button
                         className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors"
                         title="Download PDF"
@@ -145,6 +151,7 @@ export default function DocumentList() {
                       >
                         📥
                       </button>
+                      <Link to={`/documents/${doc.id}`} className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors" title="View / Edit">✏️</Link>
                       <button className="p-1.5 text-slate-400 hover:text-rose-400 rounded hover:bg-rose-500/10 transition-colors" onClick={(e) => handleDelete(doc.id, e)} title="Delete">🗑️</button>
                     </div>
                   </td>

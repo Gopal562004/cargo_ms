@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useDocumentStore } from '../store/documentStore';
+import { downloadDocumentPDF, previewDocumentPDF } from '../services/documentService';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 
@@ -121,6 +122,7 @@ export default function Dashboard() {
                   <th className="py-3.5 px-4">Title</th>
                   <th className="py-3.5 px-4">Status</th>
                   <th className="py-3.5 px-4">Created</th>
+                  <th className="py-3.5 px-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
@@ -136,6 +138,25 @@ export default function Dashboard() {
                     <td className="py-3 px-4"><Badge status={doc.status} size="sm" /></td>
                     <td className="py-3 px-4 text-slate-400">
                       {new Date(doc.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <div className="inline-flex items-center gap-1.5">
+                        <button
+                          className="p-1.5 text-slate-400 hover:text-indigo-400 rounded hover:bg-slate-800 transition-colors"
+                          title="Preview PDF in New Tab"
+                          onClick={() => previewDocumentPDF(doc.id)}
+                        >
+                          👁️
+                        </button>
+                        <button
+                          className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors"
+                          title="Download PDF"
+                          onClick={() => downloadDocumentPDF(doc.id, `${doc.documentNumber || 'document'}.pdf`)}
+                        >
+                          📥
+                        </button>
+                        <Link to={`/documents/${doc.id}`} className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors" title="Edit">✏️</Link>
+                      </div>
                     </td>
                   </tr>
                 ))}

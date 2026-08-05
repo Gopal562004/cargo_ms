@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDocumentStore } from '../store/documentStore';
-import { getDocumentSchema } from '../schemas/registry';
-import { downloadDocumentPDF } from '../services/documentService';
+import { downloadDocumentPDF, previewDocumentPDF } from '../services/documentService';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Badge from '../components/ui/Badge';
@@ -21,6 +20,7 @@ export default function DocumentEditorPage() {
   const [title, setTitle] = useState('');
   const [loading, setLoading] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [previewingPdf, setPreviewingPdf] = useState(false);
   const [errors, setErrors] = useState({});
   const [activeSection, setActiveSection] = useState(0);
 
@@ -78,6 +78,17 @@ export default function DocumentEditorPage() {
 
   const removePackage = (index) => {
     setPackages((prev) => prev.filter((_, i) => i !== index).map((p, i) => ({ ...p, pieceNumber: i + 1 })));
+  };
+
+  const handlePreviewPDF = async () => {
+    setPreviewingPdf(true);
+    try {
+      await previewDocumentPDF(id);
+    } catch (err) {
+      alert('Error previewing PDF: ' + err.message);
+    } finally {
+      setPreviewingPdf(false);
+    }
   };
 
   const handleDownloadPDF = async () => {
@@ -140,14 +151,24 @@ export default function DocumentEditorPage() {
         </div>
         <div className="flex items-center gap-2">
           {isEdit && (
-            <Button
-              variant="secondary"
-              icon="📥"
-              loading={downloadingPdf}
-              onClick={handleDownloadPDF}
-            >
-              Download PDF
-            </Button>
+            <>
+              <Button
+                variant="secondary"
+                icon="👁️"
+                loading={previewingPdf}
+                onClick={handlePreviewPDF}
+              >
+                Preview PDF
+              </Button>
+              <Button
+                variant="secondary"
+                icon="📥"
+                loading={downloadingPdf}
+                onClick={handleDownloadPDF}
+              >
+                Download PDF
+              </Button>
+            </>
           )}
           <Button variant="secondary" onClick={() => navigate(-1)}>Cancel</Button>
           <Button variant="primary" loading={loading} onClick={() => handleSave(true)}>
