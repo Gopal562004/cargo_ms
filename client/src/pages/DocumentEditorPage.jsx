@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDocumentStore } from '../store/documentStore';
+import { getDocumentSchema } from '../schemas/registry';
 import { downloadDocumentPDF, previewDocumentPDF } from '../services/documentService';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
