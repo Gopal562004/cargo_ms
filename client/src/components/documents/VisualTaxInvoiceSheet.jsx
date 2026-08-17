@@ -1,4 +1,5 @@
 import React, { useRef } from 'react';
+import { Plus, X, Building, Truck, Copy } from 'lucide-react';
 
 /**
  * VisualTaxInvoiceSheet - Pixel-perfect, WYSIWYG printable A4 sheet editor for Tax Invoices.
@@ -33,10 +34,10 @@ export default function VisualTaxInvoiceSheet({
   const unitLabel = totals.unitsSet.size === 1 ? (items[0]?.unit || 'Pcs') : 'Qty';
 
   return (
-    <div className="w-full flex justify-center py-4 bg-slate-950/60 rounded-2xl overflow-x-auto">
+    <div className="w-full flex justify-center py-4 bg-slate-950/60 rounded-md overflow-x-auto">
       {/* A4 Printable Sheet Container */}
       <div
-        className="w-[820px] min-w-[820px] bg-white text-black p-7 shadow-2xl font-sans rounded-sm text-[12px] leading-tight select-text border border-slate-300"
+        className="w-[820px] min-w-[820px] bg-white text-black p-7 shadow-xl font-sans rounded text-[12px] leading-tight select-text border border-slate-300"
         style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
       >
         {/* Copy Type Header (Top Right) */}
@@ -648,10 +649,10 @@ export default function VisualTaxInvoiceSheet({
                           <button
                             type="button"
                             onClick={() => handleRemoveItem(idx)}
-                            className="text-slate-400 hover:text-rose-600 text-xs font-bold transition-colors"
+                            className="text-slate-400 hover:text-rose-600 text-xs font-bold transition-colors p-0.5"
                             title="Remove row"
                           >
-                            ✕
+                            <X size={13} />
                           </button>
                         )}
                       </td>
@@ -668,7 +669,8 @@ export default function VisualTaxInvoiceSheet({
                 onClick={handleAddItem}
                 className="text-[10px] text-indigo-700 hover:text-indigo-900 font-bold flex items-center gap-1 px-2 py-0.5 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded transition-colors"
               >
-                <span>➕ Add Line Item</span>
+                <Plus size={11} />
+                <span>Add Line Item</span>
               </button>
             </div>
           </div>

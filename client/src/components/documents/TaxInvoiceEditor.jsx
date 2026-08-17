@@ -1,5 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import {
+  Printer,
+  Eye,
+  Download,
+  Save,
+  FileText,
+  LayoutGrid,
+  Settings,
+  Zap,
+  Plus,
+  Trash2,
+  Folder,
+  Image,
+  Building,
+  Truck,
+  Receipt,
+  CheckCircle2,
+  X,
+  ArrowLeft,
+  Copy,
+} from 'lucide-react';
 import { useDocumentStore } from '../../store/documentStore';
 import { downloadDocumentPDF, printDocumentPDF } from '../../services/documentService';
 import {
@@ -335,7 +356,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
 
   // Form State
   const [formData, setFormData] = useState(() => {
-    const d = initialData || {};
+    const d = initialData || currentDocument?.data || {};
     return {
       ...INVOICE_TEMPLATES.pdfTemplate.data,
       ...d,
@@ -344,11 +365,26 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
 
   // Line Items State
   const [items, setItems] = useState(() => {
-    if (Array.isArray(initialData?.items) && initialData.items.length > 0) {
-      return initialData.items;
+    const d = initialData || currentDocument?.data;
+    if (Array.isArray(d?.items) && d.items.length > 0) {
+      return d.items;
     }
     return INVOICE_TEMPLATES.pdfTemplate.items;
   });
+
+  useEffect(() => {
+    const loadedData = initialData || currentDocument?.data;
+    if (loadedData && Object.keys(loadedData).length > 0) {
+      setFormData((prev) => ({
+        ...INVOICE_TEMPLATES.pdfTemplate.data,
+        ...prev,
+        ...loadedData,
+      }));
+      if (Array.isArray(loadedData.items) && loadedData.items.length > 0) {
+        setItems(loadedData.items);
+      }
+    }
+  }, [initialData, currentDocument]);
 
   const handleFieldChange = (field, val) => {
     setFormData((prev) => ({ ...prev, [field]: val }));
@@ -583,6 +619,8 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
         resultDoc = await updateDocument(documentId, {
           title: `Tax Invoice ${formData.invoiceNumber}`,
           documentNumber: formData.invoiceNumber,
+          status: formData.status,
+          statusNote: `Status updated via Invoice Editor`,
           data: payloadData,
         });
       } else {
@@ -599,11 +637,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
         return;
       }
 
-      if (!isEdit && resultDoc?.id) {
-        navigate(`/documents/${resultDoc.id}`);
-        return;
-      }
-      navigate(`/documents/${documentId}`);
+      navigate('/billing');
     } catch (err) {
       alert('Failed to save document: ' + err.message);
     } finally {
@@ -626,12 +660,13 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
         amountInWords,
       };
 
-      let targetId = documentId;
       let resultDoc;
       if (isEdit) {
         resultDoc = await updateDocument(documentId, {
           title: `Tax Invoice ${formData.invoiceNumber}`,
           documentNumber: formData.invoiceNumber,
+          status: formData.status,
+          statusNote: `Status updated via Invoice Editor`,
           data: payloadData,
         });
       } else {
@@ -641,20 +676,19 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
           title: `Tax Invoice ${formData.invoiceNumber}`,
           data: payloadData,
         });
-        targetId = resultDoc?.id;
       }
-      
-      // Immediately open print dialog / PDF
-      await printDocumentPDF(targetId);
+
+      const targetId = resultDoc?.id || documentId;
+      if (targetId) {
+        await printDocumentPDF(targetId);
+      }
       
       if (onSaved) {
         onSaved(resultDoc);
         return;
       }
 
-      if (!isEdit && targetId) {
-        navigate(`/documents/${targetId}`);
-      }
+      navigate('/billing');
     } catch (err) {
       alert('Failed to save & print bill: ' + err.message);
     } finally {
@@ -699,57 +733,69 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
         <div className="flex items-center gap-3">
           <button
             type="button"
-            className="text-xs text-slate-400 hover:text-white transition-colors"
+            className="flex items-center gap-1 text-xs text-slate-400 hover:text-white transition-colors"
             onClick={() => {
               if (onCancel) onCancel();
               else navigate('/billing');
             }}
           >
-            ← {isEmbedded ? 'Back to Bills Hub' : 'All Bills Hub'}
+            <ArrowLeft size={13} /> {isEmbedded ? 'Back to Bills Hub' : 'All Bills Hub'}
           </button>
           <div className="flex items-center gap-2">
-            <span className="text-xl">🧾</span>
+            <div className="w-7 h-7 rounded bg-indigo-600/20 text-indigo-400 flex items-center justify-center">
+              <Receipt size={16} />
+            </div>
             <h1 className="text-xl font-bold text-slate-100">
               {isEdit ? 'Edit' : 'New'} Tax Invoice Form
             </h1>
           </div>
-          {isEdit && currentDocument && <Badge status={currentDocument.status} />}
+          {isEdit && currentDocument && (
+            <select
+              className="bg-slate-900 border border-slate-700 rounded px-2.5 py-1 text-xs font-semibold text-slate-200 focus:outline-none focus:border-indigo-500 cursor-pointer"
+              value={formData.status || currentDocument.status}
+              onChange={(e) => handleFieldChange('status', e.target.value)}
+            >
+              <option value="DRAFT" className="bg-slate-900 text-slate-300">Draft</option>
+              <option value="ISSUED" className="bg-slate-900 text-amber-400">Pending Payment</option>
+              <option value="COMPLETED" className="bg-slate-900 text-emerald-400">Paid / Completed</option>
+              <option value="CANCELLED" className="bg-slate-900 text-rose-400">Cancelled</option>
+            </select>
+          )}
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
           {/* Main Save & Print Bill Action */}
           <Button
             variant="primary"
-            icon="🖨️"
             loading={loading}
             onClick={handleSaveAndPrint}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-950/40"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded text-xs shadow-sm"
           >
-            Save & Print Bill
+            <Printer size={14} className="mr-1.5 inline" /> Save & Print Bill
           </Button>
 
           {isEdit && (
             <>
               <Button
                 variant="secondary"
-                icon="👁️"
                 onClick={() => setPreviewOpen(true)}
+                className="rounded text-xs"
               >
-                Preview PDF
+                <Eye size={14} className="mr-1.5 inline" /> Preview PDF
               </Button>
               <Button
                 variant="secondary"
-                icon="📥"
                 loading={downloadingPdf}
                 onClick={handleDownload}
+                className="rounded text-xs"
               >
-                Download PDF
+                <Download size={14} className="mr-1.5 inline" /> Download PDF
               </Button>
             </>
           )}
 
-          <Button variant="secondary" onClick={handleSave} loading={loading}>
-            {isEdit ? 'Save Changes' : 'Save as Draft'}
+          <Button variant="secondary" onClick={handleSave} loading={loading} className="rounded text-xs">
+            <Save size={13} className="mr-1 inline" /> {isEdit ? 'Save Changes' : 'Save as Draft'}
           </Button>
 
           <Button
@@ -758,6 +804,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
               if (onCancel) onCancel();
               else navigate('/billing');
             }}
+            className="rounded text-xs"
           >
             {isEmbedded ? 'Close Form' : 'Cancel'}
           </Button>
@@ -765,65 +812,67 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
       </div>
 
       {/* Quick Template Selector & Mode Switcher */}
-      <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-4 space-y-3 shadow-lg">
+      <div className="bg-slate-900/80 border border-slate-800 rounded-md p-3.5 space-y-3 shadow-sm">
         {/* Row 1: Mode Switcher */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
-          <div className="flex items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800">
+          <div className="flex items-center gap-1.5 bg-slate-950 p-1 rounded border border-slate-800">
             <button
               type="button"
               onClick={() => setEditorMode('VISUAL')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded text-xs font-bold transition-all flex items-center gap-1.5 ${
                 editorMode === 'VISUAL'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                  ? 'bg-indigo-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
               }`}
             >
-              <span>📄</span>
+              <FileText size={13} />
               <span>Live Printable Sheet (WYSIWYG)</span>
             </button>
             <button
               type="button"
               onClick={() => setEditorMode('FORM')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded text-xs font-bold transition-all flex items-center gap-1.5 ${
                 editorMode === 'FORM'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                  ? 'bg-indigo-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
               }`}
             >
-              <span>📝</span>
+              <LayoutGrid size={13} />
               <span>Structured Form Cards</span>
             </button>
           </div>
 
           <span className="text-[11px] text-slate-400 font-medium">
-            {editorMode === 'VISUAL' ? '✏️ Type directly into the invoice sheet below' : '📋 Edit through standard categorized form cards'}
+            {editorMode === 'VISUAL' ? 'Type directly into the invoice sheet below' : 'Edit through standard categorized form cards'}
           </span>
         </div>
 
         {/* Row 2: Preset Templates */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-xs font-semibold text-slate-300">
-            <span className="text-indigo-400">⚡ Quick Auto-Fill Presets:</span>
+            <span className="text-indigo-400 flex items-center gap-1">
+              <Zap size={13} /> Quick Auto-Fill Presets:
+            </span>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {savedProfiles.map((tpl) => (
               <button
                 key={tpl.id}
                 type="button"
-                className="px-2.5 py-1 text-xs bg-slate-800/90 hover:bg-indigo-600/30 hover:border-indigo-500 border border-slate-700 text-slate-200 rounded-lg transition-all font-medium flex items-center gap-1"
+                className="px-2.5 py-1 text-xs bg-slate-800/90 hover:bg-indigo-600/30 hover:border-indigo-500 border border-slate-700 text-slate-200 rounded transition-all font-medium flex items-center gap-1"
                 onClick={() => applyProfile(tpl)}
               >
-                <span>⚡</span>
+                <Zap size={11} className="text-amber-400" />
                 <span>{tpl.name}</span>
               </button>
             ))}
 
             <button
               type="button"
-              className="px-2.5 py-1 text-xs bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/40 rounded-lg transition-all font-semibold flex items-center gap-1 ml-auto"
+              className="px-2.5 py-1 text-xs bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/40 rounded transition-all font-semibold flex items-center gap-1 ml-auto"
               onClick={() => setTemplateManagerOpen(true)}
             >
-              <span>⚙️</span>
+              <Settings size={12} />
               <span>Manage Directory</span>
             </button>
           </div>
@@ -847,24 +896,24 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
           handleSelectShipper={handleSelectShipper}
         />
       ) : (
-        /* STRUCTURED FORM SECTIONS */
-        <div className="space-y-6">
+        <div className="space-y-5">
         
         {/* LOGO & ISSUER BRANDING SECTION */}
-        <div className="bg-slate-900/70 border border-slate-800 rounded-xl p-5 shadow-xl space-y-4">
+        <div className="bg-slate-900/70 border border-slate-800 rounded-md p-4 shadow-sm space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-3">
             <div>
               <h2 className="text-sm font-bold text-slate-200 flex items-center gap-2">
-                <span>🖼️</span> Company Logo & Branding
+                <Image size={15} className="text-indigo-400" />
+                <span>Company Logo & Branding</span>
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
                 Upload a custom PNG/JPG logo to show on the top-left of the Tax Invoice, or use the default DGR logo.
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
-              <label className="cursor-pointer px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5">
-                <span>📁</span>
+            <div className="flex items-center gap-2.5">
+              <label className="cursor-pointer px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-semibold transition-colors flex items-center gap-1.5">
+                <Folder size={13} />
                 <span>Upload Logo Image</span>
                 <input
                   type="file"
@@ -877,7 +926,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
               {formData.companyLogo && (
                 <button
                   type="button"
-                  className="px-2.5 py-1.5 bg-slate-800 hover:bg-rose-900/40 text-slate-400 hover:text-rose-300 rounded-lg text-xs border border-slate-700 transition-colors"
+                  className="px-2.5 py-1.5 bg-slate-800 hover:bg-rose-900/40 text-slate-400 hover:text-rose-300 rounded text-xs border border-slate-700 transition-colors"
                   onClick={handleRemoveLogo}
                 >
                   Reset to Default DGR Logo
@@ -887,7 +936,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="w-20 h-20 rounded-xl border border-slate-700 bg-slate-950 flex items-center justify-center p-1 overflow-hidden shrink-0">
+            <div className="w-16 h-16 rounded border border-slate-700 bg-slate-950 flex items-center justify-center p-1 overflow-hidden shrink-0">
               {formData.companyLogo ? (
                 <img
                   src={formData.companyLogo}
@@ -895,13 +944,13 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
                   className="w-full h-full object-contain"
                 />
               ) : (
-                <div className="w-14 h-14 rounded-full border-2 border-slate-700 flex items-center justify-center font-bold text-xs text-slate-300">
+                <div className="w-12 h-12 rounded-full border border-slate-700 flex items-center justify-center font-bold text-xs text-slate-300 font-mono">
                   DGR
                 </div>
               )}
             </div>
 
-            <div className="text-xs space-y-1">
+            <div className="text-xs space-y-0.5">
               <div className="font-semibold text-slate-200">
                 {formData.companyLogo ? 'Custom Logo Active' : 'Default DGR Vector Logo'}
               </div>
@@ -915,12 +964,13 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
         </div>
 
         {/* 1. INVOICE & DISPATCH DETAILS */}
-        <div className="bg-slate-900/70 border border-slate-800 rounded-xl p-5 shadow-xl space-y-4">
+        <div className="bg-slate-900/70 border border-slate-800 rounded-md p-4 shadow-sm space-y-3">
           <h2 className="text-sm font-bold text-slate-200 flex items-center gap-2 border-b border-slate-800 pb-2.5">
-            <span>📝</span> 1. Invoice & Transport Information
+            <FileText size={15} className="text-indigo-400" />
+            <span>1. Invoice & Transport Information</span>
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             <Input
               label="Invoice Number *"
               value={formData.invoiceNumber}
@@ -944,7 +994,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
             <div className="flex flex-col gap-1">
               <label className="text-xs text-slate-400 font-medium">Reverse Charge</label>
               <select
-                className="w-full px-3 py-2.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
                 value={formData.reverseCharge}
                 onChange={(e) => handleFieldChange('reverseCharge', e.target.value)}
               >
@@ -1025,33 +1075,35 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
         </div>
 
         {/* 2. BILLED TO & SHIPPED TO ADDRESSES */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Billed To */}
-          <div className="bg-slate-900/70 border border-slate-800 rounded-xl p-5 shadow-xl space-y-4">
+          <div className="bg-slate-900/70 border border-slate-800 rounded-md p-4 shadow-sm space-y-3">
             <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
               <h2 className="text-sm font-bold text-slate-200 flex items-center gap-2">
-                <span>🏢</span> 2. Billed To (Buyer / Customer)
+                <Building size={15} className="text-indigo-400" />
+                <span>2. Billed To (Buyer / Customer)</span>
               </h2>
               <button
                 type="button"
-                className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1 px-2 py-1 bg-emerald-950/40 border border-emerald-500/30 rounded-lg hover:bg-emerald-900/40 transition-colors"
+                className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1 px-2 py-1 bg-emerald-950/40 border border-emerald-500/30 rounded hover:bg-emerald-900/40 transition-colors"
                 onClick={handleSaveCurrentBuyer}
                 title="Save current buyer details to saved customer directory"
               >
-                <span>💾</span> Save to Directory
+                <Save size={12} />
+                <span>Save to Directory</span>
               </button>
             </div>
 
             {/* Search & Select Existing Customer */}
-            <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-lg space-y-1.5">
+            <div className="p-2.5 bg-slate-950/80 border border-slate-800 rounded space-y-1.5">
               <div className="flex items-center justify-between text-xs text-slate-400 font-medium">
                 <span className="flex items-center gap-1.5 text-indigo-300 font-semibold">
-                  <span>🏢</span> Select from Customer Directory:
+                  <Building size={13} /> Select from Customer Directory:
                 </span>
                 <span className="text-[11px] text-slate-500">Auto-fills address & GSTIN</span>
               </div>
               <select
-                className="w-full px-3 py-2 bg-slate-900 border border-slate-700/80 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700/80 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
                 onChange={(e) => {
                   handleSelectBuyer(e.target.value);
                   e.target.value = '';
@@ -1080,7 +1132,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
               <label className="text-xs text-slate-400 font-medium">Buyer Address *</label>
               <textarea
                 rows={3}
-                className="w-full p-2.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                className="w-full p-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                 value={formData.buyerAddress}
                 onChange={(e) => handleFieldChange('buyerAddress', e.target.value)}
                 placeholder="Full address of the buyer"
@@ -1103,23 +1155,25 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
           </div>
 
           {/* Shipped To */}
-          <div className="bg-slate-900/70 border border-slate-800 rounded-xl p-5 shadow-xl space-y-4">
+          <div className="bg-slate-900/70 border border-slate-800 rounded-md p-4 shadow-sm space-y-3">
             <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
               <h2 className="text-sm font-bold text-slate-200 flex items-center gap-2">
-                <span>🚚</span> 3. Shipped To (Delivery Destination)
+                <Truck size={15} className="text-indigo-400" />
+                <span>3. Shipped To (Delivery Destination)</span>
               </h2>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold px-2 py-0.5 bg-emerald-950/40 border border-emerald-500/30 rounded"
+                  className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold px-2 py-0.5 bg-emerald-950/40 border border-emerald-500/30 rounded flex items-center gap-1"
                   onClick={handleSaveCurrentShipper}
                   title="Save current destination details to directory"
                 >
-                  <span>💾</span> Save Destination
+                  <Save size={12} />
+                  <span>Save Destination</span>
                 </button>
                 <button
                   type="button"
-                  className="text-xs text-indigo-400 hover:text-indigo-300 font-medium underline"
+                  className="text-xs text-indigo-400 hover:text-indigo-300 font-medium underline flex items-center gap-1"
                   onClick={() => {
                     setFormData((p) => ({
                       ...p,
@@ -1130,21 +1184,21 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
                     }));
                   }}
                 >
-                  + Copy Buyer Details
+                  <Copy size={11} /> Copy Buyer
                 </button>
               </div>
             </div>
 
             {/* Search & Select Existing Destination */}
-            <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-lg space-y-1.5">
+            <div className="p-2.5 bg-slate-950/80 border border-slate-800 rounded space-y-1.5">
               <div className="flex items-center justify-between text-xs text-slate-400 font-medium">
                 <span className="flex items-center gap-1.5 text-indigo-300 font-semibold">
-                  <span>🚚</span> Select from Destination Directory:
+                  <Truck size={13} /> Select from Destination Directory:
                 </span>
                 <span className="text-[11px] text-slate-500">Auto-fills delivery info</span>
               </div>
               <select
-                className="w-full px-3 py-2 bg-slate-900 border border-slate-700/80 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700/80 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
                 onChange={(e) => {
                   handleSelectShipper(e.target.value);
                   e.target.value = '';
@@ -1172,7 +1226,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
               <label className="text-xs text-slate-400 font-medium">Delivery Address</label>
               <textarea
                 rows={3}
-                className="w-full p-2.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                className="w-full p-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                 value={formData.consigneeAddress}
                 onChange={(e) => handleFieldChange('consigneeAddress', e.target.value)}
                 placeholder="Full delivery destination address"
@@ -1196,23 +1250,24 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
         </div>
 
         {/* 3. LINE ITEMS FORM TABLE */}
-        <div className="bg-slate-900/70 border border-slate-800 rounded-xl p-5 shadow-xl space-y-4">
+        <div className="bg-slate-900/70 border border-slate-800 rounded-md p-4 shadow-sm space-y-3">
           <div className="flex items-center justify-between border-b border-slate-800 pb-3">
             <div>
               <h2 className="text-sm font-bold text-slate-200 flex items-center gap-2">
-                <span>📋</span> 4. Goods & Services Line Items
+                <Receipt size={15} className="text-indigo-400" />
+                <span>4. Goods & Services Line Items</span>
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
                 Add line items, quantities, rates, and GST % slabs. Tax and total amounts calculate in real-time.
               </p>
             </div>
-            <Button variant="secondary" size="sm" onClick={addItem} icon="➕">
-              Add Item Row
+            <Button variant="secondary" size="sm" onClick={addItem} className="rounded text-xs">
+              <Plus size={13} className="mr-1 inline" /> Add Item Row
             </Button>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left border border-slate-800 rounded-lg overflow-hidden">
+            <table className="w-full text-xs text-left border border-slate-800 rounded overflow-hidden">
               <thead className="bg-slate-950/90 text-slate-300 font-semibold border-b border-slate-800">
                 <tr>
                   <th className="p-2.5 w-10 text-center">#</th>
@@ -1242,14 +1297,14 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
                       <td className="p-2 space-y-1">
                         <input
                           type="text"
-                          className="w-full px-2.5 py-1.5 bg-slate-950/80 border border-slate-700/90 rounded text-slate-100 font-medium focus:outline-none focus:border-indigo-500"
+                          className="w-full px-2.5 py-1 bg-slate-950/80 border border-slate-700/90 rounded text-slate-100 font-medium focus:outline-none focus:border-indigo-500"
                           placeholder="Description of Goods & Service"
                           value={item.description}
                           onChange={(e) => handleItemChange(idx, 'description', e.target.value)}
                         />
                         <input
                           type="text"
-                          className="w-full px-2 py-1 text-[11px] bg-slate-950/50 border border-slate-800 rounded text-slate-400 focus:outline-none focus:border-indigo-500"
+                          className="w-full px-2 py-0.5 text-[11px] bg-slate-950/50 border border-slate-800 rounded text-slate-400 focus:outline-none focus:border-indigo-500"
                           placeholder="Sub-details (e.g. UN 3465/6.1/III, Box specs)"
                           value={item.subText || ''}
                           onChange={(e) => handleItemChange(idx, 'subText', e.target.value)}
@@ -1258,7 +1313,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
                       <td className="p-2">
                         <input
                           type="text"
-                          className="w-full px-2 py-1.5 bg-slate-950/80 border border-slate-700/90 rounded text-slate-200 text-center font-mono focus:outline-none focus:border-indigo-500"
+                          className="w-full px-2 py-1 bg-slate-950/80 border border-slate-700/90 rounded text-slate-200 text-center font-mono focus:outline-none focus:border-indigo-500"
                           placeholder="HSN"
                           value={item.hsnCode || ''}
                           onChange={(e) => handleItemChange(idx, 'hsnCode', e.target.value)}
@@ -1268,14 +1323,14 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
                         <input
                           type="number"
                           step="any"
-                          className="w-full px-2 py-1.5 bg-slate-950/80 border border-slate-700/90 rounded text-slate-200 text-center font-mono focus:outline-none focus:border-indigo-500"
+                          className="w-full px-2 py-1 bg-slate-950/80 border border-slate-700/90 rounded text-slate-200 text-center font-mono focus:outline-none focus:border-indigo-500"
                           value={item.qty}
                           onChange={(e) => handleItemChange(idx, 'qty', e.target.value)}
                         />
                       </td>
                       <td className="p-2">
                         <select
-                          className="w-full px-1.5 py-1.5 bg-slate-950/80 border border-slate-700/90 rounded text-slate-200 focus:outline-none focus:border-indigo-500 text-center"
+                          className="w-full px-1.5 py-1 bg-slate-950/80 border border-slate-700/90 rounded text-slate-200 focus:outline-none focus:border-indigo-500 text-center"
                           value={item.unit || 'Pcs'}
                           onChange={(e) => handleItemChange(idx, 'unit', e.target.value)}
                         >
@@ -1292,14 +1347,14 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
                         <input
                           type="number"
                           step="any"
-                          className="w-full px-2 py-1.5 bg-slate-950/80 border border-slate-700/90 rounded text-slate-200 text-right font-mono focus:outline-none focus:border-indigo-500"
+                          className="w-full px-2 py-1 bg-slate-950/80 border border-slate-700/90 rounded text-slate-200 text-right font-mono focus:outline-none focus:border-indigo-500"
                           value={item.price}
                           onChange={(e) => handleItemChange(idx, 'price', e.target.value)}
                         />
                       </td>
                       <td className="p-2">
                         <select
-                          className="w-full px-1.5 py-1.5 bg-slate-950/80 border border-slate-700/90 rounded text-slate-200 focus:outline-none focus:border-indigo-500 text-center font-medium"
+                          className="w-full px-1.5 py-1 bg-slate-950/80 border border-slate-700/90 rounded text-slate-200 focus:outline-none focus:border-indigo-500 text-center font-medium"
                           value={item.gstRate}
                           onChange={(e) => handleItemChange(idx, 'gstRate', e.target.value)}
                         >
@@ -1324,7 +1379,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
                             title="Duplicate Row"
                             onClick={() => duplicateItem(idx)}
                           >
-                            📋
+                            <Copy size={13} />
                           </button>
                           <button
                             type="button"
@@ -1333,7 +1388,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
                             onClick={() => removeItem(idx)}
                             disabled={items.length <= 1}
                           >
-                            🗑️
+                            <Trash2 size={13} />
                           </button>
                         </div>
                       </td>
@@ -1347,7 +1402,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
           {/* 4. TOTALS & GST BREAKDOWN */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-slate-800">
             {/* GST Tax Slabs Table */}
-            <div className="bg-slate-950/70 border border-slate-800 rounded-lg p-3 space-y-2">
+            <div className="bg-slate-950/70 border border-slate-800 rounded p-3 space-y-2">
               <h3 className="text-xs font-semibold text-slate-300">GST Slab Breakdown</h3>
               <table className="w-full text-[11px] text-left border border-slate-800 rounded overflow-hidden">
                 <thead className="bg-slate-900 text-slate-400">
@@ -1376,7 +1431,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
             </div>
 
             {/* Total Calculation Card */}
-            <div className="bg-slate-950/70 border border-slate-800 rounded-lg p-4 space-y-2.5 flex flex-col justify-between">
+            <div className="bg-slate-950/70 border border-slate-800 rounded p-4 space-y-2.5 flex flex-col justify-between">
               <div className="space-y-1.5 text-xs">
                 <div className="flex justify-between text-slate-400">
                   <span>Total Quantity:</span>
@@ -1408,10 +1463,11 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
         </div>
 
         {/* 5. ISSUER & BANK DETAILS (COLLAPSIBLE TOGGLE) */}
-        <div className="bg-slate-900/70 border border-slate-800 rounded-xl p-5 shadow-xl space-y-4">
+        <div className="bg-slate-900/70 border border-slate-800 rounded-md p-4 shadow-sm space-y-3">
           <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
             <h2 className="text-sm font-bold text-slate-200 flex items-center gap-2">
-              <span>🏦</span> 5. Issuer Company & Bank Details
+              <Building size={15} className="text-indigo-400" />
+              <span>5. Issuer Company & Bank Details</span>
             </h2>
             <button
               type="button"
@@ -1424,7 +1480,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
 
           {showCompanyDetails && (
             <div className="space-y-4 pt-2">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 <Input
                   label="Company Name"
                   value={formData.companyName}
@@ -1464,7 +1520,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-slate-800 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="pt-2 border-t border-slate-800 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 <Input
                   label="Bank Name"
                   value={formData.bankName}
@@ -1496,29 +1552,29 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
         </div>
 
         {/* BOTTOM ACTION BAR */}
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+        <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-800">
           <Button
             variant="secondary"
             onClick={() => {
               if (onCancel) onCancel();
               else navigate('/billing');
             }}
+            className="rounded text-xs"
           >
             {isEmbedded ? 'Close Form' : 'Cancel'}
           </Button>
 
-          <Button variant="secondary" onClick={handleSave} loading={loading}>
+          <Button variant="secondary" onClick={handleSave} loading={loading} className="rounded text-xs">
             Save as Draft
           </Button>
 
           <Button
             variant="primary"
-            icon="🖨️"
             loading={loading}
             onClick={handleSaveAndPrint}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-2.5 text-sm shadow-xl shadow-emerald-950/50"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-5 py-2 text-xs shadow-sm rounded"
           >
-            Save & Print Bill
+            <Printer size={14} className="mr-1.5 inline" /> Save & Print Bill
           </Button>
         </div>
       </div>

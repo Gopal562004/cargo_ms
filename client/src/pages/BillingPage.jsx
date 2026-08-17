@@ -1,8 +1,30 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  Printer,
+  Eye,
+  Download,
+  CreditCard,
+  Trash2,
+  Plus,
+  RotateCw,
+  Search,
+  X,
+  FileText,
+  Pencil,
+  Calendar,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  Building,
+  Truck,
+  Package,
+  Bookmark,
+  SlidersHorizontal,
+} from 'lucide-react';
 import { useDocumentStore } from '../store/documentStore';
 import { printDocumentPDF, downloadDocumentPDF, deleteDocument } from '../services/documentService';
-import TaxInvoiceEditor from '../components/documents/TaxInvoiceEditor';
+import InvoiceDetailModal from '../components/documents/InvoiceDetailModal';
 import BillingTemplateManagerModal from '../components/documents/BillingTemplateManagerModal';
 import PdfPreviewModal from '../components/ui/PdfPreviewModal';
 import Button from '../components/ui/Button';
@@ -17,17 +39,50 @@ function formatINR(val) {
 
 export default function BillingPage() {
   const navigate = useNavigate();
-  const { documents, fetchDocuments, isLoading } = useDocumentStore();
+  const { documents, fetchDocuments, isLoading, updateDocument } = useDocumentStore();
 
+  // Filter input states (staged until Applied)
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
-  const [previewDoc, setPreviewDoc] = useState(null);
+  const [buyerFilter, setBuyerFilter] = useState('ALL');
+  const [shipperFilter, setShipperFilter] = useState('ALL');
+  const [productFilter, setProductFilter] = useState('ALL');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
+  // Active / Applied filter states
+  const [appliedFilters, setAppliedFilters] = useState({
+    search: '',
+    statusFilter: 'ALL',
+    buyerFilter: 'ALL',
+    shipperFilter: 'ALL',
+    productFilter: 'ALL',
+    startDate: '',
+    endDate: '',
+  });
+
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+
+  // Active advanced filters count (excluding search & status)
+  const activeAdvancedCount = [
+    appliedFilters.buyerFilter !== 'ALL',
+    appliedFilters.shipperFilter !== 'ALL',
+    appliedFilters.productFilter !== 'ALL',
+    appliedFilters.startDate !== '',
+    appliedFilters.endDate !== '',
+  ].filter(Boolean).length;
+
+  const handleSearchChange = (e) => {
+    const val = e.target.value;
+    setSearch(val);
+    setAppliedFilters((prev) => ({ ...prev, search: val }));
+  };
+
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [previewDocId, setPreviewDocId] = useState(null);
+  const [previewDocTitle, setPreviewDocTitle] = useState('Tax Invoice Preview');
   const [printingId, setPrintingId] = useState(null);
   const [downloadingId, setDownloadingId] = useState(null);
-  
-  // State for opening the bill creation / editing form
-  const [showForm, setShowForm] = useState(false);
-  const [editingDoc, setEditingDoc] = useState(null);
   const [templateManagerOpen, setTemplateManagerOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -35,30 +90,189 @@ export default function BillingPage() {
     fetchDocuments({ documentType: 'TAX_INVOICE', limit: 100, sortBy: 'createdAt', sortOrder: 'desc' });
   }, []);
 
-  // Filter invoices for TAX_INVOICE
-  const invoices = documents.filter((d) => d.documentType === 'TAX_INVOICE');
+  const handleSavePaymentInfo = async (docId, paymentInfo) => {
+    const target = invoices.find((i) => i.id === docId);
+    if (!target) return;
+    const currentData = target.data || {};
+    const updatedData = {
+      ...currentData,
+      transactionId: paymentInfo.transactionId,
+      paymentMode: paymentInfo.paymentMode,
+      paidDate: paymentInfo.paymentDate,
+      remarks: paymentInfo.remarks,
+      paymentInfo,
+    };
+    await updateDocument(docId, {
+      data: updatedData,
+      status: 'COMPLETED',
+      statusNote: `Payment recorded via ${paymentInfo.paymentMode} (Txn Ref: ${paymentInfo.transactionId || 'N/A'})`,
+    });
+    setSuccessMessage(`Payment recorded successfully for Invoice #${target.documentNumber || currentData.invoiceNumber || ''}! Status updated to Paid / Completed.`);
+    fetchDocuments({ documentType: 'TAX_INVOICE', limit: 100, sortBy: 'createdAt', sortOrder: 'desc' });
+  };
+
+  const handleUpdateStatus = async (docId, status, note) => {
+    await updateDocument(docId, {
+      status,
+      statusNote: note || `Status updated to ${status}`,
+    });
+    setSuccessMessage(`Invoice status updated to ${status}!`);
+    fetchDocuments({ documentType: 'TAX_INVOICE', limit: 100, sortBy: 'createdAt', sortOrder: 'desc' });
+  };
+
+  // Filter invoices for TAX_INVOICE (Sales only)
+  const invoices = documents.filter((d) => d.documentType === 'TAX_INVOICE' && d.data?.invoiceKind !== 'PURCHASE');
+
+  // Extract distinct filter option lists from existing invoices
+  const distinctBuyers = Array.from(
+    new Set(
+      invoices
+        .map((d) => (d.data?.buyerName || '').trim())
+        .filter(Boolean)
+    )
+  ).sort();
+
+  const distinctShippers = Array.from(
+    new Set(
+      invoices
+        .map((d) => (d.data?.consigneeName || d.data?.shipperName || '').trim())
+        .filter(Boolean)
+    )
+  ).sort();
+
+  const distinctProducts = Array.from(
+    new Set(
+      invoices
+        .flatMap((d) => (d.data?.items || []).map((it) => (it.description || '').trim()))
+        .filter(Boolean)
+    )
+  ).sort();
+
+  const isAnyFilterActive =
+    appliedFilters.search !== '' ||
+    appliedFilters.statusFilter !== 'ALL' ||
+    appliedFilters.buyerFilter !== 'ALL' ||
+    appliedFilters.shipperFilter !== 'ALL' ||
+    appliedFilters.productFilter !== 'ALL' ||
+    appliedFilters.startDate !== '' ||
+    appliedFilters.endDate !== '';
+
+  const handleApplyFilters = () => {
+    setAppliedFilters({
+      search,
+      statusFilter,
+      buyerFilter,
+      shipperFilter,
+      productFilter,
+      startDate,
+      endDate,
+    });
+  };
+
+  const handleResetFilters = () => {
+    const resetState = {
+      search: '',
+      statusFilter: 'ALL',
+      buyerFilter: 'ALL',
+      shipperFilter: 'ALL',
+      productFilter: 'ALL',
+      startDate: '',
+      endDate: '',
+    };
+    setSearch('');
+    setStatusFilter('ALL');
+    setBuyerFilter('ALL');
+    setShipperFilter('ALL');
+    setProductFilter('ALL');
+    setStartDate('');
+    setEndDate('');
+    setAppliedFilters(resetState);
+  };
+
+  const handleQuickStatusChange = (st) => {
+    setStatusFilter(st);
+    setAppliedFilters((prev) => ({ ...prev, statusFilter: st }));
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleApplyFilters();
+    }
+  };
 
   const filteredInvoices = invoices.filter((doc) => {
     const data = doc.data || {};
-    const matchesStatus = statusFilter === 'ALL' || doc.status === statusFilter;
-    const q = search.toLowerCase().trim();
-    if (!q) return matchesStatus;
+    const items = data.items || [];
+
+    // 1. Status Filter
+    const matchesStatus = appliedFilters.statusFilter === 'ALL' || doc.status === appliedFilters.statusFilter;
+    if (!matchesStatus) return false;
+
+    // 2. Buyer Filter
+    const buyerName = (data.buyerName || '').trim().toLowerCase();
+    const matchesBuyer = appliedFilters.buyerFilter === 'ALL' || buyerName === appliedFilters.buyerFilter.toLowerCase();
+    if (!matchesBuyer) return false;
+
+    // 3. Shipper / Consignee Filter
+    const shipperName = (data.consigneeName || data.shipperName || '').trim().toLowerCase();
+    const matchesShipper = appliedFilters.shipperFilter === 'ALL' || shipperName === appliedFilters.shipperFilter.toLowerCase();
+    if (!matchesShipper) return false;
+
+    // 4. Product / Line Item Filter
+    const matchesProduct =
+      appliedFilters.productFilter === 'ALL' ||
+      items.some(
+        (it) =>
+          (it.description || '').toLowerCase().includes(appliedFilters.productFilter.toLowerCase()) ||
+          (it.subText || '').toLowerCase().includes(appliedFilters.productFilter.toLowerCase()) ||
+          (it.hsnCode || '').toLowerCase().includes(appliedFilters.productFilter.toLowerCase())
+      );
+    if (!matchesProduct) return false;
+
+    // 5. Date Range Filter
+    if (appliedFilters.startDate || appliedFilters.endDate) {
+      const docDate = new Date(doc.createdAt);
+      if (appliedFilters.startDate) {
+        const start = new Date(appliedFilters.startDate);
+        start.setHours(0, 0, 0, 0);
+        if (docDate < start) return false;
+      }
+      if (appliedFilters.endDate) {
+        const end = new Date(appliedFilters.endDate);
+        end.setHours(23, 59, 59, 999);
+        if (docDate > end) return false;
+      }
+    }
+
+    // 6. Free Search Query
+    const q = appliedFilters.search.toLowerCase().trim();
+    if (!q) return true;
 
     const matchesSearch =
       (doc.documentNumber || '').toLowerCase().includes(q) ||
       (doc.title || '').toLowerCase().includes(q) ||
       (data.buyerName || '').toLowerCase().includes(q) ||
+      (data.consigneeName || '').toLowerCase().includes(q) ||
+      (data.shipperName || '').toLowerCase().includes(q) ||
       (data.invoiceNumber || '').toLowerCase().includes(q) ||
       (data.airwayBillNo || '').toLowerCase().includes(q) ||
-      (data.referenceName || '').toLowerCase().includes(q);
+      (data.referenceName || '').toLowerCase().includes(q) ||
+      (data.companyName || '').toLowerCase().includes(q) ||
+      items.some(
+        (it) =>
+          (it.description || '').toLowerCase().includes(q) ||
+          (it.subText || '').toLowerCase().includes(q) ||
+          (it.hsnCode || '').toLowerCase().includes(q)
+      );
 
-    return matchesStatus && matchesSearch;
+    return matchesSearch;
   });
 
   // Calculate Metrics
   const totalCount = invoices.length;
   const draftCount = invoices.filter((d) => d.status === 'DRAFT').length;
-  const issuedCount = invoices.filter((d) => ['ISSUED', 'COMPLETED', 'DELIVERED'].includes(d.status)).length;
+  const pendingPaymentCount = invoices.filter((d) => d.status === 'ISSUED').length;
+  const paidCount = invoices.filter((d) => ['COMPLETED', 'DELIVERED'].includes(d.status)).length;
   const totalBilledAmount = invoices.reduce((acc, doc) => {
     const grandTotal = doc.data?.grandTotal || 0;
     return acc + (parseFloat(grandTotal) || 0);
@@ -102,50 +316,48 @@ export default function BillingPage() {
     navigate('/documents/new/TAX_INVOICE');
   };
 
-  const handleEditDoc = (doc) => {
-    navigate(`/documents/${doc.id}/edit`);
-  };
-
   return (
-    <div className="space-y-8 animate-fade-in pb-16">
+    <div className="space-y-6 animate-fade-in pb-16">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <span className="text-2xl">🧾</span>
+            <div className="w-8 h-8 rounded bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+              <FileText size={18} />
+            </div>
             <h1 className="text-2xl font-bold text-slate-100 tracking-tight">
-              Tax Invoices & Billing Register
+              Sales Invoices & Billing Register
             </h1>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Track revenue, manage drafts, search invoices, and 1-click print or download GST Tax Invoices.
+            Track revenue from clients, filter by buyer/shipper/product, and 1-click print or download GST Tax Invoices.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <Button
             variant="secondary"
-            icon="📑"
             onClick={() => navigate('/billing/templates')}
+            className="rounded text-xs"
           >
-            Templates & Directory
+            <Bookmark size={14} className="mr-1.5 inline" /> Templates & Directory
           </Button>
 
           <Button
             variant="primary"
-            icon="➕"
             onClick={handleCreateNew}
+            className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold"
           >
-            Create New Bill
+            <Plus size={14} className="mr-1.5 inline" /> Create New Bill
           </Button>
         </div>
       </div>
 
       {/* Success Notification Alert */}
       {successMessage && (
-        <div className="p-4 bg-emerald-500/15 border border-emerald-500/30 rounded-xl text-xs text-emerald-300 flex items-center justify-between animate-fade-in shadow-lg">
+        <div className="p-3 bg-emerald-500/15 border border-emerald-500/30 rounded-md text-xs text-emerald-300 flex items-center justify-between animate-fade-in shadow-md">
           <div className="flex items-center gap-2 font-medium">
-            <span className="text-base">✅</span>
+            <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
             <span>{successMessage}</span>
           </div>
           <button
@@ -159,66 +371,285 @@ export default function BillingPage() {
       )}
 
       {/* Metrics Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-xl shadow-lg space-y-1">
-          <div className="text-xs text-slate-400 font-medium">Total Invoices</div>
-          <div className="text-2xl font-bold text-slate-100 font-mono">{totalCount}</div>
-          <div className="text-[11px] text-slate-500">Tracked in database</div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <div className="p-3.5 bg-slate-900/70 border border-slate-800 rounded-md shadow-sm space-y-1">
+          <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5">
+            <FileText size={13} className="text-indigo-400" /> Total Billed Revenue
+          </div>
+          <div className="text-xl font-bold text-slate-100 font-mono">₹{formatINR(totalBilledAmount)}</div>
+          <div className="text-[10px] text-slate-500">{totalCount} total invoices</div>
         </div>
 
-        <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-xl shadow-lg space-y-1">
-          <div className="text-xs text-emerald-400 font-medium">Total Billed Revenue</div>
-          <div className="text-2xl font-bold text-emerald-400 font-mono">₹{formatINR(totalBilledAmount)}</div>
-          <div className="text-[11px] text-slate-500">Across all invoices</div>
+        <div className="p-3.5 bg-slate-900/70 border border-slate-800 rounded-md shadow-sm space-y-1">
+          <div className="text-[11px] text-amber-400 font-medium flex items-center gap-1.5">
+            <Clock size={13} className="text-amber-400" /> Pending Payment
+          </div>
+          <div className="text-xl font-bold text-amber-400 font-mono">{pendingPaymentCount}</div>
+          <div className="text-[10px] text-slate-500">Invoices issued to clients</div>
         </div>
 
-        <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-xl shadow-lg space-y-1">
-          <div className="text-xs text-amber-400 font-medium">Draft Bills</div>
-          <div className="text-2xl font-bold text-amber-400 font-mono">{draftCount}</div>
-          <div className="text-[11px] text-slate-500">Pending finalization</div>
+        <div className="p-3.5 bg-slate-900/70 border border-slate-800 rounded-md shadow-sm space-y-1">
+          <div className="text-[11px] text-emerald-400 font-medium flex items-center gap-1.5">
+            <CheckCircle2 size={13} className="text-emerald-400" /> Paid / Completed
+          </div>
+          <div className="text-xl font-bold text-emerald-400 font-mono">{paidCount}</div>
+          <div className="text-[10px] text-slate-500">Payment received</div>
         </div>
 
-        <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-xl shadow-lg space-y-1">
-          <div className="text-xs text-indigo-400 font-medium">Issued / Completed</div>
-          <div className="text-2xl font-bold text-indigo-400 font-mono">{issuedCount}</div>
-          <div className="text-[11px] text-slate-500">Ready for dispatch & accounting</div>
+        <div className="p-3.5 bg-slate-900/70 border border-slate-800 rounded-md shadow-sm space-y-1">
+          <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5">
+            <AlertCircle size={13} className="text-slate-400" /> Draft Bills
+          </div>
+          <div className="text-xl font-bold text-slate-300 font-mono">{draftCount}</div>
+          <div className="text-[10px] text-slate-500">Unsent drafts</div>
         </div>
       </div>
 
-      {/* Filters & Search Bar */}
-      <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4 space-y-3 shadow-lg">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="w-full md:w-80">
-            <Input
-              placeholder="Search by Invoice #, Buyer, AWB..."
+      {/* Long Search Bar & Controls */}
+      <div className="bg-slate-900/70 border border-slate-800 rounded-md p-3.5 space-y-3 shadow-sm">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+          {/* Long Search Bar */}
+          <div className="relative flex-1">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search by Invoice #, Buyer, Shipper, Product / Item, AWB..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={handleSearchChange}
+              onKeyDown={handleKeyDown}
+              className="w-full pl-9 pr-8 py-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
             />
+            {search && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch('');
+                  setAppliedFilters((prev) => ({ ...prev, search: '' }));
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs"
+              >
+                ✕
+              </button>
+            )}
           </div>
 
-          <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto">
-            {['ALL', 'DRAFT', 'ISSUED', 'COMPLETED', 'CANCELLED'].map((st) => (
+          {/* Filter Toggle & Action Buttons */}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded text-xs font-semibold border transition-colors ${
+                showAdvancedFilters || activeAdvancedCount > 0
+                  ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
+                  : 'bg-slate-800/80 text-slate-300 border-slate-700/60 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <SlidersHorizontal size={13} />
+              <span>Filters</span>
+              {activeAdvancedCount > 0 && (
+                <span className="px-1.5 py-0.2 bg-white text-indigo-700 rounded-full text-[10px] font-bold">
+                  {activeAdvancedCount}
+                </span>
+              )}
+              <span className="text-[10px]">{showAdvancedFilters ? '▲' : '▼'}</span>
+            </button>
+
+            {isAnyFilterActive && (
               <button
-                key={st}
-                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap ${
-                  statusFilter === st
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-slate-800/80 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-                }`}
-                onClick={() => setStatusFilter(st)}
+                type="button"
+                onClick={handleResetFilters}
+                className="flex items-center gap-1 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 rounded text-xs font-medium transition-colors"
+                title="Reset All Filters"
               >
-                {st === 'ALL' ? 'All Invoices' : st}
+                <RotateCw size={13} /> Reset
               </button>
-            ))}
+            )}
           </div>
         </div>
+
+        {/* Status Quick Pills */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+          {[
+            { id: 'ALL', label: 'All Invoices' },
+            { id: 'DRAFT', label: 'Drafts' },
+            { id: 'ISSUED', label: 'Pending Payment' },
+            { id: 'COMPLETED', label: 'Paid / Completed' },
+            { id: 'CANCELLED', label: 'Cancelled' },
+          ].map((st) => (
+            <button
+              key={st.id}
+              className={`px-3 py-1 text-xs font-medium rounded transition-colors whitespace-nowrap ${
+                statusFilter === st.id
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'bg-slate-800/70 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+              }`}
+              onClick={() => handleQuickStatusChange(st.id)}
+            >
+              {st.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Collapsible Advanced Filters Drawer */}
+        {showAdvancedFilters && (
+          <div className="pt-3 border-t border-slate-800 space-y-3 animate-fade-in">
+            <div className="text-[11px] font-semibold text-slate-400">Advanced Filter Criteria:</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {/* Buyer Filter */}
+              <div>
+                <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                  Billed To (Buyer)
+                </label>
+                <select
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                  value={buyerFilter}
+                  onChange={(e) => setBuyerFilter(e.target.value)}
+                >
+                  <option value="ALL">All Buyers ({distinctBuyers.length})</option>
+                  {distinctBuyers.map((b) => (
+                    <option key={b} value={b}>
+                      {b}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Shipper / Consignee Filter */}
+              <div>
+                <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                  Shipper / Destination
+                </label>
+                <select
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                  value={shipperFilter}
+                  onChange={(e) => setShipperFilter(e.target.value)}
+                >
+                  <option value="ALL">All Shippers / Destinations ({distinctShippers.length})</option>
+                  {distinctShippers.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Product / Line Item Filter */}
+              <div>
+                <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                  Product / Item
+                </label>
+                <select
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                  value={productFilter}
+                  onChange={(e) => setProductFilter(e.target.value)}
+                >
+                  <option value="ALL">All Products / Items ({distinctProducts.length})</option>
+                  {distinctProducts.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Date Range Filters */}
+              <div>
+                <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                  Filter by Date Range
+                </label>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    placeholder="From"
+                    className="w-full px-2 py-1.5 bg-slate-950 border border-slate-800 rounded text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500"
+                    title="Start Date"
+                  />
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    placeholder="To"
+                    className="w-full px-2 py-1.5 bg-slate-950 border border-slate-800 rounded text-[11px] text-slate-200 focus:outline-none focus:border-indigo-500"
+                    title="End Date"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Apply / Reset Actions inside Drawer */}
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800/80">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleResetFilters}
+                className="text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 text-xs px-3 py-1.5 rounded"
+              >
+                <RotateCw size={12} className="mr-1 inline" /> Reset Filters
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleApplyFilters}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow-sm px-4 py-1.5 rounded"
+              >
+                <Search size={12} className="mr-1 inline" /> Apply Filters
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Active Filters Summary Pills */}
+        {isAnyFilterActive && (
+          <div className="pt-2 border-t border-slate-800 flex items-center justify-between flex-wrap gap-2 text-xs">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-slate-400 font-medium text-[11px]">Active Filters:</span>
+              {appliedFilters.statusFilter !== 'ALL' && (
+                <span className="px-2 py-0.5 bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 rounded text-[11px] font-mono">
+                  Status: {appliedFilters.statusFilter}
+                </span>
+              )}
+              {appliedFilters.buyerFilter !== 'ALL' && (
+                <span className="px-2 py-0.5 bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 rounded text-[11px] font-mono">
+                  Buyer: {appliedFilters.buyerFilter}
+                </span>
+              )}
+              {appliedFilters.shipperFilter !== 'ALL' && (
+                <span className="px-2 py-0.5 bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 rounded text-[11px] font-mono">
+                  Shipper: {appliedFilters.shipperFilter}
+                </span>
+              )}
+              {appliedFilters.productFilter !== 'ALL' && (
+                <span className="px-2 py-0.5 bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 rounded text-[11px] font-mono">
+                  Product: {appliedFilters.productFilter}
+                </span>
+              )}
+              {appliedFilters.search && (
+                <span className="px-2 py-0.5 bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 rounded text-[11px] font-mono">
+                  Search: "{appliedFilters.search}"
+                </span>
+              )}
+              {(appliedFilters.startDate || appliedFilters.endDate) && (
+                <span className="px-2 py-0.5 bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 rounded text-[11px] font-mono">
+                  Date: {appliedFilters.startDate || '...'} to {appliedFilters.endDate || '...'}
+                </span>
+              )}
+            </div>
+
+            <div className="text-[11px] text-slate-400 font-medium">
+              Showing <span className="text-white font-bold">{filteredInvoices.length}</span> of {invoices.length} invoices
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Latest Invoices List Table */}
-      <div className="bg-slate-900/60 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
-        <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/80">
+      <div className="bg-slate-900/70 border border-slate-800 rounded-md overflow-hidden shadow-sm">
+        <div className="p-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-900/90">
           <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-            <span>📋</span> Latest Created Bills & Drafts ({filteredInvoices.length})
+            <FileText size={16} className="text-indigo-400" />
+            <span>Latest Created Bills & Drafts ({filteredInvoices.length})</span>
           </h2>
           <div className="flex items-center gap-3">
             <button
@@ -226,17 +657,15 @@ export default function BillingPage() {
               className="text-xs text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-1"
               onClick={() => fetchDocuments({ documentType: 'TAX_INVOICE', limit: 100, sortBy: 'createdAt', sortOrder: 'desc' })}
             >
-              <span>🔄</span> Refresh
+              <RotateCw size={13} /> Refresh
             </button>
-            {!showForm && (
-              <button
-                type="button"
-                className="text-xs text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1"
-                onClick={handleCreateNew}
-              >
-                <span>➕</span> New Bill
-              </button>
-            )}
+            <button
+              type="button"
+              className="text-xs text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1"
+              onClick={handleCreateNew}
+            >
+              <Plus size={14} /> New Bill
+            </button>
           </div>
         </div>
 
@@ -247,7 +676,7 @@ export default function BillingPage() {
           </div>
         ) : filteredInvoices.length === 0 ? (
           <div className="p-12 text-center space-y-3">
-            <span className="text-3xl">🧾</span>
+            <FileText size={36} className="text-slate-600 mx-auto" />
             <p className="text-sm font-medium text-slate-300">No Tax Invoices found</p>
             <p className="text-xs text-slate-500">
               {search ? 'Try adjusting your search query' : 'Click "+ Create New Bill" to fill and print your first invoice.'}
@@ -256,8 +685,9 @@ export default function BillingPage() {
               variant="primary"
               size="sm"
               onClick={handleCreateNew}
+              className="rounded"
             >
-              ➕ Create First Bill
+              <Plus size={14} className="mr-1 inline" /> Create First Bill
             </Button>
           </div>
         ) : (
@@ -267,16 +697,19 @@ export default function BillingPage() {
                 <tr>
                   <th className="py-3 px-4">Invoice #</th>
                   <th className="py-3 px-4">Date</th>
-                  <th className="py-3 px-4 min-w-[180px]">Billed To (Buyer)</th>
+                  <th className="py-3 px-4 min-w-[150px]">Billed To (Buyer)</th>
+                  <th className="py-3 px-4 min-w-[150px]">Shipper / Destination</th>
+                  <th className="py-3 px-4 min-w-[170px]">Products / Items</th>
                   <th className="py-3 px-4">AWB / Ref</th>
                   <th className="py-3 px-4 text-right">Amount (₹)</th>
                   <th className="py-3 px-4 text-center">Status</th>
-                  <th className="py-3 px-4 text-right min-w-[220px]">Actions</th>
+                  <th className="py-3 px-4 text-right min-w-[200px]">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/80">
                 {filteredInvoices.map((doc) => {
                   const data = doc.data || {};
+                  const items = data.items || [];
                   const grandTotal = data.grandTotal || 0;
                   const invoiceNum = doc.documentNumber || data.invoiceNumber || 'Draft';
                   const invoiceDate = data.invoiceDate || new Date(doc.createdAt).toLocaleDateString('en-GB');
@@ -286,11 +719,17 @@ export default function BillingPage() {
                       <td className="py-3.5 px-4 font-bold text-slate-100 font-mono">
                         <button
                           type="button"
-                          className="hover:text-indigo-400 transition-colors text-left font-mono"
-                          onClick={() => handleEditDoc(doc)}
+                          className="hover:text-indigo-400 transition-colors text-left font-mono underline decoration-dotted underline-offset-4"
+                          onClick={() => setSelectedInvoice(doc)}
+                          title="Click to view details, payment proof, activity logs & edit"
                         >
                           {invoiceNum}
                         </button>
+                        {data.paymentInfo?.transactionId && (
+                          <div className="mt-1 flex items-center gap-1 text-[10px] font-normal text-emerald-400 font-mono">
+                            <CreditCard size={11} /> {data.paymentInfo.paymentMode}: {data.paymentInfo.transactionId}
+                          </div>
+                        )}
                       </td>
                       <td className="py-3.5 px-4 text-slate-300 font-mono">
                         {invoiceDate}
@@ -298,6 +737,32 @@ export default function BillingPage() {
                       <td className="py-3.5 px-4">
                         <div className="font-semibold text-slate-200">{data.buyerName || 'Unspecified'}</div>
                         <div className="text-[11px] text-slate-400 truncate max-w-xs">{data.buyerState || ''}</div>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <div className="text-slate-300 font-medium">{data.consigneeName || data.shipperName || '-'}</div>
+                        {data.consigneeState && (
+                          <div className="text-[11px] text-slate-500 truncate max-w-xs">{data.consigneeState}</div>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        {items.length > 0 ? (
+                          <div className="space-y-0.5 max-w-xs">
+                            <div className="text-slate-200 font-medium truncate" title={items.map((i) => i.description).join(', ')}>
+                              {items[0].description || 'Item'}
+                              {items.length > 1 && (
+                                <span className="ml-1 text-[10px] px-1.5 py-0.2 bg-slate-800 text-indigo-300 rounded font-semibold">
+                                  +{items.length - 1} more
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[10px] text-slate-400 font-mono">
+                              Qty: {items.reduce((sum, it) => sum + (parseFloat(it.qty || it.quantity) || 0), 0)} {items[0]?.unit || 'Pcs'}
+                              {items[0]?.hsnCode && ` | HSN: ${items[0].hsnCode}`}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-slate-500">-</span>
+                        )}
                       </td>
                       <td className="py-3.5 px-4 text-slate-300 font-mono">
                         {data.airwayBillNo || data.poNumberAndDate || '-'}
@@ -318,39 +783,41 @@ export default function BillingPage() {
                             disabled={printingId === doc.id}
                             title="Print this invoice immediately"
                           >
-                            <span>🖨️</span>
+                            <Printer size={13} />
                             <span>{printingId === doc.id ? 'Printing...' : 'Print Bill'}</span>
                           </button>
 
-                          {/* Preview Modal */}
-                          <button
-                            type="button"
-                            className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition-colors"
-                            onClick={() => setPreviewDoc(doc)}
-                            title="Preview PDF"
-                          >
-                            👁️
-                          </button>
-
-                          {/* Download PDF */}
-                          <button
-                            type="button"
-                            className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition-colors"
-                            onClick={() => handleDownload(doc)}
-                            disabled={downloadingId === doc.id}
-                            title="Download PDF"
-                          >
-                            📥
-                          </button>
-
-                          {/* Edit */}
+                          {/* Direct Document Preview (PDF) */}
                           <button
                             type="button"
                             className="p-1.5 text-slate-400 hover:text-indigo-400 hover:bg-slate-800 rounded transition-colors"
-                            onClick={() => handleEditDoc(doc)}
-                            title="Edit Invoice"
+                            onClick={() => {
+                              setPreviewDocTitle(`Invoice #${invoiceNum}`);
+                              setPreviewDocId(doc.id);
+                            }}
+                            title="Direct Document Preview (PDF)"
                           >
-                            ✏️
+                            <Eye size={15} />
+                          </button>
+
+                          {/* Payment / Activity Details Modal */}
+                          <button
+                            type="button"
+                            className="p-1.5 text-slate-400 hover:text-emerald-400 hover:bg-slate-800 rounded transition-colors"
+                            onClick={() => setSelectedInvoice(doc)}
+                            title={data.paymentInfo?.transactionId ? `Payment Recorded (${data.paymentInfo.transactionId})` : "Record Client Payment Details"}
+                          >
+                            <CreditCard size={15} />
+                          </button>
+
+                          {/* Edit Bill Form */}
+                          <button
+                            type="button"
+                            className="p-1.5 text-slate-400 hover:text-indigo-400 hover:bg-slate-800 rounded transition-colors"
+                            onClick={() => navigate(`/documents/${doc.id}`)}
+                            title="Edit Bill Form"
+                          >
+                            <Pencil size={15} />
                           </button>
 
                           {/* Delete */}
@@ -360,7 +827,7 @@ export default function BillingPage() {
                             onClick={() => handleDelete(doc.id)}
                             title="Delete Invoice"
                           >
-                            🗑️
+                            <Trash2 size={15} />
                           </button>
                         </div>
                       </td>
@@ -373,13 +840,30 @@ export default function BillingPage() {
         )}
       </div>
 
+      {/* Comprehensive Invoice Details, Payment & Activity Modal */}
+      {selectedInvoice && (
+        <InvoiceDetailModal
+          doc={selectedInvoice}
+          onClose={() => setSelectedInvoice(null)}
+          onUpdatePayment={handleSavePaymentInfo}
+          onUpdateStatus={handleUpdateStatus}
+          onPrint={handlePrint}
+          onDownload={handleDownload}
+          onPreview={(id) => {
+            const num = selectedInvoice.documentNumber || selectedInvoice.data?.invoiceNumber || 'Invoice';
+            setPreviewDocTitle(`Invoice #${num}`);
+            setPreviewDocId(id);
+          }}
+        />
+      )}
+
       {/* PDF Preview Modal */}
-      {previewDoc && (
+      {previewDocId && (
         <PdfPreviewModal
-          isOpen={!!previewDoc}
-          documentId={previewDoc.id}
-          title={previewDoc.title || previewDoc.documentNumber || 'Tax Invoice'}
-          onClose={() => setPreviewDoc(null)}
+          isOpen={!!previewDocId}
+          documentId={previewDocId}
+          title={previewDocTitle}
+          onClose={() => setPreviewDocId(null)}
         />
       )}
 
@@ -388,21 +872,8 @@ export default function BillingPage() {
         <BillingTemplateManagerModal
           isOpen={templateManagerOpen}
           onClose={() => setTemplateManagerOpen(false)}
-          onSelectTemplate={(tpl) => {
-            setEditingDoc({
-              data: {
-                ...tpl.companyDetails,
-                ...tpl.buyer,
-                ...tpl.consignee,
-                items: tpl.items,
-                companyLogo: tpl.companyLogo,
-                invoiceNumber: tpl.invoiceNumber || 'DGR/0466/26-27',
-                invoiceDate: tpl.invoiceDate || '27-06-2026',
-              },
-            });
-            setShowForm(true);
+          onSelectTemplate={() => {
             setTemplateManagerOpen(false);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
         />
       )}

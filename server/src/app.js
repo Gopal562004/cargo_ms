@@ -8,6 +8,7 @@ import authRoutes from './routes/auth.routes.js';
 import documentRoutes from './routes/document.routes.js';
 import contactRoutes from './routes/contact.routes.js';
 import templateRoutes from './routes/template.routes.js';
+import userRoutes from './routes/user.routes.js';
 
 const app = express();
 
@@ -40,6 +41,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/contacts', contactRoutes);
 app.use('/api/templates', templateRoutes);
+app.use('/api/users', userRoutes);
 
 // ─── Error Handling ──────────────────────────────────
 app.use(notFound);

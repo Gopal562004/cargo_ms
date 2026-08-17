@@ -71,6 +71,10 @@ export async function getMe(req, res, next) {
         name: true,
         company: true,
         role: true,
+        isActive: true,
+        allowedServices: true,
+        phone: true,
+        department: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -78,6 +82,10 @@ export async function getMe(req, res, next) {
 
     if (!user) {
       throw new AppError('User not found', 404);
+    }
+
+    if (user.isActive === false) {
+      throw new AppError('This user account has been deactivated', 403);
     }
 
     res.json({ success: true, data: { user } });

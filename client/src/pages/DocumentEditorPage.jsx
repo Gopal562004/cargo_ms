@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { ArrowLeft, Eye, Download, Plus, Trash2, Save, FileText } from 'lucide-react';
 import { useDocumentStore } from '../store/documentStore';
 import { getDocumentSchema } from '../schemas/registry';
 import { downloadDocumentPDF, previewDocumentPDF } from '../services/documentService';
@@ -156,8 +157,8 @@ export default function DocumentEditorPage() {
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
         <div className="flex items-center gap-3">
-          <button className="text-xs text-slate-400 hover:text-white transition-colors" onClick={() => navigate(-1)}>
-            ← Back
+          <button className="flex items-center gap-1 text-xs text-slate-400 hover:text-white transition-colors" onClick={() => navigate(-1)}>
+            <ArrowLeft size={14} /> Back
           </button>
           <h1 className="text-xl font-bold text-slate-100">
             {isEdit ? 'Edit' : 'New'} {schema.name}
@@ -169,25 +170,25 @@ export default function DocumentEditorPage() {
             <>
               <Button
                 variant="secondary"
-                icon="👁️"
                 loading={previewingPdf}
                 onClick={handlePreviewPDF}
+                className="rounded text-xs"
               >
-                Preview PDF
+                <Eye size={14} className="mr-1.5 inline" /> Preview PDF
               </Button>
               <Button
                 variant="secondary"
-                icon="📥"
                 loading={downloadingPdf}
                 onClick={handleDownloadPDF}
+                className="rounded text-xs"
               >
-                Download PDF
+                <Download size={14} className="mr-1.5 inline" /> Download PDF
               </Button>
             </>
           )}
-          <Button variant="secondary" onClick={() => navigate(-1)}>Cancel</Button>
-          <Button variant="primary" loading={loading} onClick={() => handleSave(true)}>
-            {isEdit ? 'Save Changes' : 'Create Document'}
+          <Button variant="secondary" onClick={() => navigate(-1)} className="rounded text-xs">Cancel</Button>
+          <Button variant="primary" loading={loading} onClick={() => handleSave(true)} className="rounded text-xs font-semibold">
+            <Save size={14} className="mr-1.5 inline" /> {isEdit ? 'Save Changes' : 'Create Document'}
           </Button>
         </div>
       </div>
@@ -299,18 +300,22 @@ export default function DocumentEditorPage() {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-semibold text-slate-200">Packages</h2>
-              <Button variant="secondary" size="sm" onClick={addPackage} icon="➕">Add Package</Button>
+              <Button variant="secondary" size="sm" onClick={addPackage} className="rounded text-xs">
+                <Plus size={13} className="mr-1 inline" /> Add Package
+              </Button>
             </div>
             {packages.length === 0 ? (
               <div className="p-8 text-center space-y-3">
                 <p className="text-xs text-slate-400">No packages added yet</p>
-                <Button variant="secondary" onClick={addPackage}>Add First Package</Button>
+                <Button variant="secondary" onClick={addPackage} className="rounded text-xs">
+                  <Plus size={13} className="mr-1 inline" /> Add First Package
+                </Button>
               </div>
             ) : (
               <div className="space-y-3">
                 {packages.map((pkg, i) => (
-                  <div key={i} className="flex flex-col sm:flex-row items-end gap-3 p-4 bg-slate-900/40 border border-slate-800 rounded-xl">
-                    <div className="text-xs font-bold text-indigo-400 pb-3 shrink-0">#{pkg.pieceNumber}</div>
+                  <div key={i} className="flex flex-col sm:flex-row items-end gap-3 p-4 bg-slate-900/40 border border-slate-800 rounded">
+                    <div className="text-xs font-bold text-indigo-400 pb-3 shrink-0 font-mono">#{pkg.pieceNumber}</div>
                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 flex-1">
                       <Input label="Length" type="number" value={pkg.length} onChange={(e) => updatePackage(i, 'length', e.target.value)} />
                       <Input label="Width" type="number" value={pkg.width} onChange={(e) => updatePackage(i, 'width', e.target.value)} />
@@ -318,7 +323,9 @@ export default function DocumentEditorPage() {
                       <Input label="Weight" type="number" value={pkg.weight} onChange={(e) => updatePackage(i, 'weight', e.target.value)} required />
                       <Input label="Description" value={pkg.description} onChange={(e) => updatePackage(i, 'description', e.target.value)} />
                     </div>
-                    <button className="p-2 text-slate-400 hover:text-rose-400 transition-colors shrink-0" onClick={() => removePackage(i)} title="Remove">🗑️</button>
+                    <button className="p-2 text-slate-400 hover:text-rose-400 transition-colors shrink-0" onClick={() => removePackage(i)} title="Remove">
+                      <Trash2 size={16} />
+                    </button>
                   </div>
                 ))}
               </div>

@@ -7,8 +7,8 @@
   }
 
   html.light {
-    --bg-primary: #f3f4f6;
-    --text-primary: #1f2937;
+    --bg-primary: #f8fafc;
+    --text-primary: #0f172a;
   }
 
   body {
@@ -16,28 +16,112 @@
     color: var(--text-primary);
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     min-height: 100vh;
-    transition: background-color 200ms ease, color 200ms ease;
+    transition: background-color 150ms ease, color 150ms ease;
+  }
+
+  /* Global Interactive Cursor Pointer Rules */
+  button:not(:disabled),
+  select:not(:disabled),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  input[type="submit"]:not(:disabled),
+  input[type="button"]:not(:disabled),
+  input[type="file"],
+  [role="button"],
+  [tabindex="0"],
+  summary,
+  label {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  select:disabled,
+  input:disabled {
+    cursor: not-allowed;
   }
 }
 
-/* Off-white light theme overrides (Slate / Warm Neutral tint, no pure white) */
-html.light .bg-slate-950 { background-color: #f1f5f9 !important; }
-html.light .bg-slate-900\/80 { background-color: rgba(226, 232, 240, 0.85) !important; }
-html.light .bg-slate-900\/60 { background-color: rgba(226, 232, 240, 0.65) !important; }
-html.light .bg-slate-900\/40 { background-color: rgba(241, 245, 249, 0.5) !important; }
-html.light .bg-slate-900 { background-color: #e2e8f0 !important; }
-html.light .bg-slate-800 { background-color: #cbd5e1 !important; }
-html.light .bg-slate-800\/60 { background-color: rgba(203, 213, 225, 0.7) !important; }
+/* ========================================================
+   LIGHT THEME OVERRIDES (Clean, Crisp, Professional Palette)
+   ======================================================== */
+html.light body {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
 
-html.light .border-slate-800\/80 { border-color: rgba(203, 213, 225, 0.8) !important; }
-html.light .border-slate-800 { border-color: #cbd5e1 !important; }
-html.light .border-slate-700 { border-color: #94a3b8 !important; }
+/* Crisp White Surfaces & Cards */
+html.light .bg-slate-950 { background-color: #ffffff !important; }
+html.light .bg-slate-950\/90 { background-color: #ffffff !important; }
+html.light .bg-slate-950\/80 { background-color: #ffffff !important; }
+html.light .bg-slate-950\/70 { background-color: #ffffff !important; }
+html.light .bg-slate-950\/60 { background-color: #ffffff !important; }
+html.light .bg-slate-950\/50 { background-color: #f8fafc !important; }
+html.light .bg-slate-950\/40 { background-color: #f8fafc !important; }
 
+html.light .bg-slate-900 { background-color: #ffffff !important; }
+html.light .bg-slate-900\/90 { background-color: #ffffff !important; }
+html.light .bg-slate-900\/80 { background-color: #ffffff !important; }
+html.light .bg-slate-900\/70 { background-color: #ffffff !important; }
+html.light .bg-slate-900\/60 { background-color: #ffffff !important; }
+html.light .bg-slate-900\/40 { background-color: #f1f5f9 !important; }
+
+/* Sub-panels and Tables header */
+html.light .bg-slate-800 { background-color: #f1f5f9 !important; }
+html.light .bg-slate-800\/80 { background-color: #f1f5f9 !important; }
+html.light .bg-slate-800\/70 { background-color: #f1f5f9 !important; }
+html.light .bg-slate-800\/60 { background-color: #f1f5f9 !important; }
+html.light .bg-slate-800\/50 { background-color: #f8fafc !important; }
+html.light .bg-slate-800\/30 { background-color: #f8fafc !important; }
+
+/* Crisp Slate Borders */
+html.light .border-slate-800\/80 { border-color: #e2e8f0 !important; }
+html.light .border-slate-800\/60 { border-color: #e2e8f0 !important; }
+html.light .border-slate-800 { border-color: #e2e8f0 !important; }
+html.light .border-slate-700\/60 { border-color: #cbd5e1 !important; }
+html.light .border-slate-700 { border-color: #cbd5e1 !important; }
+
+/* High-Contrast Typography */
 html.light .text-slate-100 { color: #0f172a !important; }
 html.light .text-slate-200 { color: #1e293b !important; }
 html.light .text-slate-300 { color: #334155 !important; }
-html.light .text-slate-400 { color: #475569 !important; }
-html.light .text-slate-500 { color: #64748b !important; }
+html.light .text-slate-400 { color: #64748b !important; }
+html.light .text-slate-500 { color: #94a3b8 !important; }
+
+/* Clean Crisp Inputs */
+html.light input,
+html.light select,
+html.light textarea {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+html.light input:focus,
+html.light select:focus,
+html.light textarea:focus {
+  border-color: #4f46e5 !important;
+  box-shadow: 0 0 0 1px #4f46e5 !important;
+}
+
+/* Light mode hover state overrides so buttons/cards don't turn dark gray */
+html.light .hover\:bg-slate-800:hover { background-color: #e2e8f0 !important; }
+html.light .hover\:bg-slate-800\/80:hover { background-color: #e2e8f0 !important; }
+html.light .hover\:bg-slate-800\/60:hover { background-color: #f1f5f9 !important; }
+html.light .hover\:bg-slate-800\/50:hover { background-color: #f1f5f9 !important; }
+html.light .hover\:bg-slate-800\/40:hover { background-color: #f1f5f9 !important; }
+html.light .hover\:bg-slate-800\/30:hover { background-color: #f1f5f9 !important; }
+html.light .hover\:bg-slate-700:hover { background-color: #cbd5e1 !important; }
+html.light .hover\:text-white:hover { color: #0f172a !important; }
+html.light .hover\:text-slate-100:hover { color: #0f172a !important; }
+html.light .hover\:text-slate-200:hover { color: #1e293b !important; }
+html.light .hover\:text-slate-300:hover { color: #334155 !important; }
+html.light .hover\:border-slate-700:hover { border-color: #94a3b8 !important; }
+
 
 @keyframes scaleIn {
   from {
@@ -87,3 +171,59 @@ html.light .text-slate-500 { color: #64748b !important; }
     display: none !important;
   }
 }
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.no-scrollbar {
+  -ms-overflow-style: none !important;  /* IE and Edge */
+  scrollbar-width: none !important;  /* Firefox */
+}
+
+/* Sleek Theme-Matching Sidebar Scrollbar */
+.custom-sidebar-scroll {
+  scrollbar-width: thin;
+}
+
+/* Dark Mode Scrollbar */
+html:not(.light) .custom-sidebar-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+html:not(.light) .custom-sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+html:not(.light) .custom-sidebar-scroll::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 9999px;
+}
+html:not(.light) .custom-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+html:not(.light) .custom-sidebar-scroll {
+  scrollbar-color: #334155 transparent;
+}
+
+/* Light Mode Scrollbar */
+html.light .custom-sidebar-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+html.light .custom-sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+html.light .custom-sidebar-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+html.light .custom-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+html.light .custom-sidebar-scroll {
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+

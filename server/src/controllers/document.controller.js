@@ -169,3 +169,25 @@ export async function downloadPDF(req, res, next) {
   }
 }
 
+/**
+ * POST /api/documents/parse-invoice
+ * Auto-extract invoice/purchase bill fields from uploaded document PDF or image.
+ */
+export async function parseInvoiceDocument(req, res, next) {
+  try {
+    const { parseInvoiceFile } = await import('../services/invoiceExtractor.service.js');
+    const { base64Data, fileName } = req.body;
+    if (!base64Data) {
+      return res.status(400).json({ success: false, message: 'base64Data is required' });
+    }
+    const extractedData = await parseInvoiceFile(base64Data, fileName);
+    res.json({
+      success: true,
+      data: extractedData,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+

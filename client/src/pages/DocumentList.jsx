@@ -1,5 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import {
+  Plus,
+  Search,
+  Eye,
+  Download,
+  Pencil,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+} from 'lucide-react';
 import { useDocumentStore } from '../store/documentStore';
 import { downloadDocumentPDF, previewDocumentPDF } from '../services/documentService';
 import Badge from '../components/ui/Badge';
@@ -63,24 +74,26 @@ export default function DocumentList() {
           <p className="text-xs text-slate-400 mt-1">{pagination.total} total documents</p>
         </div>
         <Link to="/new">
-          <Button variant="primary" icon="➕">New Document</Button>
+          <Button variant="primary" className="rounded text-xs">
+            <Plus size={14} className="mr-1.5 inline" /> New Document
+          </Button>
         </Link>
       </div>
 
       {/* Filters */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="relative flex items-center">
-          <span className="absolute left-3 text-slate-400 text-xs pointer-events-none">🔍</span>
+          <Search size={14} className="absolute left-3 text-slate-400 pointer-events-none" />
           <input
             type="text"
-            className="w-full pl-8 pr-3 py-2 bg-slate-900/60 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+            className="w-full pl-8 pr-3 py-2 bg-slate-900/60 border border-slate-800 rounded text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
             placeholder="Search by document number or title..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
         <select 
-          className="w-full px-3 py-2 bg-slate-900/60 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors" 
+          className="w-full px-3 py-2 bg-slate-900/60 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors" 
           value={category} 
           onChange={(e) => setCategory(e.target.value)}
         >
@@ -89,7 +102,7 @@ export default function DocumentList() {
           ))}
         </select>
         <select 
-          className="w-full px-3 py-2 bg-slate-900/60 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors" 
+          className="w-full px-3 py-2 bg-slate-900/60 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors" 
           value={status} 
           onChange={(e) => setStatus(e.target.value)}
         >
@@ -100,10 +113,10 @@ export default function DocumentList() {
       </div>
 
       {/* Table */}
-      <div className="bg-slate-900/60 border border-slate-800/80 rounded-xl overflow-hidden shadow-xl">
+      <div className="bg-slate-900/60 border border-slate-800/80 rounded overflow-hidden shadow-xl">
         {isLoading ? (
           <div className="p-4 space-y-2">
-            {[...Array(8)].map((_, i) => <div key={i} className="h-10 bg-slate-800/50 rounded-lg animate-pulse" />)}
+            {[...Array(8)].map((_, i) => <div key={i} className="h-10 bg-slate-800/50 rounded animate-pulse" />)}
           </div>
         ) : documents.length === 0 ? (
           <div className="p-12 text-center text-sm text-slate-400">
@@ -139,20 +152,32 @@ export default function DocumentList() {
                     <div className="inline-flex items-center gap-1.5">
                       <button
                         className="p-1.5 text-slate-400 hover:text-indigo-400 rounded hover:bg-slate-800 transition-colors"
-                        title="Preview PDF in New Tab"
+                        title="Preview PDF"
                         onClick={() => previewDocumentPDF(doc.id)}
                       >
-                        👁️
+                        <Eye size={15} />
                       </button>
                       <button
                         className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors"
                         title="Download PDF"
                         onClick={() => downloadDocumentPDF(doc.id, `${doc.documentNumber || 'document'}.pdf`)}
                       >
-                        📥
+                        <Download size={15} />
                       </button>
-                      <Link to={`/documents/${doc.id}`} className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors" title="View / Edit">✏️</Link>
-                      <button className="p-1.5 text-slate-400 hover:text-rose-400 rounded hover:bg-rose-500/10 transition-colors" onClick={(e) => handleDelete(doc.id, e)} title="Delete">🗑️</button>
+                      <Link
+                        to={`/documents/${doc.id}`}
+                        className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors"
+                        title="View / Edit"
+                      >
+                        <Pencil size={15} />
+                      </Link>
+                      <button
+                        className="p-1.5 text-slate-400 hover:text-rose-400 rounded hover:bg-rose-500/10 transition-colors"
+                        onClick={(e) => handleDelete(doc.id, e)}
+                        title="Delete"
+                      >
+                        <Trash2 size={15} />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -166,21 +191,21 @@ export default function DocumentList() {
       {pagination.totalPages > 1 && (
         <div className="flex items-center justify-between pt-2">
           <button
-            className="px-3 py-1.5 border border-slate-800 rounded-lg text-xs text-slate-300 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-1 px-3 py-1.5 border border-slate-800 rounded text-xs text-slate-300 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             disabled={pagination.page <= 1}
             onClick={() => handlePageChange(pagination.page - 1)}
           >
-            ← Previous
+            <ChevronLeft size={14} /> Previous
           </button>
           <span className="text-xs text-slate-400 font-medium">
             Page {pagination.page} of {pagination.totalPages}
           </span>
           <button
-            className="px-3 py-1.5 border border-slate-800 rounded-lg text-xs text-slate-300 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-1 px-3 py-1.5 border border-slate-800 rounded text-xs text-slate-300 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             disabled={pagination.page >= pagination.totalPages}
             onClick={() => handlePageChange(pagination.page + 1)}
           >
-            Next →
+            Next <ChevronRight size={14} />
           </button>
         </div>
       )}

@@ -1,13 +1,17 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
+import { Search, Sun, Moon } from 'lucide-react';
 import { useThemeStore } from '../../store/themeStore';
 
 const BREADCRUMB_MAP = {
   '/': 'Dashboard',
   '/new': 'New Document',
   '/documents': 'Documents',
-  '/contacts': 'Contacts',
-  '/templates': 'Templates',
+  '/billing': 'Sales Invoices',
+  '/billing/purchases': 'Purchase Bills',
+  '/billing/templates': 'Billing Templates',
+  '/contacts': 'Contacts & Directory',
+  '/templates': 'Document Templates',
   '/settings': 'Settings',
 };
 
@@ -32,13 +36,31 @@ export default function Header() {
   const breadcrumbs = getBreadcrumbs();
 
   return (
-    <header className="h-14 border-b border-slate-800/80 bg-slate-900/40 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-30">
+    <header
+      className={`h-14 border-b px-6 flex items-center justify-between sticky top-0 z-30 transition-colors ${
+        theme === 'light'
+          ? 'bg-white/95 border-slate-200 backdrop-blur-md text-slate-800'
+          : 'bg-slate-900/60 border-slate-800/80 backdrop-blur-md text-slate-200'
+      }`}
+    >
       <div className="flex items-center">
-        <nav className="flex items-center gap-2 text-sm">
+        <nav className="flex items-center gap-2 text-xs">
           {breadcrumbs.map((crumb, i) => (
             <React.Fragment key={i}>
-              {i > 0 && <span className="text-slate-600">/</span>}
-              <span className={i === breadcrumbs.length - 1 ? 'font-medium text-slate-100' : 'text-slate-400'}>
+              {i > 0 && (
+                <span className={theme === 'light' ? 'text-slate-300' : 'text-slate-600'}>
+                  /
+                </span>
+              )}
+              <span
+                className={
+                  i === breadcrumbs.length - 1
+                    ? `font-bold ${theme === 'light' ? 'text-slate-900' : 'text-slate-100'}`
+                    : theme === 'light'
+                    ? 'text-slate-500'
+                    : 'text-slate-400'
+                }
+              >
                 {crumb}
               </span>
             </React.Fragment>
@@ -48,23 +70,48 @@ export default function Header() {
 
       <div className="flex items-center gap-3">
         <div className="relative flex items-center">
-          <span className="absolute left-3 text-slate-400 text-xs select-none">🔍</span>
+          <Search
+            size={14}
+            className={`absolute left-3 pointer-events-none ${
+              theme === 'light' ? 'text-slate-400' : 'text-slate-500'
+            }`}
+          />
           <input
             type="text"
-            className="pl-8 pr-12 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors w-64"
+            className={`pl-8 pr-12 py-1.5 rounded text-xs transition-colors w-64 focus:outline-none ${
+              theme === 'light'
+                ? 'bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:border-indigo-600'
+                : 'bg-slate-950 border border-slate-800 text-slate-200 placeholder-slate-500 focus:border-indigo-500'
+            }`}
             placeholder="Search documents..."
             aria-label="Search"
           />
-          <kbd className="absolute right-2 px-1.5 py-0.5 text-[10px] text-slate-400 bg-slate-800 border border-slate-700 rounded shadow-sm select-none">⌘K</kbd>
+          <kbd
+            className={`absolute right-2 px-1.5 py-0.5 text-[10px] rounded shadow-sm select-none border ${
+              theme === 'light'
+                ? 'text-slate-500 bg-white border-slate-200'
+                : 'text-slate-400 bg-slate-900 border-slate-700'
+            }`}
+          >
+            ⌘K
+          </kbd>
         </div>
 
         {/* Theme Toggle Button */}
         <button
           onClick={toggleTheme}
-          className="p-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg border border-slate-800 transition-all text-sm flex items-center gap-1.5"
+          className={`p-2 rounded border transition-colors text-xs flex items-center gap-1.5 ${
+            theme === 'light'
+              ? 'text-slate-700 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border-slate-200'
+              : 'text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 border-slate-800'
+          }`}
           title={`Switch to ${theme === 'dark' ? 'Light Mode' : 'Dark Mode'}`}
         >
-          <span>{theme === 'dark' ? '☀️' : '🌙'}</span>
+          {theme === 'dark' ? (
+            <Sun size={15} className="text-amber-400" />
+          ) : (
+            <Moon size={15} className="text-indigo-600" />
+          )}
         </button>
       </div>
     </header>

@@ -40,14 +40,23 @@ export function getDocumentTypes() {
   return api.get('/documents/types');
 }
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 export async function fetchDocumentPDFBlobUrl(id) {
   const token = localStorage.getItem('accessToken');
-  const response = await fetch(`http://localhost:5000/api/documents/${id}/pdf`, {
+  const response = await fetch(`${API_BASE_URL}/documents/${id}/pdf`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
   });
-  if (!response.ok) throw new Error('Failed to generate PDF');
+  if (!response.ok) {
+    let msg = 'Failed to generate PDF';
+    try {
+      const errJson = await response.json();
+      if (errJson?.message) msg = errJson.message;
+    } catch (_e) {}
+    throw new Error(msg);
+  }
   const blob = await response.blob();
   return window.URL.createObjectURL(blob);
 }
@@ -61,46 +70,50 @@ export async function previewDocumentPDF(id) {
 export async function printDocumentPDF(id) {
   const url = await fetchDocumentPDFBlobUrl(id);
 
-  // Method 1: Invisible iframe for seamless direct print dialog
-  const iframe = document.createElement('iframe');
-  iframe.style.position = 'fixed';
-  iframe.style.right = '0';
-  iframe.style.bottom = '0';
-  iframe.style.width = '0';
-  iframe.style.height = '0';
-  iframe.style.border = 'none';
-  iframe.src = url;
-
-  document.body.appendChild(iframe);
-
-  iframe.onload = () => {
-    setTimeout(() => {
+  // Open PDF blob in preview window & trigger native print
+  const printWindow = window.open(url, '_blank');
+  if (printWindow) {
+    printWindow.addEventListener('load', () => {
       try {
-        iframe.contentWindow.focus();
-        iframe.contentWindow.print();
+        printWindow.focus();
+        printWindow.print();
       } catch (e) {
-        console.warn('Iframe print fallback to window.open:', e);
-        window.open(url, '_blank');
+        console.warn('Auto print failed:', e);
       }
+    });
+  } else {
+    // Fallback: Invisible iframe
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = 'none';
+    iframe.src = url;
+
+    document.body.appendChild(iframe);
+
+    iframe.onload = () => {
       setTimeout(() => {
-        iframe.remove();
-      }, 60000);
-    }, 300);
-  };
+        try {
+          iframe.contentWindow.focus();
+          iframe.contentWindow.print();
+        } catch (e) {
+          console.warn('Iframe print fallback:', e);
+        }
+        setTimeout(() => {
+          iframe.remove();
+        }, 30000);
+      }, 300);
+    };
+  }
 
   return url;
 }
 
 export async function downloadDocumentPDF(id, filename = 'document.pdf') {
-  const token = localStorage.getItem('accessToken');
-  const response = await fetch(`http://localhost:5000/api/documents/${id}/pdf`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  if (!response.ok) throw new Error('Failed to generate PDF');
-  const blob = await response.blob();
-  const url = window.URL.createObjectURL(blob);
+  const url = await fetchDocumentPDFBlobUrl(id);
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
@@ -109,3 +122,9 @@ export async function downloadDocumentPDF(id, filename = 'document.pdf') {
   a.remove();
   window.URL.revokeObjectURL(url);
 }
+
+export async function parseInvoiceDocument(base64Data, fileName = '') {
+  const res = await api.post('/documents/parse-invoice', { base64Data, fileName });
+  return res.data?.data || res.data;
+}
+

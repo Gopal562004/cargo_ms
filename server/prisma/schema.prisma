@@ -10,14 +10,19 @@ datasource db {
 // ─── AUTH ────────────────────────────────────────────
 
 model User {
-  id           String     @id @default(cuid())
-  email        String     @unique
-  passwordHash String
-  name         String
-  company      String?
-  role         Role       @default(OPERATOR)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id              String     @id @default(cuid())
+  username        String?    @unique
+  email           String?    @unique
+  passwordHash    String
+  name            String
+  company         String?
+  role            Role       @default(OPERATOR)
+  isActive        Boolean    @default(true)
+  allowedServices String[]   @default([])
+  phone           String?
+  department      String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 
   documents  Document[]
   contacts   Contact[]

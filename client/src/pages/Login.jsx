@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Plane, Mail, Lock, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
@@ -27,20 +28,16 @@ export default function Login() {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center p-4 bg-slate-950 overflow-hidden">
-      {/* Dynamic Background Glows */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none -translate-x-1/2 -translate-y-1/2" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none translate-x-1/2 translate-y-1/2" />
-
-      <div className="relative w-full max-w-md bg-slate-900/80 border border-slate-800/80 rounded-2xl shadow-2xl p-8 backdrop-blur-xl animate-scale-in">
+    <div className="relative min-h-screen flex items-center justify-center p-4 bg-slate-950">
+      <div className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-md shadow-xl p-8 animate-scale-in">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-indigo-500/30">
-              ✈
+            <div className="w-10 h-10 rounded bg-indigo-600 flex items-center justify-center text-white text-xl font-bold shadow-sm">
+              <Plane size={20} />
             </div>
-            <h1 className="text-2xl font-bold text-slate-100 tracking-tight">AWB Editor</h1>
+            <h1 className="text-2xl font-bold text-slate-100 tracking-tight">CargoHub OS</h1>
           </div>
-          <p className="text-xs text-slate-400">Freight Document Management Platform</p>
+          <p className="text-xs text-slate-400">Freight & Document Management Platform</p>
         </div>
 
         <form className="space-y-5" onSubmit={handleSubmit}>
@@ -50,18 +47,19 @@ export default function Login() {
           </div>
 
           {error && (
-            <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg text-xs text-rose-400 flex items-center gap-2 animate-fade-in-up">
-              <span>⚠</span> {error}
+            <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded text-xs text-rose-400 flex items-center gap-2 animate-fade-in-up">
+              <AlertCircle size={15} /> {error}
             </div>
           )}
 
           <Input
-            label="Email"
-            type="email"
+            label="Username or Email Address"
+            type="text"
+            placeholder="e.g. mayur52004 or user@dgrlogistics.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            icon="📧"
+            icon={<Mail size={16} />}
           />
 
           <Input
@@ -70,10 +68,10 @@ export default function Login() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            icon="🔒"
+            icon={<Lock size={16} />}
           />
 
-          <Button type="submit" variant="primary" size="lg" fullWidth loading={loading}>
+          <Button type="submit" variant="primary" size="lg" fullWidth loading={loading} className="rounded">
             Sign In
           </Button>
         </form>

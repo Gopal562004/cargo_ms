@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { FileText, ExternalLink, Download, X } from 'lucide-react';
 import { fetchDocumentPDFBlobUrl, downloadDocumentPDF } from '../../services/documentService';
 import Button from './Button';
 
@@ -67,27 +68,27 @@ export default function PdfPreviewModal({ isOpen, onClose, documentId, title = '
       onClick={onClose}
     >
       <div
-        className="w-full max-w-5xl bg-slate-900/95 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] animate-scale-in"
+        className="w-full max-w-5xl bg-slate-900/95 border border-slate-800 rounded-md shadow-2xl overflow-hidden flex flex-col max-h-[92vh] animate-scale-in"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
       >
         {/* Header Bar */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800/80 bg-slate-900/80">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-bold text-sm">
-              📄
+        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-800 bg-slate-900">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-bold text-sm">
+              <FileText size={15} />
             </div>
             <div>
-              <h3 className="text-base font-semibold text-slate-100">{title}</h3>
-              <p className="text-xs text-slate-400">Live PDF Document Preview</p>
+              <h3 className="text-sm font-semibold text-slate-100">{title}</h3>
+              <p className="text-[11px] text-slate-400">Live PDF Document Preview</p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             {pdfUrl && (
-              <Button variant="secondary" size="sm" onClick={handleOpenNewTab} icon="↗️">
-                Open in Tab
+              <Button variant="secondary" size="sm" onClick={handleOpenNewTab} className="rounded text-xs">
+                <ExternalLink size={13} className="mr-1 inline" /> Open in Tab
               </Button>
             )}
             <Button
@@ -95,36 +96,36 @@ export default function PdfPreviewModal({ isOpen, onClose, documentId, title = '
               size="sm"
               onClick={handleDownload}
               isLoading={downloading}
-              icon="📥"
+              className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold"
             >
-              Download PDF
+              <Download size={13} className="mr-1 inline" /> Download PDF
             </Button>
             <button
-              className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors ml-2"
+              className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors ml-1"
               onClick={onClose}
               aria-label="Close"
             >
-              ✕
+              <X size={16} />
             </button>
           </div>
         </div>
 
         {/* Content Viewer Body */}
-        <div className="p-4 flex-1 bg-slate-950/40 flex items-center justify-center min-h-[500px]">
+        <div className="p-3.5 flex-1 bg-slate-950/40 flex items-center justify-center min-h-[500px]">
           {loading ? (
             <div className="flex flex-col items-center justify-center space-y-3 py-20">
-              <div className="w-10 h-10 border-3 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-              <p className="text-sm font-medium text-slate-300">Generating live PDF preview...</p>
+              <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-xs font-medium text-slate-300">Generating live PDF preview...</p>
             </div>
           ) : error ? (
-            <div className="text-center p-8 bg-red-500/10 border border-red-500/20 rounded-xl max-w-md space-y-3">
-              <p className="text-red-400 text-sm font-medium">{error}</p>
-              <Button size="sm" variant="secondary" onClick={onClose}>Close</Button>
+            <div className="text-center p-6 bg-red-500/10 border border-red-500/20 rounded-md max-w-md space-y-3">
+              <p className="text-red-400 text-xs font-medium">{error}</p>
+              <Button size="sm" variant="secondary" onClick={onClose} className="rounded">Close</Button>
             </div>
           ) : pdfUrl ? (
             <iframe
               src={pdfUrl}
-              className="w-full h-[76vh] rounded-xl border border-slate-800 bg-slate-900 shadow-inner"
+              className="w-full h-[76vh] rounded border border-slate-800 bg-slate-900 shadow-inner"
               title="PDF Preview Viewer"
             />
           ) : null}

@@ -1,4 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import {
+  Bookmark,
+  Zap,
+  Plus,
+  Pencil,
+  Trash2,
+  Image,
+  Building,
+  Truck,
+  Save,
+  X,
+  Copy,
+} from 'lucide-react';
 import { getSavedBillingProfiles, saveBillingProfile, deleteBillingProfile } from '../../services/billingProfileService';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
@@ -123,21 +136,21 @@ export default function BillingTemplateManagerModal({ isOpen, onClose, onSelectT
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (event) => {
-      setFormData((prev) => ({ ...prev, companyLogo: event.target?.result }));
+    reader.onload = (ev) => {
+      setFormData((prev) => ({ ...prev, companyLogo: ev.target.result }));
     };
     reader.readAsDataURL(file);
   };
 
   const handleSaveForm = (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.buyerName) {
-      alert('Please enter Template Name and Buyer Company Name.');
+    if (!formData.name) {
+      alert('Please enter a Template / Preset Name.');
       return;
     }
 
     const payload = {
-      id: editingProfile?.id,
+      id: editingProfile ? editingProfile.id : undefined,
       name: formData.name,
       category: formData.category,
       companyLogo: formData.companyLogo,
@@ -185,11 +198,13 @@ export default function BillingTemplateManagerModal({ isOpen, onClose, onSelectT
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden my-auto">
+      <div className="bg-slate-900 border border-slate-700 rounded-md w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden my-auto">
         {/* Header */}
         <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/80">
           <div className="flex items-center gap-2.5">
-            <span className="text-xl">📑</span>
+            <div className="w-8 h-8 rounded bg-indigo-600/20 text-indigo-400 flex items-center justify-center">
+              <Bookmark size={16} />
+            </div>
             <div>
               <h2 className="text-base font-bold text-slate-100">
                 {isCreating ? (editingProfile ? 'Edit Template / Party' : 'Create New Template / Party') : 'Saved Templates & Customer Directory'}
@@ -202,16 +217,16 @@ export default function BillingTemplateManagerModal({ isOpen, onClose, onSelectT
 
           <div className="flex items-center gap-2">
             {!isCreating && (
-              <Button size="sm" variant="primary" icon="➕" onClick={handleStartCreate}>
-                New Template
+              <Button size="sm" variant="primary" onClick={handleStartCreate} className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold">
+                <Plus size={13} className="mr-1 inline" /> New Template
               </Button>
             )}
             <button
               type="button"
-              className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
+              className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800 transition-colors"
               onClick={onClose}
             >
-              ✕
+              <X size={16} />
             </button>
           </div>
         </div>
@@ -228,13 +243,13 @@ export default function BillingTemplateManagerModal({ isOpen, onClose, onSelectT
                 return (
                   <div
                     key={p.id}
-                    className="p-4 bg-slate-950/60 border border-slate-800 hover:border-indigo-500/50 rounded-xl space-y-3 shadow-lg transition-all flex flex-col justify-between"
+                    className="p-4 bg-slate-950/60 border border-slate-800 hover:border-indigo-500/50 rounded-md space-y-3 shadow-sm transition-all flex flex-col justify-between"
                   >
                     <div className="space-y-2">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-base">⚡</span>
-                          <span className="font-bold text-slate-100 text-sm">{p.name}</span>
+                          <Zap size={14} className="text-amber-400" />
+                          <span className="font-bold text-slate-100 text-xs">{p.name}</span>
                         </div>
                         {p.isBuiltIn ? (
                           <span className="px-2 py-0.5 bg-slate-800 text-slate-400 text-[10px] font-mono rounded">
@@ -266,13 +281,14 @@ export default function BillingTemplateManagerModal({ isOpen, onClose, onSelectT
                     <div className="flex items-center justify-between pt-3 border-t border-slate-800/80 gap-2">
                       <button
                         type="button"
-                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition-colors flex-1"
+                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-semibold transition-colors flex-1 flex items-center justify-center gap-1 shadow-sm"
                         onClick={() => {
                           if (onSelectTemplate) onSelectTemplate(p);
                           onClose();
                         }}
                       >
-                        ⚡ Apply to Invoice
+                        <Zap size={13} />
+                        <span>Apply to Invoice</span>
                       </button>
 
                       <div className="flex items-center gap-1">
@@ -282,7 +298,7 @@ export default function BillingTemplateManagerModal({ isOpen, onClose, onSelectT
                           onClick={() => handleStartEdit(p)}
                           title="Edit Template"
                         >
-                          ✏️
+                          <Pencil size={14} />
                         </button>
                         <button
                           type="button"
@@ -290,7 +306,7 @@ export default function BillingTemplateManagerModal({ isOpen, onClose, onSelectT
                           onClick={() => handleDelete(p.id)}
                           title="Delete Template"
                         >
-                          🗑️
+                          <Trash2 size={14} />
                         </button>
                       </div>
                     </div>
@@ -300,10 +316,10 @@ export default function BillingTemplateManagerModal({ isOpen, onClose, onSelectT
             </div>
           ) : (
             /* CREATE / EDIT TEMPLATE FORM */
-            <form onSubmit={handleSaveForm} className="space-y-6">
-              <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-4 space-y-4">
-                <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                  Template Details & Logo
+            <form onSubmit={handleSaveForm} className="space-y-5">
+              <div className="bg-slate-950/70 border border-slate-800 rounded p-4 space-y-3">
+                <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                  <Image size={14} className="text-indigo-400" /> Template Details & Logo
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input
@@ -315,8 +331,8 @@ export default function BillingTemplateManagerModal({ isOpen, onClose, onSelectT
                   />
 
                   <div className="flex items-center gap-3">
-                    <label className="cursor-pointer px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold border border-slate-700 transition-colors flex items-center gap-2 mt-auto">
-                      <span>🖼️</span>
+                    <label className="cursor-pointer px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-xs font-semibold border border-slate-700 transition-colors flex items-center gap-2 mt-auto">
+                      <Image size={13} />
                       <span>{formData.companyLogo ? 'Change Logo Image' : 'Upload Template Logo'}</span>
                       <input
                         type="file"
@@ -340,9 +356,9 @@ export default function BillingTemplateManagerModal({ isOpen, onClose, onSelectT
 
               {/* Buyer & Consignee */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-4 space-y-3">
-                  <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                    2. Billed To (Buyer)
+                <div className="bg-slate-950/70 border border-slate-800 rounded p-4 space-y-3">
+                  <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                    <Building size={14} className="text-indigo-400" /> 2. Billed To (Buyer)
                   </h3>
                   <Input
                     label="Buyer Company Name *"
@@ -374,14 +390,14 @@ export default function BillingTemplateManagerModal({ isOpen, onClose, onSelectT
                   </div>
                 </div>
 
-                <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-4 space-y-3">
+                <div className="bg-slate-950/70 border border-slate-800 rounded p-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                      3. Shipped To (Destination)
+                    <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                      <Truck size={14} className="text-indigo-400" /> 3. Shipped To (Destination)
                     </h3>
                     <button
                       type="button"
-                      className="text-xs text-indigo-400 hover:underline"
+                      className="text-xs text-indigo-400 hover:underline flex items-center gap-1"
                       onClick={() =>
                         setFormData({
                           ...formData,
@@ -392,7 +408,7 @@ export default function BillingTemplateManagerModal({ isOpen, onClose, onSelectT
                         })
                       }
                     >
-                      + Copy Buyer Details
+                      <Copy size={11} /> Copy Buyer Details
                     </button>
                   </div>
                   <Input
@@ -425,7 +441,7 @@ export default function BillingTemplateManagerModal({ isOpen, onClose, onSelectT
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-800">
                 <Button
                   type="button"
                   variant="secondary"
@@ -433,11 +449,12 @@ export default function BillingTemplateManagerModal({ isOpen, onClose, onSelectT
                     setIsCreating(false);
                     setEditingProfile(null);
                   }}
+                  className="rounded text-xs"
                 >
                   Cancel
                 </Button>
-                <Button type="submit" variant="primary">
-                  💾 Save Template
+                <Button type="submit" variant="primary" className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold">
+                  <Save size={13} className="mr-1.5 inline" /> Save Template
                 </Button>
               </div>
             </form>

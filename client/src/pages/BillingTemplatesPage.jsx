@@ -1,6 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
+  Bookmark,
+  RotateCcw,
+  Receipt,
+  Plus,
+  Building,
+  Truck,
+  Pencil,
+  Trash2,
+  Save,
+  FileText,
+  CheckCircle2,
+  Image,
+  Folder,
+  Sparkles,
+  X,
+  Search,
+  Zap,
+} from 'lucide-react';
+import {
   getSavedBillingProfiles,
   saveBillingProfile,
   deleteBillingProfile,
@@ -148,8 +167,9 @@ export default function BillingTemplatesPage() {
     const comp = p.companyDetails || {};
     const buyer = p.buyer || {};
     const cons = p.consignee || {};
+
     setTemplateForm({
-      name: p.name,
+      name: p.name || '',
       category: p.category || 'Full Invoice Template',
       companyLogo: p.companyLogo || null,
       companyName: comp.companyName || 'DGR PACKAGING COMPANY',
@@ -159,11 +179,6 @@ export default function BillingTemplatesPage() {
       companyGstin: comp.companyGstin || '',
       companyTel: comp.companyTel || '',
       companyEmail: comp.companyEmail || '',
-      bankName: comp.bankName || 'HDFC BANK LTD',
-      accountNumber: comp.accountNumber || '',
-      ifscCode: comp.ifscCode || '',
-      swiftCode: comp.swiftCode || '',
-      branchName: comp.branchName || '',
       buyerName: buyer.buyerName || '',
       buyerAddress: buyer.buyerAddress || '',
       buyerState: buyer.buyerState || 'Maharashtra (27)',
@@ -172,8 +187,13 @@ export default function BillingTemplatesPage() {
       consigneeAddress: cons.consigneeAddress || '',
       consigneeState: cons.consigneeState || 'Maharashtra (27)',
       consigneeGstin: cons.consigneeGstin || '',
-      items: p.items || [
-        { sn: 1, description: 'UN APPROVED BOX', subText: '', hsnCode: '48191010', qty: 1, unit: 'Pcs', price: 100, gstRate: 5, cgstRate: 2.5, sgstRate: 2.5, igstRate: 0 },
+      bankName: comp.bankName || 'HDFC BANK LTD',
+      accountNumber: comp.accountNumber || '',
+      ifscCode: comp.ifscCode || '',
+      swiftCode: comp.swiftCode || '',
+      branchName: comp.branchName || '',
+      items: p.items && p.items.length > 0 ? p.items : [
+        { sn: 1, description: 'Item Description', subText: '', hsnCode: '48191010', qty: 1, unit: 'Pcs', price: 100, gstRate: 5, cgstRate: 2.5, sgstRate: 2.5, igstRate: 0 }
       ],
     });
     setIsEditingTemplate(true);
@@ -184,26 +204,10 @@ export default function BillingTemplatesPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (event) => {
-      setTemplateForm((prev) => ({ ...prev, companyLogo: event.target?.result }));
+    reader.onload = (ev) => {
+      setTemplateForm((prev) => ({ ...prev, companyLogo: ev.target.result }));
     };
     reader.readAsDataURL(file);
-  };
-
-  const handleTemplateItemChange = (index, field, value) => {
-    setTemplateForm((prev) => {
-      const nextItems = [...prev.items];
-      const item = { ...nextItems[index], [field]: value };
-      if (field === 'gstRate') {
-        const r = parseFloat(value) || 0;
-        item.gstRate = r;
-        item.cgstRate = r / 2;
-        item.sgstRate = r / 2;
-        item.igstRate = 0;
-      }
-      nextItems[index] = item;
-      return { ...prev, items: nextItems };
-    });
   };
 
   const handleAddTemplateItem = () => {
@@ -229,22 +233,36 @@ export default function BillingTemplatesPage() {
   };
 
   const handleRemoveTemplateItem = (index) => {
-    if (templateForm.items.length === 1) return;
     setTemplateForm((prev) => ({
       ...prev,
-      items: prev.items.filter((_, i) => i !== index).map((it, idx) => ({ ...it, sn: idx + 1 })),
+      items: prev.items.filter((_, i) => i !== index),
     }));
+  };
+
+  const handleTemplateItemChange = (index, field, value) => {
+    setTemplateForm((prev) => {
+      const nextItems = [...prev.items];
+      nextItems[index] = { ...nextItems[index], [field]: value };
+
+      if (field === 'gstRate') {
+        const rate = parseFloat(value) || 0;
+        nextItems[index].cgstRate = rate / 2;
+        nextItems[index].sgstRate = rate / 2;
+        nextItems[index].igstRate = 0;
+      }
+      return { ...prev, items: nextItems };
+    });
   };
 
   const handleSaveTemplate = (e) => {
     e.preventDefault();
-    if (!templateForm.name || !templateForm.buyerName) {
-      alert('Please enter Template Name and Buyer Company Name.');
+    if (!templateForm.name) {
+      alert('Please enter a Template / Preset Name.');
       return;
     }
 
     const payload = {
-      id: editingTemplate?.id,
+      id: editingTemplate ? editingTemplate.id : undefined,
       name: templateForm.name,
       category: templateForm.category,
       companyLogo: templateForm.companyLogo,
@@ -445,12 +463,14 @@ export default function BillingTemplatesPage() {
   });
 
   return (
-    <div className="space-y-8 animate-fade-in pb-16">
+    <div className="space-y-6 animate-fade-in pb-16">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <span className="text-2xl">📑</span>
+            <div className="w-8 h-8 rounded bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+              <Bookmark size={17} />
+            </div>
             <h1 className="text-2xl font-bold text-slate-100 tracking-tight">
               Billing Templates & Customer Directory
             </h1>
@@ -460,53 +480,53 @@ export default function BillingTemplatesPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 flex-wrap">
           {activeTab === 'TEMPLATES' && (
             <Button
               variant="secondary"
-              icon="🔄"
               onClick={handleResetDefaults}
               title="Reset standard templates to initial state"
+              className="rounded text-xs"
             >
-              Reset Defaults
+              <RotateCcw size={13} className="mr-1.5 inline" /> Reset Defaults
             </Button>
           )}
 
           <Button
             variant="secondary"
-            icon="🧾"
             onClick={() => navigate('/billing')}
+            className="rounded text-xs"
           >
-            Bills Register
+            <Receipt size={13} className="mr-1.5 inline" /> Bills Register
           </Button>
 
           {activeTab === 'TEMPLATES' && (
             <Button
               variant="primary"
-              icon="➕"
               onClick={handleStartCreateTemplate}
+              className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold"
             >
-              New Template
+              <Plus size={13} className="mr-1.5 inline" /> New Template
             </Button>
           )}
 
           {activeTab === 'BUYERS' && (
             <Button
               variant="primary"
-              icon="🏢"
               onClick={handleStartCreateBuyer}
+              className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold"
             >
-              + Add Customer
+              <Plus size={13} className="mr-1.5 inline" /> Add Customer
             </Button>
           )}
 
           {activeTab === 'SHIPPERS' && (
             <Button
               variant="primary"
-              icon="🚚"
               onClick={handleStartCreateShipper}
+              className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold"
             >
-              + Add Destination
+              <Plus size={13} className="mr-1.5 inline" /> Add Destination
             </Button>
           )}
         </div>
@@ -514,14 +534,14 @@ export default function BillingTemplatesPage() {
 
       {/* Success Alert */}
       {successMsg && (
-        <div className="p-4 bg-emerald-500/15 border border-emerald-500/30 rounded-xl text-xs text-emerald-300 flex items-center justify-between animate-fade-in shadow-lg">
+        <div className="p-3.5 bg-emerald-500/15 border border-emerald-500/30 rounded-md text-xs text-emerald-300 flex items-center justify-between animate-fade-in shadow-sm">
           <div className="flex items-center gap-2 font-medium">
-            <span>✅</span>
+            <CheckCircle2 size={16} className="text-emerald-400" />
             <span>{successMsg}</span>
           </div>
           <button
             type="button"
-            className="text-emerald-400 hover:text-white font-bold text-sm"
+            className="text-emerald-400 hover:text-white font-bold text-xs"
             onClick={() => setSuccessMsg('')}
           >
             ✕
@@ -530,13 +550,13 @@ export default function BillingTemplatesPage() {
       )}
 
       {/* DIRECTORY SECTION TABS */}
-      <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+      <div className="flex items-center gap-1.5 border-b border-slate-800 pb-2 overflow-x-auto">
         <button
           type="button"
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+          className={`px-3.5 py-2 rounded text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
             activeTab === 'TEMPLATES'
-              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-              : 'bg-slate-900 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
           }`}
           onClick={() => {
             setActiveTab('TEMPLATES');
@@ -545,16 +565,16 @@ export default function BillingTemplatesPage() {
             setIsEditingShipper(false);
           }}
         >
-          <span>⚡</span>
+          <Zap size={14} className={activeTab === 'TEMPLATES' ? 'text-white' : 'text-amber-400'} />
           <span>Full Invoice Templates ({templates.length})</span>
         </button>
 
         <button
           type="button"
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+          className={`px-3.5 py-2 rounded text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
             activeTab === 'BUYERS'
-              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-              : 'bg-slate-900 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
           }`}
           onClick={() => {
             setActiveTab('BUYERS');
@@ -563,16 +583,16 @@ export default function BillingTemplatesPage() {
             setIsEditingShipper(false);
           }}
         >
-          <span>🏢</span>
+          <Building size={14} className={activeTab === 'BUYERS' ? 'text-white' : 'text-indigo-400'} />
           <span>Customer Directory (Billed To) ({buyers.length})</span>
         </button>
 
         <button
           type="button"
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+          className={`px-3.5 py-2 rounded text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
             activeTab === 'SHIPPERS'
-              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-              : 'bg-slate-900 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
           }`}
           onClick={() => {
             setActiveTab('SHIPPERS');
@@ -581,18 +601,21 @@ export default function BillingTemplatesPage() {
             setIsEditingShipper(false);
           }}
         >
-          <span>🚚</span>
+          <Truck size={14} className={activeTab === 'SHIPPERS' ? 'text-white' : 'text-emerald-400'} />
           <span>Delivery Destinations (Shipped To) ({shippers.length})</span>
         </button>
       </div>
 
       {/* SEARCH BAR */}
-      <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="w-full sm:w-80">
-          <Input
+      <div className="bg-slate-900/70 border border-slate-800 rounded-md p-3.5 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="relative w-full sm:w-80">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <input
+            type="text"
             placeholder={`Search ${activeTab.toLowerCase()}...`}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-8 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
           />
         </div>
         <div className="text-xs text-slate-400 font-mono">
@@ -609,25 +632,26 @@ export default function BillingTemplatesPage() {
         <div className="space-y-6">
           {/* Template Edit Form */}
           {isEditingTemplate && (
-            <div className="p-6 bg-slate-900/90 border-2 border-indigo-500/50 rounded-2xl shadow-2xl space-y-6 animate-scale-in">
+            <div className="p-5 bg-slate-900/95 border border-indigo-500/50 rounded-md shadow-xl space-y-5 animate-scale-in">
               <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                  <span>📝</span> {editingTemplate ? `Edit Template: ${editingTemplate.name}` : 'Create New Billing Template'}
+                <h2 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+                  <FileText size={16} className="text-indigo-400" />
+                  <span>{editingTemplate ? `Edit Template: ${editingTemplate.name}` : 'Create New Billing Template'}</span>
                 </h2>
                 <button
                   type="button"
-                  className="text-xs text-slate-400 hover:text-white px-2.5 py-1 bg-slate-800 rounded-lg hover:bg-slate-700 transition-colors"
+                  className="text-xs text-slate-400 hover:text-white px-2.5 py-1 bg-slate-800 rounded hover:bg-slate-700 transition-colors flex items-center gap-1"
                   onClick={() => setIsEditingTemplate(false)}
                 >
-                  ✕ Close
+                  <X size={13} /> Close
                 </button>
               </div>
 
-              <form onSubmit={handleSaveTemplate} className="space-y-6">
+              <form onSubmit={handleSaveTemplate} className="space-y-5">
                 {/* Logo & Preset Name */}
-                <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-5 space-y-4">
+                <div className="bg-slate-950/70 border border-slate-800 rounded p-4 space-y-3">
                   <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                    <span>🖼️</span> Template Logo & Branding
+                    <Image size={14} className="text-indigo-400" /> Template Logo & Branding
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
                     <Input
@@ -638,8 +662,8 @@ export default function BillingTemplatesPage() {
                       required
                     />
 
-                    <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 rounded-xl border border-slate-700 bg-slate-900 flex items-center justify-center overflow-hidden shrink-0">
+                    <div className="flex items-center gap-3">
+                      <div className="w-14 h-14 rounded border border-slate-700 bg-slate-900 flex items-center justify-center overflow-hidden shrink-0">
                         {templateForm.companyLogo ? (
                           <img src={templateForm.companyLogo} alt="Logo" className="w-full h-full object-contain" />
                         ) : (
@@ -647,18 +671,18 @@ export default function BillingTemplatesPage() {
                         )}
                       </div>
                       <div className="space-y-1">
-                        <label className="cursor-pointer px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold inline-block">
-                          <span>📁 Upload Custom Logo</span>
-                          <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+                        <label className="cursor-pointer px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-semibold inline-block">
+                          Upload Custom Logo
+                          <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
                         </label>
                         {templateForm.companyLogo && (
                           <div>
                             <button
                               type="button"
-                              className="text-[11px] text-rose-400 hover:underline"
                               onClick={() => setTemplateForm((p) => ({ ...p, companyLogo: null }))}
+                              className="text-[11px] text-rose-400 hover:underline font-semibold"
                             >
-                              Reset to Default DGR Logo
+                              Reset Logo
                             </button>
                           </div>
                         )}
@@ -667,88 +691,67 @@ export default function BillingTemplatesPage() {
                   </div>
                 </div>
 
-                {/* Issuer & Bank Credentials */}
-                <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-5 space-y-4">
+                {/* Company / Seller Info */}
+                <div className="bg-slate-950/70 border border-slate-800 rounded p-4 space-y-3">
                   <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                    <span>🏢</span> Issuer Company & Bank Details
+                    <Building size={14} className="text-indigo-400" /> Issuer / Seller Company Details
                   </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <Input
-                      label="Issuer Company Name"
+                      label="Company Name *"
                       value={templateForm.companyName}
                       onChange={(e) => setTemplateForm({ ...templateForm, companyName: e.target.value })}
+                      required
                     />
                     <Input
-                      label="GSTIN"
-                      value={templateForm.companyGstin}
-                      onChange={(e) => setTemplateForm({ ...templateForm, companyGstin: e.target.value })}
-                    />
-                    <Input
-                      label="PAN"
+                      label="PAN Number"
                       value={templateForm.companyPan}
                       onChange={(e) => setTemplateForm({ ...templateForm, companyPan: e.target.value })}
                     />
                     <Input
-                      label="Bank Name"
-                      value={templateForm.bankName}
-                      onChange={(e) => setTemplateForm({ ...templateForm, bankName: e.target.value })}
+                      label="GSTIN *"
+                      value={templateForm.companyGstin}
+                      onChange={(e) => setTemplateForm({ ...templateForm, companyGstin: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <Input
+                      label="Address Line"
+                      value={templateForm.companyAddress}
+                      onChange={(e) => setTemplateForm({ ...templateForm, companyAddress: e.target.value })}
                     />
                     <Input
-                      label="Account Number"
-                      value={templateForm.accountNumber}
-                      onChange={(e) => setTemplateForm({ ...templateForm, accountNumber: e.target.value })}
+                      label="City - PIN"
+                      value={templateForm.companyCityPin}
+                      onChange={(e) => setTemplateForm({ ...templateForm, companyCityPin: e.target.value })}
                     />
                     <Input
-                      label="IFSC Code"
-                      value={templateForm.ifscCode}
-                      onChange={(e) => setTemplateForm({ ...templateForm, ifscCode: e.target.value })}
+                      label="Phone / Email"
+                      value={templateForm.companyTel}
+                      onChange={(e) => setTemplateForm({ ...templateForm, companyTel: e.target.value })}
                     />
                   </div>
                 </div>
 
-                {/* Billed To & Shipped To */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-5 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                        2. Billed To (Buyer)
-                      </h3>
-                      {buyers.length > 0 && (
-                        <select
-                          className="px-2 py-1 bg-slate-900 border border-slate-700 rounded text-[11px] text-slate-300"
-                          onChange={(e) => {
-                            const b = buyers.find((x) => x.name === e.target.value);
-                            if (b) {
-                              setTemplateForm((p) => ({
-                                ...p,
-                                buyerName: b.name,
-                                buyerAddress: b.address,
-                                buyerState: b.state,
-                                buyerGstin: b.gstin,
-                              }));
-                            }
-                            e.target.value = '';
-                          }}
-                          defaultValue=""
-                        >
-                          <option value="" disabled>Pick from Directory</option>
-                          {buyers.map((b, i) => (
-                            <option key={i} value={b.name}>{b.name}</option>
-                          ))}
-                        </select>
-                      )}
-                    </div>
+                {/* Buyer and Consignee */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Buyer */}
+                  <div className="bg-slate-950/70 border border-slate-800 rounded p-4 space-y-3">
+                    <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                      <Building size={14} className="text-indigo-400" /> Default Buyer (Billed To)
+                    </h3>
                     <Input
-                      label="Buyer Company Name *"
+                      label="Buyer Name"
                       value={templateForm.buyerName}
                       onChange={(e) => setTemplateForm({ ...templateForm, buyerName: e.target.value })}
-                      required
                     />
                     <div className="flex flex-col gap-1">
-                      <label className="text-xs text-slate-400 font-medium">Buyer Address *</label>
+                      <label className="text-xs text-slate-400 font-medium">Billing Address</label>
                       <textarea
                         rows={3}
-                        className="w-full p-2.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200"
+                        className="w-full p-2.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200"
                         value={templateForm.buyerAddress}
                         onChange={(e) => setTemplateForm({ ...templateForm, buyerAddress: e.target.value })}
                       />
@@ -767,36 +770,11 @@ export default function BillingTemplatesPage() {
                     </div>
                   </div>
 
-                  <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-5 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                        3. Shipped To (Destination)
-                      </h3>
-                      {shippers.length > 0 && (
-                        <select
-                          className="px-2 py-1 bg-slate-900 border border-slate-700 rounded text-[11px] text-slate-300"
-                          onChange={(e) => {
-                            const s = shippers.find((x) => x.name === e.target.value);
-                            if (s) {
-                              setTemplateForm((p) => ({
-                                ...p,
-                                consigneeName: s.name,
-                                consigneeAddress: s.address,
-                                consigneeState: s.state,
-                                consigneeGstin: s.gstin,
-                              }));
-                            }
-                            e.target.value = '';
-                          }}
-                          defaultValue=""
-                        >
-                          <option value="" disabled>Pick from Directory</option>
-                          {shippers.map((s, i) => (
-                            <option key={i} value={s.name}>{s.name}</option>
-                          ))}
-                        </select>
-                      )}
-                    </div>
+                  {/* Consignee */}
+                  <div className="bg-slate-950/70 border border-slate-800 rounded p-4 space-y-3">
+                    <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                      <Truck size={14} className="text-indigo-400" /> Default Consignee (Shipped To)
+                    </h3>
                     <Input
                       label="Destination Name"
                       value={templateForm.consigneeName}
@@ -806,7 +784,7 @@ export default function BillingTemplatesPage() {
                       <label className="text-xs text-slate-400 font-medium">Delivery Address</label>
                       <textarea
                         rows={3}
-                        className="w-full p-2.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200"
+                        className="w-full p-2.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200"
                         value={templateForm.consigneeAddress}
                         onChange={(e) => setTemplateForm({ ...templateForm, consigneeAddress: e.target.value })}
                       />
@@ -827,19 +805,19 @@ export default function BillingTemplatesPage() {
                 </div>
 
                 {/* Default Line Items */}
-                <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-5 space-y-4">
+                <div className="bg-slate-950/70 border border-slate-800 rounded p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                      <span>📋</span> Default Goods & Services Line Items
+                      <FileText size={14} className="text-indigo-400" /> Default Goods & Services Line Items
                     </h3>
-                    <Button size="sm" variant="secondary" icon="➕" onClick={handleAddTemplateItem}>
-                      Add Item
+                    <Button size="sm" variant="secondary" onClick={handleAddTemplateItem} className="rounded text-xs">
+                      <Plus size={13} className="mr-1 inline" /> Add Item
                     </Button>
                   </div>
 
-                  <div className="space-y-3">
+                  <div className="space-y-2.5">
                     {templateForm.items.map((item, idx) => (
-                      <div key={idx} className="p-3 bg-slate-900 border border-slate-800 rounded-lg grid grid-cols-1 sm:grid-cols-12 gap-2 items-center text-xs">
+                      <div key={idx} className="p-3 bg-slate-900 border border-slate-800 rounded grid grid-cols-1 sm:grid-cols-12 gap-2 items-center text-xs">
                         <div className="sm:col-span-5 space-y-1">
                           <input
                             type="text"
@@ -883,10 +861,10 @@ export default function BillingTemplatesPage() {
                         <div className="sm:col-span-1 text-center">
                           <button
                             type="button"
-                            className="text-rose-400 hover:text-rose-300 text-sm font-bold"
+                            className="text-slate-400 hover:text-rose-400 transition-colors p-1"
                             onClick={() => handleRemoveTemplateItem(idx)}
                           >
-                            ✕
+                            <X size={15} />
                           </button>
                         </div>
                       </div>
@@ -894,12 +872,12 @@ export default function BillingTemplatesPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
-                  <Button type="button" variant="secondary" onClick={() => setIsEditingTemplate(false)}>
+                <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800">
+                  <Button type="button" variant="secondary" onClick={() => setIsEditingTemplate(false)} className="rounded text-xs">
                     Cancel
                   </Button>
-                  <Button type="submit" variant="primary" icon="💾">
-                    Save Template Profile
+                  <Button type="submit" variant="primary" className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold">
+                    <Save size={13} className="mr-1.5 inline" /> Save Template Profile
                   </Button>
                 </div>
               </form>
@@ -907,7 +885,7 @@ export default function BillingTemplatesPage() {
           )}
 
           {/* Templates Grid with Logo and Full Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredTemplates.map((p) => {
               const buyer = p.buyer || {};
               const cons = p.consignee || {};
@@ -917,22 +895,22 @@ export default function BillingTemplatesPage() {
               return (
                 <div
                   key={p.id}
-                  className="p-5 bg-slate-900/70 border border-slate-800 hover:border-indigo-500/50 rounded-2xl space-y-4 shadow-xl transition-all flex flex-col justify-between"
+                  className="p-4 bg-slate-900/70 border border-slate-800 hover:border-indigo-500/50 rounded-md space-y-3.5 shadow-sm transition-all flex flex-col justify-between"
                 >
                   <div className="space-y-3">
                     {/* Header with Logo */}
                     <div className="flex items-start gap-3">
-                      <div className="w-12 h-12 rounded-xl border border-slate-700 bg-slate-950 flex items-center justify-center overflow-hidden shrink-0">
+                      <div className="w-11 h-11 rounded border border-slate-700 bg-slate-950 flex items-center justify-center overflow-hidden shrink-0">
                         {p.companyLogo ? (
                           <img src={p.companyLogo} alt="Logo" className="w-full h-full object-contain" />
                         ) : (
-                          <span className="font-bold text-xs text-indigo-400">DGR</span>
+                          <span className="font-bold text-xs text-indigo-400 font-mono">DGR</span>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-sm">⚡</span>
-                          <h3 className="font-bold text-slate-100 text-sm truncate">{p.name}</h3>
+                          <Zap size={13} className="text-amber-400 shrink-0" />
+                          <h3 className="font-bold text-slate-100 text-xs truncate">{p.name}</h3>
                         </div>
                         <div className="text-[11px] text-slate-400 truncate mt-0.5">
                           Issuer: <span className="text-slate-300 font-semibold">{comp.companyName || 'DGR PACKAGING COMPANY'}</span>
@@ -941,7 +919,7 @@ export default function BillingTemplatesPage() {
                     </div>
 
                     {/* Buyer & Destination Details */}
-                    <div className="text-xs space-y-1.5 text-slate-300 pt-2 border-t border-slate-800/80">
+                    <div className="text-xs space-y-1 text-slate-300 pt-2 border-t border-slate-800/80">
                       <div>
                         <span className="text-slate-500 font-medium">Billed To: </span>
                         <span className="font-semibold text-slate-200">{buyer.buyerName || 'Unspecified'}</span>
@@ -959,7 +937,7 @@ export default function BillingTemplatesPage() {
                       {itemsList.length > 0 && (
                         <div className="text-[11px] text-slate-400 pt-1 border-t border-slate-800/60">
                           <span className="text-slate-500">Items: </span>
-                          <span className="text-slate-300 font-mono">
+                          <span className="text-slate-300 font-mono text-[10px]">
                             {itemsList.map((it) => `${it.description || 'Item'} (${it.gstRate || 0}% GST)`).join(', ')}
                           </span>
                         </div>
@@ -967,32 +945,32 @@ export default function BillingTemplatesPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between pt-3 border-t border-slate-800/80 gap-2">
+                  <div className="flex items-center justify-between pt-2.5 border-t border-slate-800/80 gap-2">
                     <button
                       type="button"
-                      className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition-colors flex-1 flex items-center justify-center gap-1.5 shadow-md"
+                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-semibold transition-colors flex-1 flex items-center justify-center gap-1.5 shadow-sm"
                       onClick={() => handleUseTemplate(p)}
                     >
-                      <span>⚡</span>
+                      <Zap size={13} />
                       <span>Create Bill</span>
                     </button>
 
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
-                        className="p-2 text-slate-400 hover:text-indigo-300 hover:bg-slate-800 rounded-lg transition-colors"
+                        className="p-1.5 text-slate-400 hover:text-indigo-300 hover:bg-slate-800 rounded transition-colors"
                         onClick={() => handleStartEditTemplate(p)}
                         title="Edit Template"
                       >
-                        ✏️
+                        <Pencil size={14} />
                       </button>
                       <button
                         type="button"
-                        className="p-2 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-colors"
+                        className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition-colors"
                         onClick={() => handleDeleteTemplate(p.id)}
                         title="Delete Template"
                       >
-                        🗑️
+                        <Trash2 size={14} />
                       </button>
                     </div>
                   </div>
@@ -1010,22 +988,23 @@ export default function BillingTemplatesPage() {
         <div className="space-y-6">
           {/* Buyer Create / Edit Card */}
           {isEditingBuyer && (
-            <div className="p-6 bg-slate-900/90 border-2 border-indigo-500/50 rounded-2xl shadow-2xl space-y-6 animate-scale-in">
+            <div className="p-5 bg-slate-900/95 border border-indigo-500/50 rounded-md shadow-xl space-y-5 animate-scale-in">
               <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                  <span>🏢</span> {editingBuyer ? `Edit Customer: ${editingBuyer.name}` : 'Add New Customer Profile'}
+                <h2 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+                  <Building size={16} className="text-indigo-400" />
+                  <span>{editingBuyer ? `Edit Customer: ${editingBuyer.name}` : 'Add New Customer Profile'}</span>
                 </h2>
                 <button
                   type="button"
-                  className="text-xs text-slate-400 hover:text-white px-2.5 py-1 bg-slate-800 rounded-lg hover:bg-slate-700 transition-colors"
+                  className="text-xs text-slate-400 hover:text-white px-2.5 py-1 bg-slate-800 rounded hover:bg-slate-700 transition-colors flex items-center gap-1"
                   onClick={() => setIsEditingBuyer(false)}
                 >
-                  ✕ Close
+                  <X size={13} /> Close
                 </button>
               </div>
 
               <form onSubmit={handleSaveBuyer} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Input
                     label="Customer / Buyer Company Name *"
                     placeholder="e.g. TAKAI CHEMTECH INTERNATIONAL PVT LTD"
@@ -1045,7 +1024,7 @@ export default function BillingTemplatesPage() {
                   <label className="text-xs text-slate-400 font-medium">Full Billing Address *</label>
                   <textarea
                     rows={3}
-                    className="w-full p-2.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200"
+                    className="w-full p-2.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200"
                     placeholder="Company address for Tax Invoices"
                     value={buyerForm.address}
                     onChange={(e) => setBuyerForm({ ...buyerForm, address: e.target.value })}
@@ -1053,7 +1032,7 @@ export default function BillingTemplatesPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <Input
                     label="State / Place of Supply"
                     value={buyerForm.state}
@@ -1073,12 +1052,12 @@ export default function BillingTemplatesPage() {
                   />
                 </div>
 
-                <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
-                  <Button type="button" variant="secondary" onClick={() => setIsEditingBuyer(false)}>
+                <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800">
+                  <Button type="button" variant="secondary" onClick={() => setIsEditingBuyer(false)} className="rounded text-xs">
                     Cancel
                   </Button>
-                  <Button type="submit" variant="primary" icon="💾">
-                    Save Customer to Directory
+                  <Button type="submit" variant="primary" className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold">
+                    <Save size={13} className="mr-1.5 inline" /> Save Customer to Directory
                   </Button>
                 </div>
               </form>
@@ -1086,17 +1065,19 @@ export default function BillingTemplatesPage() {
           )}
 
           {/* Customers Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredBuyers.map((b) => (
               <div
                 key={b.id}
-                className="p-5 bg-slate-900/70 border border-slate-800 hover:border-indigo-500/50 rounded-2xl space-y-4 shadow-xl transition-all flex flex-col justify-between"
+                className="p-4 bg-slate-900/70 border border-slate-800 hover:border-indigo-500/50 rounded-md space-y-3.5 shadow-sm transition-all flex flex-col justify-between"
               >
                 <div className="space-y-2.5">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-xl">🏢</span>
-                      <h3 className="font-bold text-slate-100 text-sm leading-tight">{b.name}</h3>
+                      <div className="w-7 h-7 rounded bg-indigo-600/20 text-indigo-400 flex items-center justify-center shrink-0">
+                        <Building size={14} />
+                      </div>
+                      <h3 className="font-bold text-slate-100 text-xs leading-tight">{b.name}</h3>
                     </div>
                   </div>
 
@@ -1122,10 +1103,10 @@ export default function BillingTemplatesPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-3 border-t border-slate-800/80 gap-2">
+                <div className="flex items-center justify-between pt-2.5 border-t border-slate-800/80 gap-2">
                   <button
                     type="button"
-                    className="px-3 py-2 bg-indigo-600/30 hover:bg-indigo-600 border border-indigo-500/50 text-indigo-200 hover:text-white rounded-lg text-xs font-semibold transition-colors flex-1 flex items-center justify-center gap-1"
+                    className="px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-500/40 text-indigo-200 hover:text-white rounded text-xs font-semibold transition-colors flex-1 flex items-center justify-center gap-1"
                     onClick={() => {
                       navigate('/documents/new/TAX_INVOICE', {
                         state: {
@@ -1141,26 +1122,26 @@ export default function BillingTemplatesPage() {
                       });
                     }}
                   >
-                    <span>➕</span>
+                    <Plus size={13} />
                     <span>Bill this Customer</span>
                   </button>
 
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
-                      className="p-2 text-slate-400 hover:text-indigo-300 hover:bg-slate-800 rounded-lg transition-colors"
+                      className="p-1.5 text-slate-400 hover:text-indigo-300 hover:bg-slate-800 rounded transition-colors"
                       onClick={() => handleStartEditBuyer(b)}
                       title="Edit Customer"
                     >
-                      ✏️
+                      <Pencil size={14} />
                     </button>
                     <button
                       type="button"
-                      className="p-2 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-colors"
+                      className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition-colors"
                       onClick={() => handleDeleteBuyer(b.id)}
                       title="Delete Customer"
                     >
-                      🗑️
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 </div>
@@ -1177,22 +1158,23 @@ export default function BillingTemplatesPage() {
         <div className="space-y-6">
           {/* Destination Create / Edit Card */}
           {isEditingShipper && (
-            <div className="p-6 bg-slate-900/90 border-2 border-indigo-500/50 rounded-2xl shadow-2xl space-y-6 animate-scale-in">
+            <div className="p-5 bg-slate-900/95 border border-indigo-500/50 rounded-md shadow-xl space-y-5 animate-scale-in">
               <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                  <span>🚚</span> {editingShipper ? `Edit Destination: ${editingShipper.name}` : 'Add New Delivery Destination'}
+                <h2 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+                  <Truck size={16} className="text-indigo-400" />
+                  <span>{editingShipper ? `Edit Destination: ${editingShipper.name}` : 'Add New Delivery Destination'}</span>
                 </h2>
                 <button
                   type="button"
-                  className="text-xs text-slate-400 hover:text-white px-2.5 py-1 bg-slate-800 rounded-lg hover:bg-slate-700 transition-colors"
+                  className="text-xs text-slate-400 hover:text-white px-2.5 py-1 bg-slate-800 rounded hover:bg-slate-700 transition-colors flex items-center gap-1"
                   onClick={() => setIsEditingShipper(false)}
                 >
-                  ✕ Close
+                  <X size={13} /> Close
                 </button>
               </div>
 
               <form onSubmit={handleSaveShipper} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Input
                     label="Destination / Warehouse Name *"
                     placeholder="e.g. Sai Warehouse & Transport / Bhiwandi Site"
@@ -1209,69 +1191,75 @@ export default function BillingTemplatesPage() {
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs text-slate-400 font-medium">Delivery Address *</label>
+                  <label className="text-xs text-slate-400 font-medium">Delivery Destination Address *</label>
                   <textarea
                     rows={3}
-                    className="w-full p-2.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200"
-                    placeholder="Full physical delivery address"
+                    className="w-full p-2.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200"
+                    placeholder="Full physical delivery location address"
                     value={shipperForm.address}
                     onChange={(e) => setShipperForm({ ...shipperForm, address: e.target.value })}
                     required
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <Input
                     label="State"
                     value={shipperForm.state}
                     onChange={(e) => setShipperForm({ ...shipperForm, state: e.target.value })}
                   />
                   <Input
-                    label="Contact Person / Desk"
-                    placeholder="e.g. Warehouse Incharge"
+                    label="Site Contact Person"
+                    placeholder="e.g. Mr Ramesh"
                     value={shipperForm.contactPerson}
                     onChange={(e) => setShipperForm({ ...shipperForm, contactPerson: e.target.value })}
                   />
+                  <Input
+                    label="Site Phone"
+                    placeholder="e.g. +91 9820011223"
+                    value={shipperForm.phone}
+                    onChange={(e) => setShipperForm({ ...shipperForm, phone: e.target.value })}
+                  />
                 </div>
 
-                <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
-                  <Button type="button" variant="secondary" onClick={() => setIsEditingShipper(false)}>
+                <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800">
+                  <Button type="button" variant="secondary" onClick={() => setIsEditingShipper(false)} className="rounded text-xs">
                     Cancel
                   </Button>
-                  <Button type="submit" variant="primary" icon="💾">
-                    Save Destination
+                  <Button type="submit" variant="primary" className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold">
+                    <Save size={13} className="mr-1.5 inline" /> Save Destination to Directory
                   </Button>
                 </div>
               </form>
             </div>
           )}
 
-          {/* Destinations Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {/* Shippers Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredShippers.map((s) => (
               <div
                 key={s.id}
-                className="p-5 bg-slate-900/70 border border-slate-800 hover:border-indigo-500/50 rounded-2xl space-y-4 shadow-xl transition-all flex flex-col justify-between"
+                className="p-4 bg-slate-900/70 border border-slate-800 hover:border-indigo-500/50 rounded-md space-y-3.5 shadow-sm transition-all flex flex-col justify-between"
               >
                 <div className="space-y-2.5">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-xl">🚚</span>
-                      <h3 className="font-bold text-slate-100 text-sm leading-tight">{s.name}</h3>
+                      <div className="w-7 h-7 rounded bg-emerald-600/20 text-emerald-400 flex items-center justify-center shrink-0">
+                        <Truck size={14} />
+                      </div>
+                      <h3 className="font-bold text-slate-100 text-xs leading-tight">{s.name}</h3>
                     </div>
                   </div>
 
                   <div className="text-xs space-y-1 text-slate-300 pt-2 border-t border-slate-800/80">
                     <div>
+                      <span className="text-slate-500 font-medium">GSTIN: </span>
+                      <span className="font-mono text-indigo-300 font-bold">{s.gstin || 'N/A'}</span>
+                    </div>
+                    <div>
                       <span className="text-slate-500 font-medium">State: </span>
                       <span className="text-slate-300">{s.state || 'Maharashtra (27)'}</span>
                     </div>
-                    {s.gstin && (
-                      <div>
-                        <span className="text-slate-500 font-medium">GSTIN: </span>
-                        <span className="font-mono text-slate-300">{s.gstin}</span>
-                      </div>
-                    )}
                     <div className="text-[11px] text-slate-400 line-clamp-2">
                       <span className="text-slate-500">Address: </span>
                       <span>{s.address ? s.address.replace(/\n/g, ', ') : '-'}</span>
@@ -1285,23 +1273,46 @@ export default function BillingTemplatesPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end pt-3 border-t border-slate-800/80 gap-2">
+                <div className="flex items-center justify-between pt-2.5 border-t border-slate-800/80 gap-2">
                   <button
                     type="button"
-                    className="p-2 text-slate-400 hover:text-indigo-300 hover:bg-slate-800 rounded-lg transition-colors"
-                    onClick={() => handleStartEditShipper(s)}
-                    title="Edit Destination"
+                    className="px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-500/40 text-emerald-200 hover:text-white rounded text-xs font-semibold transition-colors flex-1 flex items-center justify-center gap-1"
+                    onClick={() => {
+                      navigate('/documents/new/TAX_INVOICE', {
+                        state: {
+                          templateData: {
+                            consigneeName: s.name,
+                            consigneeAddress: s.address,
+                            consigneeState: s.state,
+                            consigneeGstin: s.gstin,
+                            transportName: s.name,
+                          },
+                        },
+                      });
+                    }}
                   >
-                    ✏️ Edit
+                    <Plus size={13} />
+                    <span>Ship to this Location</span>
                   </button>
-                  <button
-                    type="button"
-                    className="p-2 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-colors"
-                    onClick={() => handleDeleteShipper(s.id)}
-                    title="Delete Destination"
-                  >
-                    🗑️ Delete
-                  </button>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      className="p-1.5 text-slate-400 hover:text-indigo-300 hover:bg-slate-800 rounded transition-colors"
+                      onClick={() => handleStartEditShipper(s)}
+                      title="Edit Destination"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition-colors"
+                      onClick={() => handleDeleteShipper(s.id)}
+                      title="Delete Destination"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

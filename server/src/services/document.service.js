@@ -111,6 +111,7 @@ export async function getAllDocuments(userId, query = {}) {
       where,
       include: {
         createdBy: { select: { id: true, name: true, email: true } },
+        statusHistory: { orderBy: { changedAt: 'desc' } },
         _count: { select: { packages: true } },
       },
       orderBy: { [sortBy]: sortOrder },
@@ -163,19 +164,29 @@ export async function updateDocument(id, userId, updateData) {
     throw new AppError('Document not found', 404);
   }
 
-  // Only allow editing DRAFT and VALIDATED documents
-  if (!['DRAFT', 'VALIDATED'].includes(existing.status)) {
+  // Only allow editing DRAFT and VALIDATED documents for non-tax-invoices
+  if (existing.documentType !== 'TAX_INVOICE' && !['DRAFT', 'VALIDATED'].includes(existing.status)) {
     throw new AppError(`Cannot edit document in ${existing.status} status`, 400);
   }
 
-  const { packages, ...docData } = updateData;
+  const { packages, status, statusNote, ...docData } = updateData;
 
   // Build update query
   const updateQuery = {
     ...docData,
     version: { increment: 1 },
+    ...(status && { status }),
     ...(docData.data && {
       data: { ...existing.data, ...docData.data },
+    }),
+    ...(status && {
+      statusHistory: {
+        create: {
+          status,
+          note: statusNote || `Status updated to ${status}`,
+          changedBy: userId,
+        },
+      },
     }),
   };
 

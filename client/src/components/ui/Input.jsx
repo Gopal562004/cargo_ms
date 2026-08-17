@@ -21,7 +21,7 @@ export default function Input({
 
   return (
     <div className={`flex flex-col gap-1 w-full ${disabled ? 'opacity-50 pointer-events-none' : ''} ${className}`}>
-      <div className={`relative flex items-center bg-slate-900/60 border rounded-lg transition-all duration-200 ${
+      <div className={`relative flex items-center bg-slate-900/60 border rounded-md transition-all duration-200 ${
         error ? 'border-rose-500/80 focus-within:ring-2 focus-within:ring-rose-500/20' : 
         focused ? 'border-indigo-500 ring-2 ring-indigo-500/20' : 'border-slate-800 hover:border-slate-700'
       }`}>

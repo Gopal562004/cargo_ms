@@ -30,7 +30,7 @@ export default function Badge({ status, variant, children, size = 'md', classNam
   const sizeClasses = size === 'sm' ? 'px-2 py-0.5 text-[11px]' : size === 'lg' ? 'px-3 py-1 text-xs font-semibold' : 'px-2.5 py-0.5 text-xs';
 
   return (
-    <span className={`inline-flex items-center gap-1.5 font-medium border rounded-full uppercase tracking-wider ${sizeClasses} ${styleClasses} ${className}`}>
+    <span className={`inline-flex items-center gap-1.5 font-medium border rounded-md uppercase tracking-wider ${sizeClasses} ${styleClasses} ${className}`}>
       <span className="w-1.5 h-1.5 rounded-full bg-current" />
       {children || status?.replace(/_/g, ' ')}
     </span>

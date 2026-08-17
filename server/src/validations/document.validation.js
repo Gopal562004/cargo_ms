@@ -36,6 +36,11 @@ export const createDocumentSchema = z.object({
 export const updateDocumentSchema = z.object({
   title: z.string().max(200).optional().nullable(),
   documentNumber: z.string().max(50).optional().nullable(),
+  status: z.enum([
+    'DRAFT', 'VALIDATED', 'ISSUED', 'BOOKED', 'DEPARTED',
+    'IN_TRANSIT', 'ARRIVED', 'DELIVERED', 'CANCELLED', 'COMPLETED',
+  ]).optional(),
+  statusNote: z.string().optional(),
   data: z.record(z.any()).optional(),
   packages: z.array(z.object({
     id: z.string().optional(),

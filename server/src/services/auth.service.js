@@ -75,24 +75,41 @@ export async function registerUser({ email, password, name, company }) {
 
   const user = await prisma.user.create({
     data: { email, passwordHash, name, company },
-    select: { id: true, email: true, name: true, company: true, role: true, createdAt: true },
+    select: { id: true, email: true, name: true, company: true, role: true, isActive: true, allowedServices: true, createdAt: true },
   });
 
   return user;
 }
 
 /**
- * Login a user — returns user + tokens.
+ * Login a user — accepts either email or username + password.
  */
-export async function loginUser({ email, password }) {
-  const user = await prisma.user.findUnique({ where: { email } });
+export async function loginUser({ email, username, identifier, password }) {
+  const loginId = (username || email || identifier || '').trim().toLowerCase();
+  if (!loginId || !password) {
+    throw new AppError('Please provide your username or email and password', 400);
+  }
+
+  const user = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { username: loginId },
+        { email: loginId },
+      ],
+    },
+  });
+
   if (!user) {
-    throw new AppError('Invalid email or password', 401);
+    throw new AppError('Invalid username/email or password', 401);
+  }
+
+  if (user.isActive === false) {
+    throw new AppError('This user account has been deactivated. Please contact your system administrator.', 403);
   }
 
   const isMatch = await comparePassword(password, user.passwordHash);
   if (!isMatch) {
-    throw new AppError('Invalid email or password', 401);
+    throw new AppError('Invalid username/email or password', 401);
   }
 
   const accessToken = generateAccessToken(user);
@@ -110,11 +127,15 @@ export async function refreshTokens(refreshToken) {
 
   const user = await prisma.user.findUnique({
     where: { id: payload.id },
-    select: { id: true, email: true, name: true, company: true, role: true },
+    select: { id: true, email: true, name: true, company: true, role: true, isActive: true, allowedServices: true, phone: true, department: true },
   });
 
   if (!user) {
     throw new AppError('User not found', 404);
+  }
+
+  if (user.isActive === false) {
+    throw new AppError('This user account has been deactivated', 403);
   }
 
   const newAccessToken = generateAccessToken(user);

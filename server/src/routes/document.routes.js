@@ -10,6 +10,7 @@ import {
   updateStatus,
   getHistory,
   downloadPDF,
+  parseInvoiceDocument,
 } from '../controllers/document.controller.js';
 import { authenticate } from '../middleware/auth.middleware.js';
 import { validate } from '../middleware/validate.middleware.js';
@@ -24,6 +25,9 @@ const router = Router();
 
 // All document routes require authentication
 router.use(authenticate);
+
+// Auto-extract invoice/bill data from uploaded PDF/file
+router.post('/parse-invoice', parseInvoiceDocument);
 
 // Document types metadata
 router.get('/types', getDocumentTypes);
