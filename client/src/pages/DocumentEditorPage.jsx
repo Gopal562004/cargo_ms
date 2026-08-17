@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useDocumentStore } from '../store/documentStore';
 import { getDocumentSchema } from '../schemas/registry';
 import { downloadDocumentPDF, previewDocumentPDF } from '../services/documentService';
+import TaxInvoiceEditor from '../components/documents/TaxInvoiceEditor';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Badge from '../components/ui/Badge';
@@ -10,13 +11,16 @@ import Badge from '../components/ui/Badge';
 export default function DocumentEditorPage() {
   const { type, id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { createDocument, updateDocument, fetchDocument, currentDocument } = useDocumentStore();
 
   const isEdit = !!id;
   const documentType = type || currentDocument?.documentType;
   const schema = getDocumentSchema(documentType);
 
-  const [formData, setFormData] = useState({});
+  const templateInitialData = location.state?.templateData;
+
+  const [formData, setFormData] = useState(() => templateInitialData || {});
   const [packages, setPackages] = useState([]);
   const [title, setTitle] = useState('');
   const [loading, setLoading] = useState(false);
@@ -34,6 +38,16 @@ export default function DocumentEditorPage() {
       });
     }
   }, [id]);
+
+  if (documentType === 'TAX_INVOICE') {
+    return (
+      <TaxInvoiceEditor
+        documentId={id}
+        initialData={formData && Object.keys(formData).length > 0 ? formData : templateInitialData}
+        currentDocument={currentDocument}
+      />
+    );
+  }
 
   if (!schema) {
     return (

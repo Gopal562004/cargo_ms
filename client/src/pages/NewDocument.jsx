@@ -38,9 +38,10 @@ const DOCUMENT_CATEGORIES = [
     ],
   },
   {
-    title: 'Other',
+    title: 'Other & Commercial',
     icon: '📁',
     items: [
+      { type: 'TAX_INVOICE', name: 'Tax Invoice / Billing', desc: 'GST Tax Invoice matching DGR template with automatic tax breakdown & print', icon: '🧾' },
       { type: 'BOOKING', name: 'Booking', desc: 'Booking request and confirmation', icon: '📅' },
       { type: 'PROFORMA_INVOICE', name: 'Proforma Invoice', desc: 'Proforma invoice, invoice and credit/debit note', icon: '💰' },
       { type: 'WAREHOUSE_RECEIPT', name: 'Warehouse Receipt', desc: 'Warehouse receipt', icon: '🏭' },

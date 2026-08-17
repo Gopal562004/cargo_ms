@@ -77,3 +77,13 @@ html.light .text-slate-500 { color: #64748b !important; }
 .animate-fade-in {
   animation: fadeIn 250ms cubic-bezier(0.33, 1, 0.68, 1);
 }
+
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  aside, header, nav, .no-print, button:not(.printable) {
+    display: none !important;
+  }
+}

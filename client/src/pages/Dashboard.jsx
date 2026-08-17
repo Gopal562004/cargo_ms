@@ -10,7 +10,8 @@ const QUICK_ACTIONS = [
   { type: 'HAWB', label: 'House AWB', icon: '📋', color: 'border-purple-500/30 text-purple-400 hover:border-purple-500/60' },
   { type: 'BILL_OF_LADING', label: 'Bill of Lading', icon: '🚢', color: 'border-cyan-500/30 text-cyan-400 hover:border-cyan-500/60' },
   { type: 'FWB', label: 'FWB (eAWB)', icon: '⚡', color: 'border-amber-500/30 text-amber-400 hover:border-amber-500/60' },
-  { type: 'PROFORMA_INVOICE', label: 'Invoice', icon: '📄', color: 'border-emerald-500/30 text-emerald-400 hover:border-emerald-500/60' },
+  { type: 'TAX_INVOICE', label: 'Tax Invoice', icon: '🧾', color: 'border-emerald-500/30 text-emerald-400 hover:border-emerald-500/60' },
+  { type: 'PROFORMA_INVOICE', label: 'Proforma', icon: '📄', color: 'border-teal-500/30 text-teal-400 hover:border-teal-500/60' },
   { type: 'BOOKING', label: 'Booking', icon: '📅', color: 'border-orange-500/30 text-orange-400 hover:border-orange-500/60' },
 ];
 

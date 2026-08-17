@@ -9,6 +9,7 @@ import {
   deliveryOrderSchema, deliveryNoteSchema, fcrSchema, cmrSchema, arrivalNoticeSchema,
   securityDeclarationSchema, letterSchema
 } from './commercial/commercial.schema.js';
+import { taxInvoiceSchema } from './commercial/taxInvoice.schema.js';
 
 // Additional Air Freight schemas
 import { AIRPORTS_OPTIONS } from './common/options.js';
@@ -120,6 +121,7 @@ export const SCHEMA_REGISTRY = {
   SOLAS_VGM: vgmSchema,
 
   // Other / Commercial
+  TAX_INVOICE: taxInvoiceSchema,
   BOOKING: bookingSchema,
   PROFORMA_INVOICE: invoiceSchema,
   WAREHOUSE_RECEIPT: warehouseReceiptSchema,

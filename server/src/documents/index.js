@@ -1,6 +1,7 @@
 import { generateExactFedExIataAWBPDF } from './air_freight/mawb.pdf.js';
 import { generateExactIataDGDPDF } from './air_freight/dgd.pdf.js';
 import { generateBOLPDF } from './sea_freight/billOfLading.pdf.js';
+import { generateTaxInvoicePDF } from './commercial/taxInvoice.pdf.js';
 import { generateGenericPDF } from './commercial/generic.pdf.js';
 
 /**
@@ -21,6 +22,8 @@ export async function generateDocumentPDF(document) {
       return generateExactIataDGDPDF(document);
     case 'BILL_OF_LADING':
       return generateBOLPDF(document);
+    case 'TAX_INVOICE':
+      return generateTaxInvoicePDF(document);
     default:
       return generateGenericPDF(document);
   }
@@ -30,5 +33,6 @@ export {
   generateExactFedExIataAWBPDF,
   generateExactIataDGDPDF,
   generateBOLPDF,
+  generateTaxInvoicePDF,
   generateGenericPDF,
 };

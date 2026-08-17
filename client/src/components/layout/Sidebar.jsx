@@ -1051,6 +1051,9 @@ import {
   Sun,
   Moon,
   Package,
+  Receipt,
+  Printer,
+  Bookmark,
 } from 'lucide-react';
 
 const NAV_SECTIONS = [
@@ -1060,6 +1063,15 @@ const NAV_SECTIONS = [
       { path: '/', label: 'Dashboard', icon: LayoutDashboard },
       { path: '/new', label: 'New Document', icon: Plus },
       { path: '/documents', label: 'All Documents', icon: FileText },
+    ],
+  },
+  {
+    title: 'Billing & Invoices',
+    items: [
+      { path: '/billing', label: 'Bills Register & Hub', icon: Receipt },
+      { path: '/billing/sheet', label: '📄 Live Sheet Editor (WYSIWYG)', icon: FileEdit },
+      { path: '/billing/new', label: '➕ Create New Bill', icon: Printer },
+      { path: '/billing/templates', label: 'Saved Templates & Parties', icon: Bookmark },
     ],
   },
   {
@@ -1087,7 +1099,7 @@ const NAV_SECTIONS = [
   {
     title: 'Management',
     items: [
-      { path: '/documents?category=OTHER', label: 'Archives', icon: Folder },
+      { path: '/documents?category=OTHER', label: 'Other Documents', icon: Folder },
       { path: '/contacts', label: 'Directory', icon: Users },
       { path: '/templates', label: 'Templates', icon: LayoutTemplate },
     ],

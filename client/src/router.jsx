@@ -8,6 +8,8 @@ import Dashboard from './pages/Dashboard';
 import NewDocument from './pages/NewDocument';
 import DocumentList from './pages/DocumentList';
 import DocumentEditorPage from './pages/DocumentEditorPage';
+import BillingPage from './pages/BillingPage';
+import BillingTemplatesPage from './pages/BillingTemplatesPage';
 import NotFound from './pages/NotFound';
 
 /**
@@ -64,6 +66,11 @@ export const router = createBrowserRouter([
       { index: true, element: <Dashboard /> },
       { path: 'new', element: <NewDocument /> },
       { path: 'documents', element: <DocumentList /> },
+      { path: 'billing', element: <BillingPage /> },
+      { path: 'billing/sheet', element: <Navigate to="/documents/new/TAX_INVOICE?mode=visual" replace /> },
+      { path: 'billing/visual', element: <Navigate to="/documents/new/TAX_INVOICE?mode=visual" replace /> },
+      { path: 'billing/new', element: <Navigate to="/documents/new/TAX_INVOICE" replace /> },
+      { path: 'billing/templates', element: <BillingTemplatesPage /> },
       { path: 'documents/new/:type', element: <DocumentEditorPage /> },
       { path: 'documents/:id', element: <DocumentEditorPage /> },
       { path: 'documents/:id/edit', element: <DocumentEditorPage /> },

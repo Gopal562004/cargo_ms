@@ -218,6 +218,7 @@ export const DOCUMENT_TYPES = {
 
   // Other
   BOOKING: { name: 'Booking', description: 'Booking request and booking confirmation', category: 'OTHER', icon: 'calendar' },
+  TAX_INVOICE: { name: 'Tax Invoice / Billing', description: 'GST Tax Invoice & Billing matching DGR standard format', category: 'OTHER', icon: 'file-text' },
   PROFORMA_INVOICE: { name: 'Proforma Invoice', description: 'Proforma invoice, invoice and note of credit and debit', category: 'OTHER', icon: 'file-text' },
   WAREHOUSE_RECEIPT: { name: 'Warehouse Receipt', description: 'Warehouse receipt', category: 'OTHER', icon: 'package' },
   DOCK_RECEIPT: { name: 'Dock Receipt', description: 'Dock receipt', category: 'OTHER', icon: 'package' },
