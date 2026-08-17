@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: cargohub-api
+    env: node
+    rootDir: server
+    buildCommand: npm install && npx prisma generate
+    startCommand: node src/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        value: postgresql://neondb_owner:npg_7P0CYHThcvXR@ep-winter-queen-azdkd9q1-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
+      - key: JWT_SECRET
+        value: your-super-secret-access-token-key-change-in-production
+      - key: JWT_REFRESH_SECRET
+        value: your-super-secret-refresh-token-key-change-in-production
+      - key: JWT_EXPIRES_IN
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d

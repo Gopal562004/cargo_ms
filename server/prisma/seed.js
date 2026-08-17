@@ -7,21 +7,68 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Seeding database with comprehensive demo documents...');
 
-  // 1. Create or update demo user
-  const passwordHash = await bcrypt.hash('password123', 12);
+  // 1. Create or update demo Admin user
+  const adminPasswordHash = await bcrypt.hash('Admin@2004', 12);
   const user = await prisma.user.upsert({
-    where: { email: 'demo@awbeditor.com' },
-    update: {},
-    create: {
-      email: 'demo@awbeditor.com',
-      passwordHash,
-      name: 'Demo Freight Manager',
-      company: 'Global Sky & Sea Logistics Ltd.',
+    where: { username: 'admin' },
+    update: {
+      passwordHash: adminPasswordHash,
       role: 'ADMIN',
+      isActive: true,
+    },
+    create: {
+      username: 'admin',
+      email: 'admin@dgrlogistics.com',
+      passwordHash: adminPasswordHash,
+      name: 'DGR Master Administrator',
+      company: 'DGR GLOBAL LOGISTICS',
+      department: 'Management',
+      role: 'ADMIN',
+      isActive: true,
+      allowedServices: [
+        'AIR_FREIGHT',
+        'EDI_CARGO',
+        'SEA_FREIGHT',
+        'SALES_BILLING',
+        'PURCHASE_BILLS',
+        'BILLING_TEMPLATES',
+        'CONTACTS_DIRECTORY',
+        'TEMPLATES_MANAGEMENT',
+        'MASTER_ADMIN',
+      ],
     },
   });
 
-  console.log(`👤 Demo Account: ${user.email} (Password: password123)`);
+  // Create Mayur operator account
+  const mayurPasswordHash = await bcrypt.hash('Mayur@2004', 12);
+  await prisma.user.upsert({
+    where: { username: 'mayur52004' },
+    update: {
+      passwordHash: mayurPasswordHash,
+      role: 'OPERATOR',
+      isActive: true,
+    },
+    create: {
+      username: 'mayur52004',
+      email: 'mayur@dgrlogistics.com',
+      passwordHash: mayurPasswordHash,
+      name: 'Mayur Kadam',
+      company: 'DGR GLOBAL LOGISTICS',
+      department: 'Accounts & Billing',
+      phone: '9028345261',
+      role: 'OPERATOR',
+      isActive: true,
+      allowedServices: [
+        'SALES_BILLING',
+        'PURCHASE_BILLS',
+        'BILLING_TEMPLATES',
+        'CONTACTS_DIRECTORY',
+      ],
+    },
+  });
+
+  console.log(`👤 Master Admin Account: username=admin / email=admin@dgrlogistics.com (Password: Admin@2004)`);
+  console.log(`👤 Operator Account: username=mayur52004 (Password: Mayur@2004)`);
 
   // Clean existing demo documents for fresh seed
   await prisma.package.deleteMany({});
