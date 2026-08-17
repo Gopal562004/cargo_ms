@@ -61,6 +61,10 @@ app.use('/api/contacts', contactRoutes);
 app.use('/api/templates', templateRoutes);
 app.use('/api/users', userRoutes);
 
+// ─── Route Aliases (Fallback for direct requests) ────
+app.use('/documents', documentRoutes);
+app.use('/auth', authRoutes);
+
 // ─── Error Handling ──────────────────────────────────
 app.use(notFound);
 app.use(errorHandler);

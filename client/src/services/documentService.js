@@ -40,24 +40,10 @@ export function getDocumentTypes() {
   return api.get('/documents/types');
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
 export async function fetchDocumentPDFBlobUrl(id) {
-  const token = localStorage.getItem('accessToken');
-  const response = await fetch(`${API_BASE_URL}/documents/${id}/pdf`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+  const blob = await api.get(`/documents/${id}/pdf`, {
+    responseType: 'blob',
   });
-  if (!response.ok) {
-    let msg = 'Failed to generate PDF';
-    try {
-      const errJson = await response.json();
-      if (errJson?.message) msg = errJson.message;
-    } catch (_e) {}
-    throw new Error(msg);
-  }
-  const blob = await response.blob();
   return window.URL.createObjectURL(blob);
 }
 

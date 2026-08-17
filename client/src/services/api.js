@@ -76,9 +76,19 @@ api.interceptors.response.use(
     }
 
     // Extract error message
-    const message = error.response?.data?.message || error.message || 'An error occurred';
+    let message = error.response?.data?.message || error.message || 'An error occurred';
+    if (error.response?.data instanceof Blob) {
+      try {
+        const text = await error.response.data.text();
+        const json = JSON.parse(text);
+        if (json?.message) message = json.message;
+      } catch (_e) {
+        // Not a JSON blob
+      }
+    }
     return Promise.reject(new Error(message));
   }
 );
 
+export { API_BASE_URL };
 export default api;
