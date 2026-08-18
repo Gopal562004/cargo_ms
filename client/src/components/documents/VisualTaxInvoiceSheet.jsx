@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
 import { Plus, X, Building, Truck, Copy } from 'lucide-react';
+import GstRateSelect from '../ui/GstRateSelect';
 
 /**
  * VisualTaxInvoiceSheet - Pixel-perfect, WYSIWYG printable A4 sheet editor for Tax Invoices.
@@ -605,17 +606,12 @@ export default function VisualTaxInvoiceSheet({
                       </td>
 
                       <td className="p-1 border-r border-black text-center">
-                        <select
+                        <GstRateSelect
                           value={item.gstRate}
-                          onChange={(e) => handleItemChange(idx, 'gstRate', e.target.value)}
-                          className="text-[9.5px] bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-0.5 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400 cursor-pointer"
-                        >
-                          <option value="0">0 %</option>
-                          <option value="5">2.5 %</option>
-                          <option value="12">6.0 %</option>
-                          <option value="18">9.0 %</option>
-                          <option value="28">14.0 %</option>
-                        </select>
+                          onChange={(val) => handleItemChange(idx, 'gstRate', val)}
+                          className="text-[9.5px] bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-0.5 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400 cursor-pointer font-medium"
+                          showHalfRateOnly
+                        />
                       </td>
 
                       <td className="p-1 border-r border-black text-right font-mono text-[9.5px]">
@@ -623,17 +619,12 @@ export default function VisualTaxInvoiceSheet({
                       </td>
 
                       <td className="p-1 border-r border-black text-center">
-                        <select
+                        <GstRateSelect
                           value={item.gstRate}
-                          onChange={(e) => handleItemChange(idx, 'gstRate', e.target.value)}
-                          className="text-[9.5px] bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-0.5 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400 cursor-pointer"
-                        >
-                          <option value="0">0 %</option>
-                          <option value="5">2.5 %</option>
-                          <option value="12">6.0 %</option>
-                          <option value="18">9.0 %</option>
-                          <option value="28">14.0 %</option>
-                        </select>
+                          onChange={(val) => handleItemChange(idx, 'gstRate', val)}
+                          className="text-[9.5px] bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-0.5 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400 cursor-pointer font-medium"
+                          showHalfRateOnly
+                        />
                       </td>
 
                       <td className="p-1 border-r border-black text-right font-mono text-[9.5px]">

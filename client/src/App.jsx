@@ -2,6 +2,8 @@ import React, { useEffect } from 'react';
 import { RouterProvider } from 'react-router-dom';
 import { router } from './router';
 import { ToastProvider } from './components/ui/Toast';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { useAuthStore } from './store/authStore';
 import { useThemeStore } from './store/themeStore';
 
@@ -17,6 +19,18 @@ function App() {
   return (
     <ToastProvider>
       <RouterProvider router={router} />
+      <ToastContainer
+        position="top-right"
+        autoClose={4000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+      />
     </ToastProvider>
   );
 }

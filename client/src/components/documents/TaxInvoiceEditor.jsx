@@ -37,6 +37,7 @@ import PdfPreviewModal from '../ui/PdfPreviewModal';
 import Button from '../ui/Button';
 import Badge from '../ui/Badge';
 import Input from '../ui/Input';
+import GstRateSelect from '../ui/GstRateSelect';
 
 // Helper for Indian Currency Number to Words
 function numberToIndianWords(num) {
@@ -421,16 +422,81 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
       consigneeGstin: cons.consigneeGstin || buyer.buyerGstin || prev.consigneeGstin,
       invoiceNumber: profile.invoiceNumber || prev.invoiceNumber,
       invoiceDate: profile.invoiceDate || prev.invoiceDate,
-      airwayBillNo: profile.airwayBillNo !== undefined ? profile.airwayBillNo : prev.airwayBillNo,
+      placeOfSupply: profile.placeOfSupply || prev.placeOfSupply,
+      reverseCharge: profile.reverseCharge || prev.reverseCharge,
       transport: profile.transport !== undefined ? profile.transport : prev.transport,
+      ewayBillNo: profile.ewayBillNo !== undefined ? profile.ewayBillNo : prev.ewayBillNo,
+      airwayBillNo: profile.airwayBillNo !== undefined ? profile.airwayBillNo : prev.airwayBillNo,
+      poNumberAndDate: profile.poNumberAndDate !== undefined ? profile.poNumberAndDate : prev.poNumberAndDate,
       noOfPackages: profile.noOfPackages !== undefined ? profile.noOfPackages : prev.noOfPackages,
+      grossWeight: profile.grossWeight !== undefined ? profile.grossWeight : prev.grossWeight,
+      transportName: profile.transportName !== undefined ? profile.transportName : prev.transportName,
+      paidToPaid: profile.paidToPaid !== undefined ? profile.paidToPaid : prev.paidToPaid,
       referenceName: profile.referenceName !== undefined ? profile.referenceName : prev.referenceName,
       contactNumber: profile.contactNumber !== undefined ? profile.contactNumber : prev.contactNumber,
+      termsAndConditions: profile.termsAndConditions || prev.termsAndConditions,
     }));
 
     if (Array.isArray(profile.items) && profile.items.length > 0) {
       setItems(profile.items);
     }
+  };
+
+  const handleSaveCurrentAsPreset = () => {
+    const presetName = prompt('Enter a name for this template preset:', formData.buyerName ? `${formData.buyerName} Standard` : 'Custom Invoice Template');
+    if (!presetName || !presetName.trim()) return;
+
+    const payload = {
+      name: presetName.trim(),
+      category: 'Full Invoice Template',
+      companyLogo: formData.companyLogo,
+      companyDetails: {
+        companyName: formData.companyName,
+        companyAddress: formData.companyAddress,
+        companyCityPin: formData.companyCityPin,
+        companyPan: formData.companyPan,
+        companyGstin: formData.companyGstin,
+        companyTel: formData.companyTel,
+        companyEmail: formData.companyEmail,
+        bankName: formData.bankName,
+        accountNumber: formData.accountNumber,
+        ifscCode: formData.ifscCode,
+        swiftCode: formData.swiftCode,
+        branchName: formData.branchName,
+      },
+      buyer: {
+        buyerName: formData.buyerName,
+        buyerAddress: formData.buyerAddress,
+        buyerState: formData.buyerState,
+        buyerGstin: formData.buyerGstin,
+      },
+      consignee: {
+        consigneeName: formData.consigneeName || formData.buyerName,
+        consigneeAddress: formData.consigneeAddress || formData.buyerAddress,
+        consigneeState: formData.consigneeState || formData.buyerState,
+        consigneeGstin: formData.consigneeGstin || formData.buyerGstin,
+      },
+      invoiceNumber: formData.invoiceNumber,
+      invoiceDate: formData.invoiceDate,
+      placeOfSupply: formData.placeOfSupply,
+      reverseCharge: formData.reverseCharge,
+      transport: formData.transport,
+      ewayBillNo: formData.ewayBillNo,
+      airwayBillNo: formData.airwayBillNo,
+      poNumberAndDate: formData.poNumberAndDate,
+      noOfPackages: formData.noOfPackages,
+      grossWeight: formData.grossWeight,
+      transportName: formData.transportName,
+      paidToPaid: formData.paidToPaid,
+      referenceName: formData.referenceName,
+      contactNumber: formData.contactNumber,
+      termsAndConditions: formData.termsAndConditions,
+      items: items,
+    };
+
+    saveBillingProfile(payload);
+    refreshProfilesAndParties();
+    alert(`Template "${presetName.trim()}" saved successfully!`);
   };
 
   const handleSelectBuyer = (buyerName) => {
@@ -866,6 +932,16 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
                 <span>{tpl.name}</span>
               </button>
             ))}
+
+            <button
+              type="button"
+              className="px-2.5 py-1 text-xs bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/40 rounded transition-all font-semibold flex items-center gap-1"
+              onClick={handleSaveCurrentAsPreset}
+              title="Save current invoice details, buyer, items, bank info as a reusable template"
+            >
+              <Save size={12} />
+              <span>Save as Template</span>
+            </button>
 
             <button
               type="button"
@@ -1353,17 +1429,12 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
                         />
                       </td>
                       <td className="p-2">
-                        <select
-                          className="w-full px-1.5 py-1 bg-slate-950/80 border border-slate-700/90 rounded text-slate-200 focus:outline-none focus:border-indigo-500 text-center font-medium"
+                        <GstRateSelect
+                          className="w-full px-1.5 py-1 bg-slate-950/80 border border-slate-700/90 rounded text-slate-200 focus:outline-none focus:border-indigo-500 text-center font-medium text-xs"
                           value={item.gstRate}
-                          onChange={(e) => handleItemChange(idx, 'gstRate', e.target.value)}
-                        >
-                          <option value="0">0% (Nil)</option>
-                          <option value="5">5% (2.5+2.5)</option>
-                          <option value="12">12% (6+6)</option>
-                          <option value="18">18% (9+9)</option>
-                          <option value="28">28% (14+14)</option>
-                        </select>
+                          onChange={(val) => handleItemChange(idx, 'gstRate', val)}
+                          compact
+                        />
                       </td>
                       <td className="p-2 text-right text-slate-300 font-mono">
                         ₹{formatINR(taxAmt)}

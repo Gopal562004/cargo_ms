@@ -39,9 +39,10 @@ api.interceptors.response.use(
   (response) => response.data,
   async (error) => {
     const originalRequest = error.config;
+    const isAuthEndpoint = originalRequest?.url?.includes('/auth/login') || originalRequest?.url?.includes('/auth/register') || originalRequest?.url?.includes('/auth/refresh');
 
-    // If 401 and not already retrying, try refresh
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // If 401 and not already retrying, try refresh (except for login/register endpoints)
+    if (error.response?.status === 401 && !originalRequest?._retry && !isAuthEndpoint) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });

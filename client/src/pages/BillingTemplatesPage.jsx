@@ -18,6 +18,8 @@ import {
   X,
   Search,
   Zap,
+  Copy,
+  CreditCard,
 } from 'lucide-react';
 import {
   getSavedBillingProfiles,
@@ -33,6 +35,7 @@ import {
 } from '../services/billingProfileService';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
+import GstRateSelect from '../components/ui/GstRateSelect';
 
 export default function BillingTemplatesPage() {
   const navigate = useNavigate();
@@ -82,8 +85,17 @@ export default function BillingTemplatesPage() {
     ifscCode: 'HDFC0003126',
     swiftCode: 'HDFCINBBXXX',
     branchName: 'MAHAD-4',
+    termsAndConditions: `1. Goods once sold will not be taken back.\n2. Interest @ 18% p.a. will be charged if the payment is not made within the stipulated time.\n3. Discrepancy if any, in billed item must be communicated within 7 days.\n4. Subject to 'Maharashtra' Jurisdiction only.`,
+    transport: 'BY ROAD',
+    airwayBillNo: '',
+    poNumberAndDate: '',
+    noOfPackages: '',
+    grossWeight: '',
+    contactNumber: '',
     items: [
-      { sn: 1, description: 'UN APPROVED BOX', subText: '', hsnCode: '48191010', qty: 1, unit: 'Pcs', price: 100, gstRate: 5, cgstRate: 2.5, sgstRate: 2.5, igstRate: 0 },
+      { sn: 1, description: 'UN APPROVED BOX X3', subText: '', hsnCode: '48191010', qty: 1, unit: 'Pcs', price: 110, gstRate: 5, cgstRate: 2.5, sgstRate: 2.5, igstRate: 0 },
+      { sn: 2, description: 'UN APPROVED BOX X6', subText: '', hsnCode: '48191010', qty: 1, unit: 'Pcs', price: 160, gstRate: 5, cgstRate: 2.5, sgstRate: 2.5, igstRate: 0 },
+      { sn: 3, description: 'UN APPROVED BOX X22', subText: '', hsnCode: '48191010', qty: 3, unit: 'Pcs', price: 270, gstRate: 5, cgstRate: 2.5, sgstRate: 2.5, igstRate: 0 },
     ],
   });
 
@@ -154,8 +166,17 @@ export default function BillingTemplatesPage() {
       ifscCode: 'HDFC0003126',
       swiftCode: 'HDFCINBBXXX',
       branchName: 'MAHAD-4',
+      termsAndConditions: `1. Goods once sold will not be taken back.\n2. Interest @ 18% p.a. will be charged if the payment is not made within the stipulated time.\n3. Discrepancy if any, in billed item must be communicated within 7 days.\n4. Subject to 'Maharashtra' Jurisdiction only.`,
+      transport: 'BY ROAD',
+      airwayBillNo: '',
+      poNumberAndDate: '',
+      noOfPackages: '',
+      grossWeight: '',
+      contactNumber: '',
       items: [
-        { sn: 1, description: 'UN APPROVED BOX', subText: '', hsnCode: '48191010', qty: 1, unit: 'Pcs', price: 100, gstRate: 5, cgstRate: 2.5, sgstRate: 2.5, igstRate: 0 },
+        { sn: 1, description: 'UN APPROVED BOX X3', subText: '', hsnCode: '48191010', qty: 1, unit: 'Pcs', price: 110, gstRate: 5, cgstRate: 2.5, sgstRate: 2.5, igstRate: 0 },
+        { sn: 2, description: 'UN APPROVED BOX X6', subText: '', hsnCode: '48191010', qty: 1, unit: 'Pcs', price: 160, gstRate: 5, cgstRate: 2.5, sgstRate: 2.5, igstRate: 0 },
+        { sn: 3, description: 'UN APPROVED BOX X22', subText: '', hsnCode: '48191010', qty: 3, unit: 'Pcs', price: 270, gstRate: 5, cgstRate: 2.5, sgstRate: 2.5, igstRate: 0 },
       ],
     });
     setIsEditingTemplate(true);
@@ -192,8 +213,15 @@ export default function BillingTemplatesPage() {
       ifscCode: comp.ifscCode || '',
       swiftCode: comp.swiftCode || '',
       branchName: comp.branchName || '',
+      termsAndConditions: p.termsAndConditions || `1. Goods once sold will not be taken back.\n2. Interest @ 18% p.a. will be charged if the payment is not made within the stipulated time.\n3. Discrepancy if any, in billed item must be communicated within 7 days.\n4. Subject to 'Maharashtra' Jurisdiction only.`,
+      transport: p.transport || '',
+      airwayBillNo: p.airwayBillNo || '',
+      poNumberAndDate: p.poNumberAndDate || '',
+      noOfPackages: p.noOfPackages || '',
+      grossWeight: p.grossWeight || '',
+      contactNumber: p.contactNumber || '',
       items: p.items && p.items.length > 0 ? p.items : [
-        { sn: 1, description: 'Item Description', subText: '', hsnCode: '48191010', qty: 1, unit: 'Pcs', price: 100, gstRate: 5, cgstRate: 2.5, sgstRate: 2.5, igstRate: 0 }
+        { sn: 1, description: 'UN APPROVED BOX X3', subText: '', hsnCode: '48191010', qty: 1, unit: 'Pcs', price: 110, gstRate: 5, cgstRate: 2.5, sgstRate: 2.5, igstRate: 0 },
       ],
     });
     setIsEditingTemplate(true);
@@ -292,6 +320,13 @@ export default function BillingTemplatesPage() {
         consigneeState: templateForm.consigneeState || templateForm.buyerState,
         consigneeGstin: templateForm.consigneeGstin || templateForm.buyerGstin,
       },
+      transport: templateForm.transport,
+      airwayBillNo: templateForm.airwayBillNo,
+      poNumberAndDate: templateForm.poNumberAndDate,
+      noOfPackages: templateForm.noOfPackages,
+      grossWeight: templateForm.grossWeight,
+      contactNumber: templateForm.contactNumber,
+      termsAndConditions: templateForm.termsAndConditions,
       items: templateForm.items,
     };
 
@@ -739,11 +774,40 @@ export default function BillingTemplatesPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Buyer */}
                   <div className="bg-slate-950/70 border border-slate-800 rounded p-4 space-y-3">
-                    <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                      <Building size={14} className="text-indigo-400" /> Default Buyer (Billed To)
-                    </h3>
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                        <Building size={14} className="text-indigo-400" /> Default Buyer (Billed To)
+                      </h3>
+                      {buyers.length > 0 && (
+                        <select
+                          className="text-xs bg-slate-900 border border-slate-700 text-indigo-300 rounded px-2 py-1 outline-none hover:border-indigo-500 focus:border-indigo-500 font-medium max-w-[210px] truncate"
+                          value=""
+                          onChange={(e) => {
+                            const found = buyers.find((b) => b.id === e.target.value || b.name === e.target.value);
+                            if (found) {
+                              setTemplateForm((prev) => ({
+                                ...prev,
+                                buyerName: found.name || '',
+                                buyerAddress: found.address || '',
+                                buyerState: found.state || 'Maharashtra (27)',
+                                buyerGstin: found.gstin || '',
+                                contactNumber: found.phone || prev.contactNumber,
+                              }));
+                            }
+                          }}
+                        >
+                          <option value="" disabled>-- Pick from Customer Directory ({buyers.length}) --</option>
+                          {buyers.map((b, i) => (
+                            <option key={b.id || i} value={b.id || b.name}>
+                              {b.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
                     <Input
                       label="Buyer Name"
+                      placeholder="e.g. DGR GLOBAL LOGISTICS"
                       value={templateForm.buyerName}
                       onChange={(e) => setTemplateForm({ ...templateForm, buyerName: e.target.value })}
                     />
@@ -752,6 +816,7 @@ export default function BillingTemplatesPage() {
                       <textarea
                         rows={3}
                         className="w-full p-2.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200"
+                        placeholder="Full billing address..."
                         value={templateForm.buyerAddress}
                         onChange={(e) => setTemplateForm({ ...templateForm, buyerAddress: e.target.value })}
                       />
@@ -764,6 +829,7 @@ export default function BillingTemplatesPage() {
                       />
                       <Input
                         label="GSTIN"
+                        placeholder="e.g. 27NSAPK0224B1Z7"
                         value={templateForm.buyerGstin}
                         onChange={(e) => setTemplateForm({ ...templateForm, buyerGstin: e.target.value })}
                       />
@@ -772,11 +838,56 @@ export default function BillingTemplatesPage() {
 
                   {/* Consignee */}
                   <div className="bg-slate-950/70 border border-slate-800 rounded p-4 space-y-3">
-                    <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                      <Truck size={14} className="text-indigo-400" /> Default Consignee (Shipped To)
-                    </h3>
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                        <Truck size={14} className="text-indigo-400" /> Default Consignee (Shipped To)
+                      </h3>
+                      <div className="flex items-center gap-2">
+                        {shippers.length > 0 && (
+                          <select
+                            className="text-xs bg-slate-900 border border-slate-700 text-emerald-300 rounded px-2 py-1 outline-none hover:border-emerald-500 focus:border-emerald-500 font-medium max-w-[170px] truncate"
+                            value=""
+                            onChange={(e) => {
+                              const found = shippers.find((s) => s.id === e.target.value || s.name === e.target.value);
+                              if (found) {
+                                setTemplateForm((prev) => ({
+                                  ...prev,
+                                  consigneeName: found.name || '',
+                                  consigneeAddress: found.address || '',
+                                  consigneeState: found.state || 'Maharashtra (27)',
+                                  consigneeGstin: found.gstin || '',
+                                }));
+                              }
+                            }}
+                          >
+                            <option value="" disabled>-- Pick Destination ({shippers.length}) --</option>
+                            {shippers.map((s, i) => (
+                              <option key={s.id || i} value={s.id || s.name}>
+                                {s.name}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                        <button
+                          type="button"
+                          className="text-xs text-indigo-400 hover:underline flex items-center gap-1 shrink-0"
+                          onClick={() =>
+                            setTemplateForm({
+                              ...templateForm,
+                              consigneeName: templateForm.buyerName,
+                              consigneeAddress: templateForm.buyerAddress,
+                              consigneeState: templateForm.buyerState,
+                              consigneeGstin: templateForm.buyerGstin,
+                            })
+                          }
+                        >
+                          <Copy size={11} /> Copy Buyer
+                        </button>
+                      </div>
+                    </div>
                     <Input
                       label="Destination Name"
+                      placeholder="e.g. DGR GLOBAL LOGISTICS"
                       value={templateForm.consigneeName}
                       onChange={(e) => setTemplateForm({ ...templateForm, consigneeName: e.target.value })}
                     />
@@ -808,35 +919,64 @@ export default function BillingTemplatesPage() {
                 <div className="bg-slate-950/70 border border-slate-800 rounded p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                      <FileText size={14} className="text-indigo-400" /> Default Goods & Services Line Items
+                      <FileText size={14} className="text-indigo-400" /> Default Goods & Services Line Items (Preset Items & UN Boxes)
                     </h3>
                     <Button size="sm" variant="secondary" onClick={handleAddTemplateItem} className="rounded text-xs">
                       <Plus size={13} className="mr-1 inline" /> Add Item
                     </Button>
                   </div>
 
-                  <div className="space-y-2.5">
+                  <div className="space-y-3">
                     {templateForm.items.map((item, idx) => (
-                      <div key={idx} className="p-3 bg-slate-900 border border-slate-800 rounded grid grid-cols-1 sm:grid-cols-12 gap-2 items-center text-xs">
-                        <div className="sm:col-span-5 space-y-1">
+                      <div key={idx} className="p-3 bg-slate-900 border border-slate-800 rounded space-y-2 text-xs">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-bold text-slate-400">#{idx + 1}</span>
+                          <button
+                            type="button"
+                            className="text-slate-400 hover:text-rose-400 transition-colors p-1"
+                            onClick={() => handleRemoveTemplateItem(idx)}
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           <input
                             type="text"
-                            placeholder="Description"
-                            className="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded text-slate-100"
+                            placeholder="Description (e.g. UN APPROVED BOX X3)"
+                            className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded text-slate-100 placeholder-slate-500"
                             value={item.description}
                             onChange={(e) => handleTemplateItemChange(idx, 'description', e.target.value)}
                           />
-                        </div>
-                        <div className="sm:col-span-2">
                           <input
                             type="text"
-                            placeholder="HSN/SAC"
+                            placeholder="Sub-text / UN Spec (e.g. UN 3465/6.1/III)"
+                            className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded text-slate-100 placeholder-slate-500"
+                            value={item.subText || ''}
+                            onChange={(e) => handleTemplateItemChange(idx, 'subText', e.target.value)}
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 items-center">
+                          <input
+                            type="text"
+                            placeholder="HSN/SAC (e.g. 48191010)"
                             className="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded text-slate-100"
                             value={item.hsnCode}
                             onChange={(e) => handleTemplateItemChange(idx, 'hsnCode', e.target.value)}
                           />
-                        </div>
-                        <div className="sm:col-span-2">
+                          <input
+                            type="number"
+                            placeholder="Qty"
+                            className="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded text-slate-100"
+                            value={item.qty}
+                            onChange={(e) => handleTemplateItemChange(idx, 'qty', parseFloat(e.target.value) || 0)}
+                          />
+                          <input
+                            type="text"
+                            placeholder="Unit (Pcs, Box, Trip)"
+                            className="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded text-slate-100"
+                            value={item.unit || 'Pcs'}
+                            onChange={(e) => handleTemplateItemChange(idx, 'unit', e.target.value)}
+                          />
                           <input
                             type="number"
                             placeholder="Price (₹)"
@@ -844,32 +984,67 @@ export default function BillingTemplatesPage() {
                             value={item.price}
                             onChange={(e) => handleTemplateItemChange(idx, 'price', parseFloat(e.target.value) || 0)}
                           />
-                        </div>
-                        <div className="sm:col-span-2">
-                          <select
-                            className="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded text-slate-100"
-                            value={item.gstRate}
-                            onChange={(e) => handleTemplateItemChange(idx, 'gstRate', e.target.value)}
-                          >
-                            <option value="0">0%</option>
-                            <option value="5">5%</option>
-                            <option value="12">12%</option>
-                            <option value="18">18%</option>
-                            <option value="28">28%</option>
-                          </select>
-                        </div>
-                        <div className="sm:col-span-1 text-center">
-                          <button
-                            type="button"
-                            className="text-slate-400 hover:text-rose-400 transition-colors p-1"
-                            onClick={() => handleRemoveTemplateItem(idx)}
-                          >
-                            <X size={15} />
-                          </button>
+                          <div>
+                            <GstRateSelect
+                              className="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded text-slate-100 font-medium"
+                              value={item.gstRate}
+                              onChange={(val) => handleTemplateItemChange(idx, 'gstRate', val)}
+                              compact
+                            />
+                          </div>
                         </div>
                       </div>
                     ))}
                   </div>
+                </div>
+
+                {/* Bank Account Details */}
+                <div className="bg-slate-950/70 border border-slate-800 rounded p-4 space-y-3">
+                  <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                    <CreditCard size={14} className="text-indigo-400" /> Bank Account Details
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <Input
+                      label="Bank Name"
+                      value={templateForm.bankName}
+                      onChange={(e) => setTemplateForm({ ...templateForm, bankName: e.target.value })}
+                    />
+                    <Input
+                      label="Account Number"
+                      value={templateForm.accountNumber}
+                      onChange={(e) => setTemplateForm({ ...templateForm, accountNumber: e.target.value })}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <Input
+                      label="RTGS / NEFT / IFSC"
+                      value={templateForm.ifscCode}
+                      onChange={(e) => setTemplateForm({ ...templateForm, ifscCode: e.target.value })}
+                    />
+                    <Input
+                      label="Swift Code"
+                      value={templateForm.swiftCode}
+                      onChange={(e) => setTemplateForm({ ...templateForm, swiftCode: e.target.value })}
+                    />
+                    <Input
+                      label="Branch Name"
+                      value={templateForm.branchName}
+                      onChange={(e) => setTemplateForm({ ...templateForm, branchName: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                {/* Default Terms & Conditions */}
+                <div className="bg-slate-950/70 border border-slate-800 rounded p-4 space-y-2">
+                  <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                    <FileText size={14} className="text-indigo-400" /> Default Terms & Conditions
+                  </h3>
+                  <textarea
+                    rows={4}
+                    className="w-full p-2.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200 font-mono"
+                    value={templateForm.termsAndConditions}
+                    onChange={(e) => setTemplateForm({ ...templateForm, termsAndConditions: e.target.value })}
+                  />
                 </div>
 
                 <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800">

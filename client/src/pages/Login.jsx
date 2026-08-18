@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Plane, Mail, Lock, AlertCircle } from 'lucide-react';
+import { toast } from 'react-toastify';
 import { useAuthStore } from '../store/authStore';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
@@ -18,10 +19,13 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-      await login(email, password);
+      const data = await login(email, password);
+      toast.success(`Welcome back, ${data?.user?.name || 'User'}!`);
       navigate('/');
     } catch (err) {
-      setError(err.message || 'Invalid email or password');
+      const msg = err.message || 'Invalid username/email or password';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

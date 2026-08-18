@@ -23,6 +23,7 @@ import {
 import { useDocumentStore } from '../store/documentStore';
 import { deleteDocument, parseInvoiceDocument } from '../services/documentService';
 import Button from '../components/ui/Button';
+import Pagination from '../components/ui/Pagination';
 
 function formatINR(val) {
   const num = parseFloat(val);
@@ -44,6 +45,10 @@ const EXPENSE_CATEGORIES = [
 export default function PurchaseBillsPage() {
   const navigate = useNavigate();
   const { documents, fetchDocuments, createDocument, updateDocument, isLoading } = useDocumentStore();
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Modal states
   const [modalOpen, setModalOpen] = useState(false);
@@ -89,6 +94,7 @@ export default function PurchaseBillsPage() {
     const val = e.target.value;
     setSearch(val);
     setAppliedFilters((prev) => ({ ...prev, search: val }));
+    setCurrentPage(1);
   };
 
   // Form State for creating/editing purchase bill
@@ -145,6 +151,7 @@ export default function PurchaseBillsPage() {
       startDate,
       endDate,
     });
+    setCurrentPage(1);
   };
 
   const handleResetFilters = () => {
@@ -163,11 +170,13 @@ export default function PurchaseBillsPage() {
     setStartDate('');
     setEndDate('');
     setAppliedFilters(resetState);
+    setCurrentPage(1);
   };
 
   const handleQuickStatusChange = (st) => {
     setStatusFilter(st);
     setAppliedFilters((prev) => ({ ...prev, statusFilter: st }));
+    setCurrentPage(1);
   };
 
   // Filtered list
@@ -225,6 +234,9 @@ export default function PurchaseBillsPage() {
   const totalExpenseAmount = purchaseBills.reduce((acc, d) => acc + (parseFloat(d.data?.grandTotal) || 0), 0);
   const pendingAmount = pendingBills.reduce((acc, d) => acc + (parseFloat(d.data?.grandTotal) || 0), 0);
   const paidAmount = paidBills.reduce((acc, d) => acc + (parseFloat(d.data?.grandTotal) || 0), 0);
+
+  // Paginate filtered results
+  const paginatedBills = filteredBills.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   // Form Handlers
   const handleOpenCreateModal = () => {
@@ -800,7 +812,7 @@ export default function PurchaseBillsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/80">
-                {filteredBills.map((doc) => {
+                {paginatedBills.map((doc) => {
                   const data = doc.data || {};
                   const grandTotal = data.grandTotal || 0;
                   const billNum = data.billNumber || doc.documentNumber || 'Bill';
@@ -907,6 +919,15 @@ export default function PurchaseBillsPage() {
                 })}
               </tbody>
             </table>
+
+            {/* Pagination Controls */}
+            <Pagination
+              currentPage={currentPage}
+              totalItems={filteredBills.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+            />
           </div>
         )}
       </div>

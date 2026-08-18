@@ -30,6 +30,7 @@ import PdfPreviewModal from '../components/ui/PdfPreviewModal';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import Input from '../components/ui/Input';
+import Pagination from '../components/ui/Pagination';
 
 function formatINR(val) {
   const num = parseFloat(val);
@@ -40,6 +41,10 @@ function formatINR(val) {
 export default function BillingPage() {
   const navigate = useNavigate();
   const { documents, fetchDocuments, isLoading, updateDocument } = useDocumentStore();
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Filter input states (staged until Applied)
   const [search, setSearch] = useState('');
@@ -76,6 +81,7 @@ export default function BillingPage() {
     const val = e.target.value;
     setSearch(val);
     setAppliedFilters((prev) => ({ ...prev, search: val }));
+    setCurrentPage(1);
   };
 
   const [selectedInvoice, setSelectedInvoice] = useState(null);
@@ -167,6 +173,7 @@ export default function BillingPage() {
       startDate,
       endDate,
     });
+    setCurrentPage(1);
   };
 
   const handleResetFilters = () => {
@@ -187,11 +194,13 @@ export default function BillingPage() {
     setStartDate('');
     setEndDate('');
     setAppliedFilters(resetState);
+    setCurrentPage(1);
   };
 
   const handleQuickStatusChange = (st) => {
     setStatusFilter(st);
     setAppliedFilters((prev) => ({ ...prev, statusFilter: st }));
+    setCurrentPage(1);
   };
 
   const handleKeyDown = (e) => {
@@ -277,6 +286,9 @@ export default function BillingPage() {
     const grandTotal = doc.data?.grandTotal || 0;
     return acc + (parseFloat(grandTotal) || 0);
   }, 0);
+
+  // Paginate filtered results
+  const paginatedInvoices = filteredInvoices.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const handlePrint = async (docId) => {
     setPrintingId(docId);
@@ -707,7 +719,7 @@ export default function BillingPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/80">
-                {filteredInvoices.map((doc) => {
+                {paginatedInvoices.map((doc) => {
                   const data = doc.data || {};
                   const items = data.items || [];
                   const grandTotal = data.grandTotal || 0;
@@ -836,6 +848,15 @@ export default function BillingPage() {
                 })}
               </tbody>
             </table>
+
+            {/* Pagination Controls */}
+            <Pagination
+              currentPage={currentPage}
+              totalItems={filteredInvoices.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+            />
           </div>
         )}
       </div>

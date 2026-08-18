@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Plane, User, Mail, Lock, Building, AlertCircle } from 'lucide-react';
+import { toast } from 'react-toastify';
 import { useAuthStore } from '../store/authStore';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
@@ -22,9 +23,12 @@ export default function Register() {
     setLoading(true);
     try {
       await register(form);
-      navigate('/login', { state: { message: 'Account created! Please sign in.' } });
+      toast.success('Account created successfully! Please sign in.');
+      navigate('/login');
     } catch (err) {
-      setError(err.message || 'Registration failed');
+      const msg = err.message || 'Registration failed';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
