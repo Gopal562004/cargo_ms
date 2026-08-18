@@ -4,6 +4,7 @@ import {
   ShoppingBag,
   Plus,
   RotateCw,
+  RotateCcw,
   Search,
   SlidersHorizontal,
   X,
@@ -19,9 +20,18 @@ import {
   Calendar,
   Sparkles,
   Loader2,
+  Bookmark,
+  Check,
+  Eye,
+  Activity,
+  History,
+  Tag,
+  ExternalLink,
+  ShieldCheck,
 } from 'lucide-react';
 import { useDocumentStore } from '../store/documentStore';
 import { deleteDocument, parseInvoiceDocument } from '../services/documentService';
+import { getSavedVendors, saveVendor } from '../services/billingProfileService';
 import Button from '../components/ui/Button';
 import Pagination from '../components/ui/Pagination';
 
@@ -29,6 +39,29 @@ function formatINR(val) {
   const num = parseFloat(val);
   if (isNaN(num)) return '0.00';
   return num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function addActivityLog(existingLogs = [], action, actor = 'Admin', details = '') {
+  const newLog = {
+    id: 'log_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+    timestamp: new Date().toISOString(),
+    action,
+    actor,
+    details,
+  };
+  return [newLog, ...(existingLogs || [])];
+}
+
+function formatActivityDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return d.toLocaleString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 const EXPENSE_CATEGORIES = [
@@ -51,10 +84,12 @@ export default function PurchaseBillsPage() {
   const [pageSize, setPageSize] = useState(10);
 
   // Modal states
+  const [viewDetailModal, setViewDetailModal] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingBill, setEditingBill] = useState(null);
   const [viewFileModal, setViewFileModal] = useState(null);
   const [recordPaymentModal, setRecordPaymentModal] = useState(null);
+  const [isEditingPayment, setIsEditingPayment] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -97,6 +132,13 @@ export default function PurchaseBillsPage() {
     setCurrentPage(1);
   };
 
+  // Vendor Templates state
+  const [savedVendors, setSavedVendors] = useState([]);
+  const [selectedVendorTemplateId, setSelectedVendorTemplateId] = useState('');
+  const [saveVendorToTemplatesChecked, setSaveVendorToTemplatesChecked] = useState(false);
+  const [vendorSaveSuccessToast, setVendorSaveSuccessToast] = useState('');
+  const [templateAutoFillToast, setTemplateAutoFillToast] = useState('');
+
   // Form State for creating/editing purchase bill
   const [formData, setFormData] = useState({
     vendorName: '',
@@ -120,8 +162,13 @@ export default function PurchaseBillsPage() {
     remarks: '',
   });
 
+  const loadVendors = () => {
+    setSavedVendors(getSavedVendors());
+  };
+
   useEffect(() => {
     fetchDocuments({ documentType: 'TAX_INVOICE', limit: 100, sortBy: 'createdAt', sortOrder: 'desc' });
+    loadVendors();
   }, []);
 
   // Filter documents for PURCHASE bills
@@ -243,6 +290,11 @@ export default function PurchaseBillsPage() {
     setEditingBill(null);
     setExtractSuccess('');
     setIsExtracting(false);
+    setSelectedVendorTemplateId('');
+    setTemplateAutoFillToast('');
+    setVendorSaveSuccessToast('');
+    setSaveVendorToTemplatesChecked(false);
+    loadVendors();
     setFormData({
       vendorName: '',
       vendorGstin: '',
@@ -267,10 +319,25 @@ export default function PurchaseBillsPage() {
     setModalOpen(true);
   };
 
+  const handleOpenDetailModal = (doc) => {
+    setViewDetailModal(doc);
+  };
+
+  const handleOpenPaymentModal = (doc) => {
+    const isAlreadyPaid = doc.status === 'COMPLETED' || doc.status === 'DELIVERED' || Boolean(doc.data?.transactionId);
+    setIsEditingPayment(!isAlreadyPaid);
+    setRecordPaymentModal(doc);
+  };
+
   const handleOpenEditModal = (doc) => {
     setEditingBill(doc);
     setExtractSuccess('');
     setIsExtracting(false);
+    setSelectedVendorTemplateId('');
+    setTemplateAutoFillToast('');
+    setVendorSaveSuccessToast('');
+    setSaveVendorToTemplatesChecked(false);
+    loadVendors();
     const data = doc.data || {};
     setFormData({
       vendorName: data.vendorName || '',
@@ -303,6 +370,82 @@ export default function PurchaseBillsPage() {
     return total > 0 ? total.toFixed(2) : '';
   };
 
+  const handleResetForm = () => {
+    setFormData({
+      vendorName: '',
+      vendorGstin: '',
+      vendorAddress: '',
+      billNumber: '',
+      billDate: new Date().toISOString().split('T')[0],
+      dueDate: '',
+      expenseCategory: 'DGD',
+      airwayBillNo: '',
+      description: '',
+      taxableAmount: '',
+      gstRate: 18,
+      grandTotal: '',
+      billFileBase64: null,
+      billFileName: '',
+      status: 'ISSUED',
+      paymentMode: 'NEFT_RTGS',
+      transactionId: '',
+      paidDate: '',
+      remarks: '',
+    });
+    setSelectedVendorTemplateId('');
+    setExtractSuccess('');
+    setTemplateAutoFillToast('');
+    setVendorSaveSuccessToast('');
+    setSaveVendorToTemplatesChecked(false);
+  };
+
+  // Vendor Template selection handler
+  const handleSelectVendorTemplate = (vendorId) => {
+    setSelectedVendorTemplateId(vendorId);
+    if (!vendorId) return;
+    const v = savedVendors.find((item) => item.id === vendorId);
+    if (v) {
+      setFormData((prev) => {
+        const updatedTaxable = prev.taxableAmount;
+        const updatedGstRate = v.defaultGstRate !== undefined ? v.defaultGstRate : prev.gstRate;
+        const newGrandTotal = updatedTaxable ? handleCalculateTotal(updatedTaxable, updatedGstRate) : prev.grandTotal;
+        return {
+          ...prev,
+          vendorName: v.name || prev.vendorName,
+          vendorGstin: v.gstin || prev.vendorGstin,
+          vendorAddress: v.address || prev.vendorAddress,
+          expenseCategory: v.category || prev.expenseCategory,
+          gstRate: updatedGstRate,
+          description: v.defaultDescription || prev.description,
+          grandTotal: newGrandTotal,
+        };
+      });
+      setTemplateAutoFillToast(`Loaded details from saved template: ${v.name}`);
+      setTimeout(() => setTemplateAutoFillToast(''), 4000);
+    }
+  };
+
+  // Save current manually entered vendor as reusable template
+  const handleSaveCurrentAsVendorTemplate = () => {
+    if (!formData.vendorName.trim()) {
+      alert('Please enter Vendor / Company Name first.');
+      return;
+    }
+    const newVendor = saveVendor({
+      name: formData.vendorName.trim(),
+      gstin: formData.vendorGstin.trim(),
+      address: formData.vendorAddress.trim(),
+      category: formData.expenseCategory || 'DGD',
+      defaultGstRate: formData.gstRate !== undefined ? formData.gstRate : 18,
+      defaultDescription: formData.description.trim(),
+    });
+    const updatedList = getSavedVendors();
+    setSavedVendors(updatedList);
+    setSelectedVendorTemplateId(newVendor.id);
+    setVendorSaveSuccessToast(`Vendor "${formData.vendorName}" saved to templates for 1-click reuse!`);
+    setTimeout(() => setVendorSaveSuccessToast(''), 4000);
+  };
+
   const triggerAutoExtraction = async (base64Data, fileName) => {
     setIsExtracting(true);
     setExtractSuccess('');
@@ -313,6 +456,7 @@ export default function PurchaseBillsPage() {
           ...prev,
           vendorName: extracted.vendorName || prev.vendorName,
           vendorGstin: extracted.vendorGstin || prev.vendorGstin,
+          vendorAddress: extracted.vendorAddress || prev.vendorAddress,
           billNumber: extracted.billNumber || prev.billNumber,
           billDate: extracted.billDate || prev.billDate,
           dueDate: extracted.dueDate || prev.dueDate,
@@ -367,6 +511,33 @@ export default function PurchaseBillsPage() {
     setSaving(true);
     try {
       const grandTotalNum = parseFloat(formData.grandTotal) || parseFloat(formData.taxableAmount) || 0;
+      
+      let logs = [];
+      if (editingBill) {
+        const existingLogs = editingBill.data?.activityLogs || [];
+        logs = addActivityLog(
+          existingLogs,
+          'UPDATED',
+          'Admin',
+          `Bill #${formData.billNumber} modified (Taxable: ₹${formatINR(formData.taxableAmount)}, Total: ₹${formatINR(grandTotalNum)})`
+        );
+      } else {
+        logs = addActivityLog(
+          [],
+          'CREATED',
+          'Admin',
+          `Purchase Bill #${formData.billNumber} recorded from ${formData.vendorName} (Amount: ₹${formatINR(grandTotalNum)})`
+        );
+        if (formData.transactionId) {
+          logs = addActivityLog(
+            logs,
+            'PAYMENT_RECORDED',
+            'Admin',
+            `Payment recorded via ${formData.paymentMode} (Ref: ${formData.transactionId})`
+          );
+        }
+      }
+
       const payloadData = {
         invoiceKind: 'PURCHASE',
         vendorName: formData.vendorName.trim(),
@@ -387,6 +558,7 @@ export default function PurchaseBillsPage() {
         transactionId: formData.transactionId,
         paidDate: formData.paidDate,
         remarks: formData.remarks,
+        activityLogs: logs,
         paymentInfo: formData.transactionId ? {
           paymentMode: formData.paymentMode,
           transactionId: formData.transactionId,
@@ -398,6 +570,19 @@ export default function PurchaseBillsPage() {
 
       const docStatus = formData.status || (formData.transactionId ? 'COMPLETED' : 'ISSUED');
 
+      // Auto-save vendor to templates directory if requested
+      if (saveVendorToTemplatesChecked && formData.vendorName.trim()) {
+        saveVendor({
+          name: formData.vendorName.trim(),
+          gstin: formData.vendorGstin.trim(),
+          address: formData.vendorAddress.trim(),
+          category: formData.expenseCategory || 'DGD',
+          defaultGstRate: formData.gstRate !== undefined ? formData.gstRate : 18,
+          defaultDescription: formData.description.trim(),
+        });
+        loadVendors();
+      }
+
       if (editingBill) {
         await updateDocument(editingBill.id, {
           title: `Purchase Bill ${formData.billNumber} (${formData.vendorName})`,
@@ -407,6 +592,14 @@ export default function PurchaseBillsPage() {
           data: payloadData,
         });
         setSuccessMessage(`Purchase Bill #${formData.billNumber} updated successfully!`);
+        if (viewDetailModal && viewDetailModal.id === editingBill.id) {
+          setViewDetailModal({
+            ...viewDetailModal,
+            status: docStatus,
+            documentNumber: formData.billNumber,
+            data: payloadData,
+          });
+        }
       } else {
         await createDocument({
           documentType: 'TAX_INVOICE',
@@ -432,13 +625,28 @@ export default function PurchaseBillsPage() {
     const target = purchaseBills.find((i) => i.id === docId);
     if (!target) return;
     const currentData = target.data || {};
+    const existingLogs = currentData.activityLogs || [];
+    const updatedLogs = addActivityLog(
+      existingLogs,
+      'PAYMENT_RECORDED',
+      'Admin',
+      `Payment settled via ${paymentInfo.paymentMode} (Txn Ref / UTR: ${paymentInfo.transactionId || 'N/A'}, Paid Date: ${paymentInfo.paymentDate || new Date().toISOString().split('T')[0]})`
+    );
+
     const updatedData = {
       ...currentData,
       transactionId: paymentInfo.transactionId,
       paymentMode: paymentInfo.paymentMode,
       paidDate: paymentInfo.paymentDate,
       remarks: paymentInfo.remarks,
-      paymentInfo,
+      activityLogs: updatedLogs,
+      paymentInfo: {
+        paymentMode: paymentInfo.paymentMode,
+        transactionId: paymentInfo.transactionId,
+        paymentDate: paymentInfo.paymentDate,
+        amountPaid: currentData.grandTotal || 0,
+        remarks: paymentInfo.remarks,
+      },
     };
     await updateDocument(docId, {
       data: updatedData,
@@ -447,6 +655,13 @@ export default function PurchaseBillsPage() {
     });
     setSuccessMessage(`Payment recorded for Vendor Bill #${target.documentNumber}! Status updated to Paid.`);
     setRecordPaymentModal(null);
+    if (viewDetailModal && viewDetailModal.id === docId) {
+      setViewDetailModal({
+        ...viewDetailModal,
+        status: 'COMPLETED',
+        data: updatedData,
+      });
+    }
     fetchDocuments({ documentType: 'TAX_INVOICE', limit: 100, sortBy: 'createdAt', sortOrder: 'desc' });
   };
 
@@ -826,7 +1041,7 @@ export default function PurchaseBillsPage() {
                         <button
                           type="button"
                           className="hover:text-indigo-400 transition-colors text-left font-mono underline decoration-dotted underline-offset-4"
-                          onClick={() => handleOpenEditModal(doc)}
+                          onClick={() => handleOpenDetailModal(doc)}
                         >
                           {billNum}
                         </button>
@@ -869,6 +1084,16 @@ export default function PurchaseBillsPage() {
                       </td>
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          {/* View Details & Activity Logs */}
+                          <button
+                            type="button"
+                            className="p-1.5 text-slate-400 hover:text-indigo-400 hover:bg-slate-800 rounded transition-colors"
+                            onClick={() => handleOpenDetailModal(doc)}
+                            title="View Bill Details & Activity Logs"
+                          >
+                            <Eye size={15} />
+                          </button>
+
                           {/* Attached Bill Viewer */}
                           {data.billFileBase64 && (
                             <button
@@ -932,9 +1157,338 @@ export default function PurchaseBillsPage() {
         )}
       </div>
 
+      {/* Modal: View Purchase Bill Details (Read-Only) & Activity Logs */}
+      {viewDetailModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-sm animate-fade-in overflow-y-auto custom-modal-scroll" onClick={() => setViewDetailModal(null)}>
+          <div className="bg-slate-900 border border-slate-800 rounded-md max-w-3xl w-full p-5 sm:p-6 shadow-2xl space-y-5 my-auto max-h-[92vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3.5 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
+                  <ShoppingBag size={20} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-base font-bold text-slate-100 tracking-tight font-mono">
+                      Purchase Bill #{viewDetailModal.data?.billNumber || viewDetailModal.documentNumber}
+                    </h2>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
+                      (viewDetailModal.status === 'COMPLETED' || viewDetailModal.status === 'DELIVERED')
+                        ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                        : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                    }`}>
+                      {(viewDetailModal.status === 'COMPLETED' || viewDetailModal.status === 'DELIVERED') ? 'PAID' : 'PENDING PAYMENT'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Vendor: <strong className="text-slate-200">{viewDetailModal.data?.vendorName || 'Unspecified'}</strong>
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons in Header */}
+              <div className="flex items-center gap-2">
+                {!(viewDetailModal.status === 'COMPLETED' || viewDetailModal.status === 'DELIVERED') && (
+                  <button
+                    type="button"
+                    onClick={() => handleOpenPaymentModal(viewDetailModal)}
+                    className="text-xs px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 rounded transition-all font-semibold flex items-center gap-1.5 shadow-sm"
+                  >
+                    <CreditCard size={13} />
+                    <span>Record Payment</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleOpenEditModal(viewDetailModal);
+                    setViewDetailModal(null);
+                  }}
+                  title="Edit Purchase Bill"
+                  className="text-xs px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 rounded transition-all font-semibold flex items-center gap-1.5 shadow-sm"
+                >
+                  <Pencil size={13} />
+                  <span>Edit Bill</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewDetailModal(null)}
+                  className="text-slate-400 hover:text-white p-1.5 hover:bg-slate-800 rounded transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Read-Only Modal Body - Zero Input Fields */}
+            <div className="flex-1 overflow-y-auto space-y-4 pr-1.5 text-xs custom-modal-scroll">
+              {/* Key Metrics Highlight */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="p-3 bg-slate-950/70 border border-slate-800 rounded">
+                  <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Grand Total Amount</div>
+                  <div className="text-lg font-bold font-mono mt-0.5 text-emerald-400">
+                    ₹{formatINR(viewDetailModal.data?.grandTotal || 0)}
+                  </div>
+                </div>
+
+                <div className="p-3 bg-slate-950/70 border border-slate-800 rounded">
+                  <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Taxable Amount</div>
+                  <div className="text-base font-bold text-slate-100 font-mono mt-0.5">
+                    ₹{formatINR(viewDetailModal.data?.taxableAmount || 0)}
+                  </div>
+                </div>
+
+                <div className="p-3 bg-slate-950/70 border border-slate-800 rounded">
+                  <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">GST Rate</div>
+                  <div className="text-base font-bold text-slate-100 font-mono mt-0.5 text-indigo-400">
+                    {viewDetailModal.data?.gstRate !== undefined ? `${viewDetailModal.data?.gstRate}%` : '18%'}
+                  </div>
+                </div>
+
+                <div className="p-3 bg-slate-950/70 border border-slate-800 rounded">
+                  <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Expense Category</div>
+                  <div className="text-xs font-semibold text-slate-200 mt-1 truncate">
+                    {EXPENSE_CATEGORIES.find((c) => c.id === viewDetailModal.data?.expenseCategory)?.label?.split(' ')[0] || 'Expense'}
+                  </div>
+                </div>
+              </div>
+
+              {/* 2-Column Info Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Left Card: Vendor Details */}
+                <div className="p-4 bg-slate-950/70 border border-slate-800 rounded space-y-2.5">
+                  <div className="flex items-center gap-1.5 text-slate-300 font-semibold text-[11px] uppercase tracking-wider border-b border-slate-800/80 pb-1.5">
+                    <Building size={14} className="text-indigo-400" /> Vendor / Supplier Information
+                  </div>
+                  <div className="space-y-2 text-xs">
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">Company / Vendor Name</span>
+                      <span className="text-slate-100 font-semibold">{viewDetailModal.data?.vendorName || '-'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">Vendor GSTIN</span>
+                      <span className="text-slate-200 font-mono">{viewDetailModal.data?.vendorGstin || 'Not specified'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">Vendor Address</span>
+                      <span className="text-slate-300">{viewDetailModal.data?.vendorAddress || 'Not specified'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Card: Invoice & Shipment Details */}
+                <div className="p-4 bg-slate-950/70 border border-slate-800 rounded space-y-2.5">
+                  <div className="flex items-center gap-1.5 text-slate-300 font-semibold text-[11px] uppercase tracking-wider border-b border-slate-800/80 pb-1.5">
+                    <FileText size={14} className="text-indigo-400" /> Invoice & Shipment Details
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">Vendor Bill / Invoice #</span>
+                      <span className="text-slate-100 font-mono font-semibold">{viewDetailModal.data?.billNumber || viewDetailModal.documentNumber}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">Bill Date</span>
+                      <span className="text-slate-200 font-mono">{viewDetailModal.data?.billDate || '-'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">Payment Due Date</span>
+                      <span className="text-slate-200 font-mono">{viewDetailModal.data?.dueDate || 'None specified'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">Linked AWB / Ref</span>
+                      <span className="text-slate-200 font-mono">{viewDetailModal.data?.airwayBillNo || '-'}</span>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-slate-400 block text-[10px]">Service / Product Description</span>
+                      <span className="text-slate-300">{viewDetailModal.data?.description || 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Settlement Card */}
+              <div className="p-4 bg-slate-950/70 border border-slate-800 rounded space-y-2.5">
+                <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
+                  <div className="flex items-center gap-1.5 text-slate-300 font-semibold text-[11px] uppercase tracking-wider">
+                    <CreditCard size={14} className="text-indigo-400" /> Payment & Settlement Information
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase ${
+                      (viewDetailModal.status === 'COMPLETED' || viewDetailModal.status === 'DELIVERED')
+                        ? 'bg-emerald-500/15 text-emerald-400'
+                        : 'bg-amber-500/15 text-amber-400'
+                    }`}>
+                      {(viewDetailModal.status === 'COMPLETED' || viewDetailModal.status === 'DELIVERED') ? 'Settled / Paid' : 'Unpaid (Pending)'}
+                    </span>
+                    {(viewDetailModal.status === 'COMPLETED' || viewDetailModal.status === 'DELIVERED') && (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenPaymentModal(viewDetailModal)}
+                        className="text-[10px] text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1"
+                      >
+                        <Pencil size={11} /> Edit Payment
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {viewDetailModal.data?.transactionId || (viewDetailModal.status === 'COMPLETED' || viewDetailModal.status === 'DELIVERED') ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">Payment Mode</span>
+                      <span className="text-slate-100 font-medium">{viewDetailModal.data?.paymentMode || 'Bank Transfer (NEFT/RTGS/IMPS)'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">UTR / Reference #</span>
+                      <span className="text-slate-100 font-mono font-semibold text-emerald-400">
+                        {viewDetailModal.data?.transactionId || 'Recorded'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">Payment Settlement Date</span>
+                      <span className="text-slate-200 font-mono">{viewDetailModal.data?.paidDate || viewDetailModal.data?.billDate || '-'}</span>
+                    </div>
+                    {viewDetailModal.data?.remarks && (
+                      <div className="col-span-full">
+                        <span className="text-slate-400 block text-[10px]">Payment Notes / Remarks</span>
+                        <span className="text-slate-300 italic">{viewDetailModal.data?.remarks}</span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between p-2.5 bg-amber-500/10 border border-amber-500/20 rounded">
+                    <span className="text-amber-300 text-xs">This bill is currently unpaid. Record payment once settled.</span>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenPaymentModal(viewDetailModal)}
+                      className="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded font-semibold text-xs transition-colors"
+                    >
+                      Record Payment Now
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Attached Bill Document Preview */}
+              {viewDetailModal.data?.billFileBase64 && (
+                <div className="p-4 bg-slate-950/70 border border-slate-800 rounded flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 truncate">
+                    <Paperclip size={16} className="text-indigo-400 shrink-0" />
+                    <div>
+                      <span className="text-slate-200 font-semibold block truncate max-w-[280px]">
+                        {viewDetailModal.data?.billFileName || 'Attached Invoice Document'}
+                      </span>
+                      <span className="text-[10px] text-slate-400">Original scanned / uploaded vendor bill</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setViewFileModal(viewDetailModal.data?.billFileBase64)}
+                    className="px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 rounded text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0"
+                  >
+                    <ExternalLink size={13} /> View Full Document
+                  </button>
+                </div>
+              )}
+
+              {/* Activity Logs & Audit History Section */}
+              <div className="p-4 bg-slate-950/70 border border-slate-800 rounded space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                  <div className="flex items-center gap-1.5 text-slate-200 font-semibold text-xs uppercase tracking-wider">
+                    <Activity size={14} className="text-indigo-400" />
+                    <span>Activity Logs & Audit History</span>
+                  </div>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    {((viewDetailModal.data?.activityLogs || []).length || 1)} events recorded
+                  </span>
+                </div>
+
+                <div className="space-y-2 pt-1">
+                  {((viewDetailModal.data?.activityLogs || []).length > 0
+                    ? viewDetailModal.data.activityLogs
+                    : [
+                        {
+                          id: 'initial',
+                          timestamp: viewDetailModal.createdAt || new Date().toISOString(),
+                          action: 'CREATED',
+                          actor: 'Admin',
+                          details: `Purchase Bill #${viewDetailModal.data?.billNumber || viewDetailModal.documentNumber} recorded for ₹${formatINR(viewDetailModal.data?.grandTotal || 0)}`,
+                        },
+                      ]
+                  ).map((log, idx) => (
+                    <div key={log.id || idx} className="flex items-start gap-3 p-2.5 bg-slate-900 border border-slate-800/80 rounded text-xs">
+                      <div className={`w-6 h-6 rounded flex items-center justify-center shrink-0 mt-0.5 ${
+                        log.action === 'PAYMENT_RECORDED'
+                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                          : log.action === 'CREATED'
+                          ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                          : 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
+                      }`}>
+                        {log.action === 'PAYMENT_RECORDED' ? <CreditCard size={12} /> : log.action === 'CREATED' ? <Plus size={12} /> : <History size={12} />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <span className="font-semibold text-slate-200 text-[11px]">
+                            {log.action === 'PAYMENT_RECORDED' ? 'Vendor Payment Recorded' : log.action === 'CREATED' ? 'Purchase Bill Created' : 'Bill Details Updated'}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-mono">
+                            {formatActivityDate(log.timestamp)}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-300 mt-0.5 break-words">
+                          {log.details}
+                        </p>
+                        <div className="text-[10px] text-slate-500 mt-0.5">
+                          By <span className="text-slate-400 font-medium">{log.actor || 'Admin'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between gap-2 pt-3 shrink-0 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => {
+                  handleDeleteBill(viewDetailModal.id);
+                  setViewDetailModal(null);
+                }}
+                className="text-xs px-3 py-2 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded transition-colors flex items-center gap-1 font-medium"
+              >
+                <Trash2 size={13} /> Delete Bill
+              </button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="secondary"
+                  type="button"
+                  onClick={() => setViewDetailModal(null)}
+                  className="rounded text-xs px-4 py-2"
+                >
+                  Close
+                </Button>
+                <Button
+                  variant="primary"
+                  type="button"
+                  onClick={() => {
+                    handleOpenEditModal(viewDetailModal);
+                    setViewDetailModal(null);
+                  }}
+                  className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-4 py-2"
+                >
+                  <Pencil size={13} className="mr-1.5 inline" /> Edit Purchase Bill
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal: Create / Edit Purchase Bill - WITH SMART OCR / AUTO-EXTRACT */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in overflow-y-auto custom-modal-scroll">
           <div className="bg-slate-900 border border-slate-800 rounded-md max-w-3xl w-full p-5 sm:p-6 shadow-2xl space-y-5 my-auto max-h-[92vh] flex flex-col">
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-slate-800 pb-3.5 shrink-0">
@@ -951,13 +1505,24 @@ export default function PurchaseBillsPage() {
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setModalOpen(false)}
-                className="text-slate-400 hover:text-white p-1.5 hover:bg-slate-800 rounded transition-colors"
-              >
-                <X size={18} />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleResetForm}
+                  title="Reset / clear form fields"
+                  className="text-slate-400 hover:text-indigo-300 text-xs px-2.5 py-1.5 bg-slate-800/90 hover:bg-slate-800 rounded transition-colors flex items-center gap-1.5 font-medium border border-slate-700/60"
+                >
+                  <RotateCcw size={13} className="text-amber-400" />
+                  <span>Reset Form</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(false)}
+                  className="text-slate-400 hover:text-white p-1.5 hover:bg-slate-800 rounded transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
             </div>
 
             {/* AI Extraction State Alerts */}
@@ -987,7 +1552,7 @@ export default function PurchaseBillsPage() {
             )}
 
             {/* Modal Scrollable Form Body */}
-            <form onSubmit={handleSaveBill} className="flex-1 overflow-y-auto space-y-4 pr-1 text-xs">
+            <form onSubmit={handleSaveBill} className="flex-1 overflow-y-auto space-y-4 pr-1.5 text-xs custom-modal-scroll">
               {/* Primary Section: Document Attachment & Auto-Fill Trigger */}
               <div className="p-4 bg-slate-950/70 border border-slate-800 rounded space-y-3">
                 <div className="flex items-center justify-between">
@@ -1049,8 +1614,62 @@ export default function PurchaseBillsPage() {
 
               {/* Section 2: Vendor Information */}
               <div className="p-4 bg-slate-950/70 border border-slate-800 rounded space-y-3">
-                <div className="flex items-center gap-1.5 text-slate-300 font-semibold text-[11px] uppercase tracking-wider">
-                  <Building size={14} className="text-indigo-400" /> 2. Vendor / Supplier Information
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-1.5 text-slate-300 font-semibold text-[11px] uppercase tracking-wider">
+                    <Building size={14} className="text-indigo-400" /> 2. Vendor / Supplier Information
+                  </div>
+                  <span className="text-[10px] text-slate-400">
+                    Direct template autofill or manual entry
+                  </span>
+                </div>
+
+                {/* Quick Autofill from Saved Vendor Templates */}
+                <div className="p-2.5 bg-indigo-950/40 border border-indigo-500/25 rounded-md space-y-2">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 text-xs text-indigo-300 font-medium shrink-0">
+                      <Bookmark size={13} className="text-amber-400 shrink-0" />
+                      <span>Auto-Fill from Saved Vendor Template:</span>
+                    </div>
+                    <div className="flex items-center gap-2 w-full sm:w-auto flex-1 sm:max-w-md">
+                      <select
+                        value={selectedVendorTemplateId}
+                        onChange={(e) => handleSelectVendorTemplate(e.target.value)}
+                        className="w-full px-2.5 py-1.5 bg-slate-900 border border-indigo-500/40 rounded text-xs text-slate-100 focus:outline-none focus:border-indigo-400"
+                      >
+                        <option value="">-- Choose from Saved Vendor Templates ({savedVendors.length}) --</option>
+                        {savedVendors.map((v) => (
+                          <option key={v.id} value={v.id}>
+                            [{v.category || 'VENDOR'}] {v.name} {v.gstin ? `• GST: ${v.gstin}` : ''}
+                          </option>
+                        ))}
+                      </select>
+                      {selectedVendorTemplateId && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedVendorTemplateId('');
+                            setTemplateAutoFillToast('');
+                          }}
+                          className="text-slate-400 hover:text-white text-xs px-2 py-1 bg-slate-800 rounded shrink-0"
+                          title="Clear template selection"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {templateAutoFillToast && (
+                    <div className="text-[11px] text-emerald-400 flex items-center gap-1.5 animate-fade-in font-medium">
+                      <Check size={13} className="shrink-0" /> {templateAutoFillToast}
+                    </div>
+                  )}
+
+                  {vendorSaveSuccessToast && (
+                    <div className="text-[11px] text-emerald-400 flex items-center gap-1.5 animate-fade-in font-medium">
+                      <Check size={13} className="shrink-0" /> {vendorSaveSuccessToast}
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -1061,7 +1680,10 @@ export default function PurchaseBillsPage() {
                     <input
                       type="text"
                       value={formData.vendorName}
-                      onChange={(e) => setFormData({ ...formData, vendorName: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, vendorName: e.target.value });
+                        if (selectedVendorTemplateId) setSelectedVendorTemplateId('');
+                      }}
                       placeholder="e.g. DGR Global Logistics / DG Box Supplier"
                       className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
                       required
@@ -1081,6 +1703,36 @@ export default function PurchaseBillsPage() {
                     />
                   </div>
                 </div>
+
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                    Vendor Address (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.vendorAddress}
+                    onChange={(e) => setFormData({ ...formData, vendorAddress: e.target.value })}
+                    placeholder="e.g. Shop No. 2, Near Sahar Cargo Complex, Andheri (E), Mumbai"
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+                  />
+                </div>
+
+                {/* Quick Save as Template button when filling manually */}
+                {formData.vendorName.trim() && (
+                  <div className="flex items-center justify-between pt-1 text-[11px]">
+                    <span className="text-slate-400 text-[10px]">
+                      Filling manually? Save this vendor details to templates for 1-click autofill in future bills.
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleSaveCurrentAsVendorTemplate}
+                      className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-indigo-300 hover:text-white border border-slate-700 rounded text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0"
+                    >
+                      <Bookmark size={12} className="text-amber-400" />
+                      Save as Vendor Template
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Section 3: Bill Identification & Dates */}
@@ -1303,27 +1955,50 @@ export default function PurchaseBillsPage() {
                     </div>
                   </div>
                 )}
+
+                {/* Checkbox to auto-save vendor to templates */}
+                <div className="pt-2 border-t border-slate-800/80">
+                  <label className="flex items-center gap-2 text-xs text-slate-300 hover:text-white cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={saveVendorToTemplatesChecked}
+                      onChange={(e) => setSaveVendorToTemplatesChecked(e.target.checked)}
+                      className="rounded text-indigo-600 focus:ring-0 w-3.5 h-3.5 bg-slate-900 border-slate-700 cursor-pointer"
+                    />
+                    <span>Save / update this vendor in saved templates directory for 1-click reuse</span>
+                  </label>
+                </div>
               </div>
 
               {/* Form Actions Footer */}
-              <div className="flex items-center justify-end gap-2 pt-2 shrink-0 border-t border-slate-800">
+              <div className="flex items-center justify-between gap-2 pt-2 shrink-0 border-t border-slate-800">
                 <Button
                   variant="secondary"
                   type="button"
-                  onClick={() => setModalOpen(false)}
-                  className="rounded text-xs px-4 py-2"
+                  onClick={handleResetForm}
+                  className="rounded text-xs px-3.5 py-2 text-slate-300 hover:text-white"
                 >
-                  Cancel
+                  <RotateCcw size={13} className="mr-1.5 inline text-amber-400" /> Reset Form
                 </Button>
-                <Button
-                  variant="primary"
-                  type="submit"
-                  loading={saving}
-                  className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-5 py-2 shadow-sm"
-                >
-                  <Save size={14} className="mr-1.5 inline" />
-                  {editingBill ? 'Update Purchase Bill' : 'Save Purchase Bill'}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="secondary"
+                    type="button"
+                    onClick={() => setModalOpen(false)}
+                    className="rounded text-xs px-4 py-2"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="primary"
+                    type="submit"
+                    loading={saving}
+                    className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-5 py-2 shadow-sm"
+                  >
+                    <Save size={14} className="mr-1.5 inline" />
+                    {editingBill ? 'Update Purchase Bill' : 'Save Purchase Bill'}
+                  </Button>
+                </div>
               </div>
             </form>
           </div>
@@ -1353,93 +2028,175 @@ export default function PurchaseBillsPage() {
         </div>
       )}
 
-      {/* Modal: Quick Record Payment */}
-      {recordPaymentModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-slate-900 border border-slate-800 rounded-md max-w-md w-full p-5 shadow-xl space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div>
-                <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                  <CreditCard size={17} className="text-indigo-400" /> Record Vendor Payment
-                </h2>
-                <p className="text-xs text-slate-400 font-mono mt-0.5">
-                  Vendor Bill #{recordPaymentModal.data?.billNumber || recordPaymentModal.documentNumber} ({recordPaymentModal.data?.vendorName})
-                </p>
+      {/* Modal: Quick Record / Update Payment */}
+      {recordPaymentModal && (() => {
+        const isAlreadyPaid = recordPaymentModal.status === 'COMPLETED' || recordPaymentModal.status === 'DELIVERED' || Boolean(recordPaymentModal.data?.transactionId);
+        const data = recordPaymentModal.data || {};
+        const currentMode = data.paymentMode || 'NEFT_RTGS';
+        const currentTxn = data.transactionId || data.paymentInfo?.transactionId || '';
+        const currentPaidDate = data.paidDate || data.paymentInfo?.paymentDate || data.billDate || new Date().toISOString().split('T')[0];
+        const currentRemarks = data.remarks || data.paymentInfo?.remarks || '';
+        const billTotal = data.grandTotal || 0;
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in" onClick={() => setRecordPaymentModal(null)}>
+            <div className="bg-slate-900 border border-slate-800 rounded-md max-w-md w-full p-5 shadow-xl space-y-4" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
+                      <CreditCard size={17} className="text-indigo-400" />
+                      <span>{isAlreadyPaid ? 'Vendor Payment Details' : 'Record Vendor Payment'}</span>
+                    </h2>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
+                      isAlreadyPaid ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                    }`}>
+                      {isAlreadyPaid ? 'PAID' : 'PENDING'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 font-mono mt-0.5">
+                    Vendor Bill #{data.billNumber || recordPaymentModal.documentNumber} ({data.vendorName || 'Unspecified'})
+                  </p>
+                </div>
+                <button onClick={() => setRecordPaymentModal(null)} className="text-slate-400 hover:text-white p-1">
+                  <X size={18} />
+                </button>
               </div>
-              <button onClick={() => setRecordPaymentModal(null)} className="text-slate-400 hover:text-white p-1">
-                <X size={18} />
-              </button>
+
+              {!isEditingPayment ? (
+                /* Read-Only Payment View - ZERO INPUT FIELDS */
+                <div className="space-y-3.5 text-xs">
+                  <div className="p-3.5 bg-slate-950 border border-slate-800 rounded space-y-3">
+                    <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                      <span className="text-slate-400 text-[10px] uppercase font-semibold">Payment Status</span>
+                      <span className="px-2 py-0.5 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded text-[10px] font-bold uppercase flex items-center gap-1">
+                        <CheckCircle2 size={11} /> Settled / Paid
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div>
+                        <span className="text-slate-400 block text-[10px]">Payment Mode</span>
+                        <span className="text-slate-100 font-semibold">{currentMode === 'NEFT_RTGS' ? 'Bank Transfer (NEFT/RTGS/IMPS)' : currentMode}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[10px]">Settled Amount</span>
+                        <span className="text-emerald-400 font-mono font-bold">₹{formatINR(billTotal)}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[10px]">Transaction UTR / Reference No.</span>
+                        <span className="text-emerald-400 font-mono font-semibold">{currentTxn || 'Recorded'}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[10px]">Settlement Date</span>
+                        <span className="text-slate-200 font-mono">{currentPaidDate}</span>
+                      </div>
+                      {currentRemarks && (
+                        <div className="col-span-2">
+                          <span className="text-slate-400 block text-[10px]">Notes / Remarks</span>
+                          <span className="text-slate-300 italic">{currentRemarks}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-800">
+                    <Button variant="secondary" type="button" onClick={() => setRecordPaymentModal(null)} className="rounded text-xs px-4 py-2">
+                      Close
+                    </Button>
+                    <Button
+                      variant="primary"
+                      type="button"
+                      onClick={() => setIsEditingPayment(true)}
+                      className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-4 py-2 shadow-sm"
+                    >
+                      <Pencil size={13} className="mr-1.5 inline" /> Edit Payment Details
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                /* Editable Form - Active when user clicks Edit or recording new payment */
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const formEl = e.target;
+                    const paymentInfo = {
+                      paymentMode: formEl.mode.value,
+                      transactionId: formEl.txn.value,
+                      paymentDate: formEl.pdate.value,
+                      remarks: formEl.remarks.value,
+                    };
+                    handleQuickRecordPayment(recordPaymentModal.id, paymentInfo);
+                  }}
+                  className="space-y-3.5 text-xs"
+                >
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-400 block mb-1">Payment Mode</label>
+                    <select
+                      name="mode"
+                      defaultValue={currentMode}
+                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                    >
+                      <option value="NEFT_RTGS">Bank Transfer (NEFT/RTGS/IMPS)</option>
+                      <option value="UPI">UPI / GPay / PhonePe</option>
+                      <option value="CHEQUE">Cheque</option>
+                      <option value="CASH">Cash</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-400 block mb-1">Transaction UTR / Reference No. *</label>
+                    <input
+                      name="txn"
+                      placeholder="e.g. UTR12345678"
+                      defaultValue={currentTxn}
+                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-400 block mb-1">Payment Date *</label>
+                    <input
+                      type="date"
+                      name="pdate"
+                      defaultValue={currentPaidDate}
+                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-400 block mb-1">Notes / Remarks</label>
+                    <textarea
+                      name="remarks"
+                      className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                      rows={2}
+                      placeholder="e.g. Settled full amount from HDFC current account"
+                      defaultValue={currentRemarks}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+                    {isAlreadyPaid ? (
+                      <Button variant="secondary" type="button" onClick={() => setIsEditingPayment(false)} className="rounded text-xs">
+                        Cancel
+                      </Button>
+                    ) : (
+                      <Button variant="secondary" type="button" onClick={() => setRecordPaymentModal(null)} className="rounded text-xs">
+                        Cancel
+                      </Button>
+                    )}
+                    <Button variant="primary" type="submit" className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-sm">
+                      <Save size={13} className="mr-1 inline" />
+                      {isAlreadyPaid ? 'Save Payment Updates' : 'Mark as Paid'}
+                    </Button>
+                  </div>
+                </form>
+              )}
             </div>
-
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                const formEl = e.target;
-                const paymentInfo = {
-                  paymentMode: formEl.mode.value,
-                  transactionId: formEl.txn.value,
-                  paymentDate: formEl.pdate.value,
-                  remarks: formEl.remarks.value,
-                };
-                handleQuickRecordPayment(recordPaymentModal.id, paymentInfo);
-              }}
-              className="space-y-3.5 text-xs"
-            >
-              <div>
-                <label className="text-[11px] font-semibold text-slate-400 block mb-1">Payment Mode</label>
-                <select name="mode" className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
-                  <option value="NEFT_RTGS">Bank Transfer (NEFT/RTGS/IMPS)</option>
-                  <option value="UPI">UPI / GPay / PhonePe</option>
-                  <option value="CHEQUE">Cheque</option>
-                  <option value="CASH">Cash</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-[11px] font-semibold text-slate-400 block mb-1">Transaction UTR / Reference No. *</label>
-                <input
-                  name="txn"
-                  placeholder="e.g. UTR12345678"
-                  defaultValue={recordPaymentModal.data?.transactionId || ''}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-[11px] font-semibold text-slate-400 block mb-1">Payment Date *</label>
-                <input
-                  type="date"
-                  name="pdate"
-                  defaultValue={recordPaymentModal.data?.paidDate || new Date().toISOString().split('T')[0]}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-[11px] font-semibold text-slate-400 block mb-1">Notes / Remarks</label>
-                <textarea
-                  name="remarks"
-                  className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-                  rows={2}
-                  placeholder="e.g. Settled full amount from HDFC current account"
-                  defaultValue={recordPaymentModal.data?.remarks || ''}
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
-                <Button variant="secondary" type="button" onClick={() => setRecordPaymentModal(null)} className="rounded text-xs">
-                  Cancel
-                </Button>
-                <Button variant="primary" type="submit" className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold">
-                  <Save size={13} className="mr-1 inline" /> Mark as Paid
-                </Button>
-              </div>
-            </form>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

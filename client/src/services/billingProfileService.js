@@ -498,3 +498,165 @@ export function deleteShipper(shipperId) {
 export function getDistinctParties() {
   return getSavedBuyers();
 }
+
+const VENDORS_STORAGE_KEY = 'cargo_billing_vendors_directory';
+
+export const DEFAULT_VENDORS = [
+  {
+    id: 'vendor_dgr_packaging',
+    name: 'DGR PACKAGING COMPANY',
+    address: 'SHOP NO.2, OPP. BLUE DART, NEAR SAHAR CARGO COMPLEX, ANDHERI (E), MUMBAI - 400 099',
+    state: 'Maharashtra (27)',
+    gstin: '27CBKPK7600K1ZE',
+    category: 'PACKAGING',
+    defaultGstRate: 18,
+    defaultDescription: 'UN Approved 4G Fibreboard Boxes, DG Packaging & Labeling Materials',
+    contactPerson: 'Mr Rajesh',
+    phone: '+91 022-26828108',
+    email: 'dgrpackaging@gmail.com',
+  },
+  {
+    id: 'vendor_dgr_global',
+    name: 'DGR GLOBAL LOGISTICS',
+    address: 'GROUND FLOOR ROOM -003, G M NAGAR NARANGI BYPASS ROAD, VIRAR EAST, PALGHAR - 401305',
+    state: 'Maharashtra (27)',
+    gstin: '27NSAPK0224B1Z7',
+    category: 'DGD',
+    defaultGstRate: 18,
+    defaultDescription: 'DGD Documentation Charges, DG Certification, Inspection & UN Packaging',
+    contactPerson: 'Sunil Gawas',
+    phone: '+91 9326392294',
+    email: 'dgr.export.logistics@gmail.com',
+  },
+  {
+    id: 'vendor_efficient',
+    name: 'EFFICIENT FREIGHT FORWARDERS PVT LTD',
+    address: '2nd Floor, Damji Shamji Corporate Square, Ghatkopar Andheri Link Road, Mumbai - 400077',
+    state: 'Maharashtra (27)',
+    gstin: '27AAECE7206P1Z9',
+    category: 'TRANSPORT',
+    defaultGstRate: 18,
+    defaultDescription: 'Airport Cartage, Local Transport & Cargo Handling Charges',
+    contactPerson: 'Mr Sunil',
+    phone: '9221876157',
+    email: 'ops@efficientfreight.com',
+  },
+  {
+    id: 'vendor_takai',
+    name: 'TAKAI CHEMTECH INTERNATIONAL PVT LTD',
+    address: 'A-218 Sagar Tech Plaza, Saki Naka Junction, Andheri Kurla Road, Andheri East Mumbai 400072',
+    state: 'Maharashtra (27)',
+    gstin: '27AAMCT0922D1Z1',
+    category: 'DGD',
+    defaultGstRate: 18,
+    defaultDescription: 'MSDS Verification & Dangerous Goods Testing Charges',
+    contactPerson: 'Accounts Dept',
+    phone: '+91 9820011223',
+    email: 'accounts@takaichem.com',
+  },
+  {
+    id: 'vendor_celebi',
+    name: 'CELEBI DELHI CARGO TERMINAL MANAGEMENT',
+    address: 'Cargo Terminal 2, IGI Airport, New Delhi - 110037',
+    state: 'Delhi (07)',
+    gstin: '07AABCC1234F1Z8',
+    category: 'AIR_FREIGHT',
+    defaultGstRate: 18,
+    defaultDescription: 'Terminal Handling Charges (THC) & Airline Cargo Security Screening',
+    contactPerson: 'Cargo Operations',
+    phone: '+91 11-49637000',
+    email: 'cargo@celebidelhi.com',
+  },
+  {
+    id: 'vendor_sai_warehouse',
+    name: 'SAI WAREHOUSE & LOGISTICS',
+    address: 'Gala no 2 Manish Estate, Chowdhary Compound, Purna Bhiwandi, Maharashtra',
+    state: 'Maharashtra (27)',
+    gstin: '27AAECE7206P1Z9',
+    category: 'WAREHOUSE',
+    defaultGstRate: 18,
+    defaultDescription: 'DG Storage, Palletization & Secure Strapping Charges',
+    contactPerson: 'Mr Sai',
+    phone: '9221876157',
+    email: 'sai.warehouse@logistics.in',
+  },
+  {
+    id: 'vendor_customs_clear',
+    name: 'SAHAR CUSTOMS CLEARING & BROKERAGE',
+    address: 'Air Cargo Complex, Sahar, Andheri (E), Mumbai - 400 099',
+    state: 'Maharashtra (27)',
+    gstin: '27AAACR1234F1Z5',
+    category: 'CUSTOMS',
+    defaultGstRate: 18,
+    defaultDescription: 'Customs DG Examination, EDI Assessment & Shipping Bill Clearance',
+    contactPerson: 'Customs Executive',
+    phone: '+91 9820123456',
+    email: 'customs.sahar@clearance.in',
+  },
+];
+
+/**
+ * Load all Vendor Profiles / Templates
+ */
+export function getSavedVendors() {
+  try {
+    const raw = localStorage.getItem(VENDORS_STORAGE_KEY);
+    if (!raw) {
+      localStorage.setItem(VENDORS_STORAGE_KEY, JSON.stringify(DEFAULT_VENDORS));
+      return DEFAULT_VENDORS;
+    }
+    const vendors = JSON.parse(raw);
+    if (!Array.isArray(vendors) || vendors.length === 0) {
+      localStorage.setItem(VENDORS_STORAGE_KEY, JSON.stringify(DEFAULT_VENDORS));
+      return DEFAULT_VENDORS;
+    }
+    return vendors;
+  } catch (err) {
+    console.error('Error loading vendors directory:', err);
+    return DEFAULT_VENDORS;
+  }
+}
+
+/**
+ * Save / Update Vendor Template
+ */
+export function saveVendor(vendor) {
+  const all = getSavedVendors();
+  const id = vendor.id || `vendor_${Date.now()}`;
+  const newVendor = {
+    ...vendor,
+    id,
+    updatedAt: new Date().toISOString(),
+  };
+
+  const existingIndex = all.findIndex(
+    (v) => v.id === id || (v.name && vendor.name && v.name.trim().toUpperCase() === vendor.name.trim().toUpperCase())
+  );
+  let updated;
+  if (existingIndex >= 0) {
+    updated = all.map((v, i) => (i === existingIndex ? { ...v, ...newVendor, id: v.id } : v));
+  } else {
+    updated = [newVendor, ...all];
+  }
+
+  localStorage.setItem(VENDORS_STORAGE_KEY, JSON.stringify(updated));
+  return newVendor;
+}
+
+/**
+ * Delete Vendor Template
+ */
+export function deleteVendor(vendorId) {
+  const all = getSavedVendors();
+  const filtered = all.filter((v) => v.id !== vendorId);
+  localStorage.setItem(VENDORS_STORAGE_KEY, JSON.stringify(filtered));
+  return true;
+}
+
+/**
+ * Reset vendors to defaults
+ */
+export function resetVendorsToDefault() {
+  localStorage.setItem(VENDORS_STORAGE_KEY, JSON.stringify(DEFAULT_VENDORS));
+  return DEFAULT_VENDORS;
+}

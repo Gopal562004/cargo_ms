@@ -20,6 +20,7 @@ import {
   Zap,
   Copy,
   CreditCard,
+  ShoppingBag,
 } from 'lucide-react';
 import {
   getSavedBillingProfiles,
@@ -32,6 +33,10 @@ import {
   getSavedShippers,
   saveShipper,
   deleteShipper,
+  getSavedVendors,
+  saveVendor,
+  deleteVendor,
+  resetVendorsToDefault,
 } from '../services/billingProfileService';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
@@ -40,7 +45,7 @@ import GstRateSelect from '../components/ui/GstRateSelect';
 export default function BillingTemplatesPage() {
   const navigate = useNavigate();
 
-  // Active Tab: 'TEMPLATES' | 'BUYERS' | 'SHIPPERS'
+  // Active Tab: 'TEMPLATES' | 'BUYERS' | 'SHIPPERS' | 'VENDORS'
   const [activeTab, setActiveTab] = useState('TEMPLATES');
   const [search, setSearch] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -49,6 +54,7 @@ export default function BillingTemplatesPage() {
   const [templates, setTemplates] = useState([]);
   const [buyers, setBuyers] = useState([]);
   const [shippers, setShippers] = useState([]);
+  const [vendors, setVendors] = useState([]);
 
   // Modal / Form Edit states
   const [isEditingTemplate, setIsEditingTemplate] = useState(false);
@@ -59,6 +65,24 @@ export default function BillingTemplatesPage() {
 
   const [isEditingShipper, setIsEditingShipper] = useState(false);
   const [editingShipper, setEditingShipper] = useState(null);
+
+  const [isEditingVendor, setIsEditingVendor] = useState(false);
+  const [editingVendor, setEditingVendor] = useState(null);
+
+  // Vendor Form State
+  const [vendorForm, setVendorForm] = useState({
+    id: null,
+    name: '',
+    address: '',
+    state: 'Maharashtra (27)',
+    gstin: '',
+    category: 'DGD',
+    defaultGstRate: 18,
+    defaultDescription: '',
+    contactPerson: '',
+    phone: '',
+    email: '',
+  });
 
   // Template Form State
   const [templateForm, setTemplateForm] = useState({
@@ -126,6 +150,7 @@ export default function BillingTemplatesPage() {
     setTemplates(getSavedBillingProfiles());
     setBuyers(getSavedBuyers());
     setShippers(getSavedShippers());
+    setVendors(getSavedVendors());
   };
 
   useEffect(() => {
@@ -135,6 +160,57 @@ export default function BillingTemplatesPage() {
   const showNotification = (msg) => {
     setSuccessMsg(msg);
     setTimeout(() => setSuccessMsg(''), 5000);
+  };
+
+  // --------------------------------------------------------------------------
+  // VENDOR / SUPPLIER DIRECTORY HANDLERS
+  // --------------------------------------------------------------------------
+  const handleStartCreateVendor = () => {
+    setEditingVendor(null);
+    setVendorForm({
+      id: null,
+      name: '',
+      address: '',
+      state: 'Maharashtra (27)',
+      gstin: '',
+      category: 'DGD',
+      defaultGstRate: 18,
+      defaultDescription: '',
+      contactPerson: '',
+      phone: '',
+      email: '',
+    });
+    setIsEditingVendor(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleStartEditVendor = (v) => {
+    setEditingVendor(v);
+    setVendorForm({ ...v });
+    setIsEditingVendor(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSaveVendor = (e) => {
+    e.preventDefault();
+    if (!vendorForm.name) {
+      alert('Please enter Vendor / Supplier Company Name.');
+      return;
+    }
+
+    saveVendor(vendorForm);
+    loadAllData();
+    setIsEditingVendor(false);
+    setEditingVendor(null);
+    showNotification(`Vendor / Supplier "${vendorForm.name}" saved to directory!`);
+  };
+
+  const handleDeleteVendor = (id) => {
+    if (window.confirm('Delete this vendor template from directory?')) {
+      deleteVendor(id);
+      loadAllData();
+      showNotification('Vendor template removed from directory.');
+    }
   };
 
   // --------------------------------------------------------------------------
@@ -497,6 +573,18 @@ export default function BillingTemplatesPage() {
     );
   });
 
+  const filteredVendors = vendors.filter((v) => {
+    const q = search.toLowerCase().trim();
+    if (!q) return true;
+    return (
+      (v.name || '').toLowerCase().includes(q) ||
+      (v.address || '').toLowerCase().includes(q) ||
+      (v.gstin || '').toLowerCase().includes(q) ||
+      (v.category || '').toLowerCase().includes(q) ||
+      (v.defaultDescription || '').toLowerCase().includes(q)
+    );
+  });
+
   return (
     <div className="space-y-6 animate-fade-in pb-16">
       {/* Top Header */}
@@ -507,11 +595,11 @@ export default function BillingTemplatesPage() {
               <Bookmark size={17} />
             </div>
             <h1 className="text-2xl font-bold text-slate-100 tracking-tight">
-              Billing Templates & Customer Directory
+              Billing Templates & Directory
             </h1>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Manage full invoice templates (with logos, items, bank info), customer buyer profiles, and delivery destinations.
+            Manage full invoice templates, customer buyer profiles, delivery destinations, and vendor expense profiles.
           </p>
         </div>
 
@@ -533,6 +621,14 @@ export default function BillingTemplatesPage() {
             className="rounded text-xs"
           >
             <Receipt size={13} className="mr-1.5 inline" /> Bills Register
+          </Button>
+
+          <Button
+            variant="secondary"
+            onClick={() => navigate('/billing/purchases')}
+            className="rounded text-xs"
+          >
+            <ShoppingBag size={13} className="mr-1.5 inline" /> Purchase Bills
           </Button>
 
           {activeTab === 'TEMPLATES' && (
@@ -562,6 +658,16 @@ export default function BillingTemplatesPage() {
               className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold"
             >
               <Plus size={13} className="mr-1.5 inline" /> Add Destination
+            </Button>
+          )}
+
+          {activeTab === 'VENDORS' && (
+            <Button
+              variant="primary"
+              onClick={handleStartCreateVendor}
+              className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold"
+            >
+              <Plus size={13} className="mr-1.5 inline" /> Add Vendor Template
             </Button>
           )}
         </div>
@@ -598,6 +704,7 @@ export default function BillingTemplatesPage() {
             setIsEditingTemplate(false);
             setIsEditingBuyer(false);
             setIsEditingShipper(false);
+            setIsEditingVendor(false);
           }}
         >
           <Zap size={14} className={activeTab === 'TEMPLATES' ? 'text-white' : 'text-amber-400'} />
@@ -616,6 +723,7 @@ export default function BillingTemplatesPage() {
             setIsEditingTemplate(false);
             setIsEditingBuyer(false);
             setIsEditingShipper(false);
+            setIsEditingVendor(false);
           }}
         >
           <Building size={14} className={activeTab === 'BUYERS' ? 'text-white' : 'text-indigo-400'} />
@@ -634,10 +742,30 @@ export default function BillingTemplatesPage() {
             setIsEditingTemplate(false);
             setIsEditingBuyer(false);
             setIsEditingShipper(false);
+            setIsEditingVendor(false);
           }}
         >
           <Truck size={14} className={activeTab === 'SHIPPERS' ? 'text-white' : 'text-emerald-400'} />
           <span>Delivery Destinations (Shipped To) ({shippers.length})</span>
+        </button>
+
+        <button
+          type="button"
+          className={`px-3.5 py-2 rounded text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
+            activeTab === 'VENDORS'
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+          }`}
+          onClick={() => {
+            setActiveTab('VENDORS');
+            setIsEditingTemplate(false);
+            setIsEditingBuyer(false);
+            setIsEditingShipper(false);
+            setIsEditingVendor(false);
+          }}
+        >
+          <ShoppingBag size={14} className={activeTab === 'VENDORS' ? 'text-white' : 'text-purple-400'} />
+          <span>Vendor & Expense Profiles ({vendors.length})</span>
         </button>
       </div>
 
@@ -657,6 +785,7 @@ export default function BillingTemplatesPage() {
           {activeTab === 'TEMPLATES' && `Showing ${filteredTemplates.length} of ${templates.length} templates`}
           {activeTab === 'BUYERS' && `Showing ${filteredBuyers.length} of ${buyers.length} customers`}
           {activeTab === 'SHIPPERS' && `Showing ${filteredShippers.length} of ${shippers.length} destinations`}
+          {activeTab === 'VENDORS' && `Showing ${filteredVendors.length} of ${vendors.length} vendor templates`}
         </div>
       </div>
 
@@ -1484,6 +1613,226 @@ export default function BillingTemplatesPage() {
                       className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition-colors"
                       onClick={() => handleDeleteShipper(s.id)}
                       title="Delete Destination"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 4: VENDOR & EXPENSE PROFILES DIRECTORY */}
+      {/* ========================================================================= */}
+      {activeTab === 'VENDORS' && (
+        <div className="space-y-6">
+          {/* Vendor Create / Edit Card */}
+          {isEditingVendor && (
+            <div className="p-5 bg-slate-900/95 border border-indigo-500/50 rounded-md shadow-xl space-y-5 animate-scale-in">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                <h2 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+                  <ShoppingBag size={16} className="text-indigo-400" />
+                  <span>{editingVendor ? `Edit Vendor Template: ${editingVendor.name}` : 'Add New Vendor Template'}</span>
+                </h2>
+                <button
+                  type="button"
+                  className="text-xs text-slate-400 hover:text-white px-2.5 py-1 bg-slate-800 rounded hover:bg-slate-700 transition-colors flex items-center gap-1"
+                  onClick={() => setIsEditingVendor(false)}
+                >
+                  <X size={13} /> Close
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveVendor} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="sm:col-span-2">
+                    <Input
+                      label="Vendor / Company Name *"
+                      placeholder="e.g. DGR Packaging Company / Celebi Cargo Terminal"
+                      value={vendorForm.name}
+                      onChange={(e) => setVendorForm({ ...vendorForm, name: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <Input
+                    label="Vendor GSTIN (Optional)"
+                    placeholder="e.g. 27CBKPK7600K1ZE"
+                    value={vendorForm.gstin}
+                    onChange={(e) => setVendorForm({ ...vendorForm, gstin: e.target.value })}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-xs text-slate-400 font-medium block mb-1">Expense Category</label>
+                    <select
+                      className="w-full p-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200"
+                      value={vendorForm.category}
+                      onChange={(e) => setVendorForm({ ...vendorForm, category: e.target.value })}
+                    >
+                      <option value="DGD">DGD Documentation Charges</option>
+                      <option value="PACKAGING">Packaging & UN Boxes</option>
+                      <option value="AIR_FREIGHT">Airline Freight Cost</option>
+                      <option value="SEA_FREIGHT">Ocean Freight Cost</option>
+                      <option value="CUSTOMS">Customs Clearance & Brokerage</option>
+                      <option value="TRANSPORT">Transport / Cartage / Courier</option>
+                      <option value="WAREHOUSE">Warehouse & Handling</option>
+                      <option value="OTHER">Other Vendor Expense</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-slate-400 font-medium block mb-1">Default GST Rate</label>
+                    <select
+                      className="w-full p-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200"
+                      value={vendorForm.defaultGstRate}
+                      onChange={(e) => setVendorForm({ ...vendorForm, defaultGstRate: parseFloat(e.target.value) })}
+                    >
+                      <option value="0">0% (Nil / Exempt)</option>
+                      <option value="5">5% GST</option>
+                      <option value="12">12% GST</option>
+                      <option value="18">18% GST (Standard Services)</option>
+                      <option value="28">28% GST</option>
+                    </select>
+                  </div>
+
+                  <Input
+                    label="State"
+                    value={vendorForm.state}
+                    onChange={(e) => setVendorForm({ ...vendorForm, state: e.target.value })}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-slate-400 font-medium">Default Service / Product Description</label>
+                  <input
+                    type="text"
+                    className="w-full p-2.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200"
+                    placeholder="e.g. UN Approved 4G Fibreboard Boxes, DG Packaging & Labeling Materials"
+                    value={vendorForm.defaultDescription}
+                    onChange={(e) => setVendorForm({ ...vendorForm, defaultDescription: e.target.value })}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-slate-400 font-medium">Vendor Office / Warehouse Address</label>
+                  <textarea
+                    rows={2}
+                    className="w-full p-2.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200"
+                    placeholder="Full physical address of supplier"
+                    value={vendorForm.address}
+                    onChange={(e) => setVendorForm({ ...vendorForm, address: e.target.value })}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <Input
+                    label="Contact Person"
+                    placeholder="e.g. Mr Sunil"
+                    value={vendorForm.contactPerson}
+                    onChange={(e) => setVendorForm({ ...vendorForm, contactPerson: e.target.value })}
+                  />
+                  <Input
+                    label="Phone"
+                    placeholder="e.g. +91 9326392294"
+                    value={vendorForm.phone}
+                    onChange={(e) => setVendorForm({ ...vendorForm, phone: e.target.value })}
+                  />
+                  <Input
+                    label="Email"
+                    placeholder="e.g. vendor@logistics.com"
+                    value={vendorForm.email}
+                    onChange={(e) => setVendorForm({ ...vendorForm, email: e.target.value })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800">
+                  <Button type="button" variant="secondary" onClick={() => setIsEditingVendor(false)} className="rounded text-xs">
+                    Cancel
+                  </Button>
+                  <Button type="submit" variant="primary" className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold">
+                    <Save size={13} className="mr-1.5 inline" /> Save Vendor Template
+                  </Button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* Vendors Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredVendors.map((v) => (
+              <div
+                key={v.id}
+                className="p-4 bg-slate-900/70 border border-slate-800 hover:border-indigo-500/50 rounded-md space-y-3.5 shadow-sm transition-all flex flex-col justify-between"
+              >
+                <div className="space-y-2.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded bg-purple-600/20 text-purple-400 flex items-center justify-center shrink-0">
+                        <ShoppingBag size={14} />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-slate-100 text-xs leading-tight">{v.name}</h3>
+                        <span className="text-[10px] px-1.5 py-0.5 bg-indigo-500/15 text-indigo-400 rounded border border-indigo-500/30 font-medium">
+                          {v.category || 'EXPENSE'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-xs space-y-1 text-slate-300 pt-2 border-t border-slate-800/80">
+                    <div>
+                      <span className="text-slate-500 font-medium">GSTIN: </span>
+                      <span className="font-mono text-indigo-300 font-bold">{v.gstin || 'N/A'}</span>
+                    </div>
+                    {v.defaultDescription && (
+                      <div className="text-[11px] text-slate-400">
+                        <span className="text-slate-500">Service: </span>
+                        <span>{v.defaultDescription}</span>
+                      </div>
+                    )}
+                    <div className="text-[11px] text-slate-400 line-clamp-2">
+                      <span className="text-slate-500">Address: </span>
+                      <span>{v.address ? v.address.replace(/\n/g, ', ') : '-'}</span>
+                    </div>
+                    {(v.contactPerson || v.phone) && (
+                      <div className="text-[11px] text-slate-400">
+                        <span className="text-slate-500">Contact: </span>
+                        <span>{v.contactPerson} {v.phone ? `(${v.phone})` : ''}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-2.5 border-t border-slate-800/80 gap-2">
+                  <button
+                    type="button"
+                    className="px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-500/40 text-indigo-200 hover:text-white rounded text-xs font-semibold transition-colors flex-1 flex items-center justify-center gap-1"
+                    onClick={() => {
+                      navigate('/billing/purchases');
+                    }}
+                  >
+                    <Plus size={13} />
+                    <span>Record Bill</span>
+                  </button>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      className="p-1.5 text-slate-400 hover:text-indigo-300 hover:bg-slate-800 rounded transition-colors"
+                      onClick={() => handleStartEditVendor(v)}
+                      title="Edit Vendor Template"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition-colors"
+                      onClick={() => handleDeleteVendor(v.id)}
+                      title="Delete Vendor Template"
                     >
                       <Trash2 size={14} />
                     </button>
