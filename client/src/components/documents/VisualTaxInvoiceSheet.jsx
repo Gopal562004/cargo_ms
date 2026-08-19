@@ -18,6 +18,7 @@ export default function VisualTaxInvoiceSheet({
   totals,
   savedBuyers = [],
   savedShippers = [],
+  itemPresets = [],
   handleSelectBuyer,
   handleSelectShipper,
   handleAddPresetItem,
@@ -36,6 +37,7 @@ export default function VisualTaxInvoiceSheet({
 
   const unitLabel = totals.unitsSet.size === 1 ? (items[0]?.unit || 'Pcs') : 'Qty';
   const isInterState = formData.taxType === 'INTER_STATE';
+  const activeItemPresets = itemPresets && itemPresets.length > 0 ? itemPresets : LOGISTICS_ITEM_PRESETS;
 
   return (
     <div className="w-full flex flex-col items-center py-4 bg-slate-950/60 rounded-md overflow-x-auto space-y-4">
@@ -47,7 +49,7 @@ export default function VisualTaxInvoiceSheet({
             <span>Fast-Add Item:</span>
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
-            {LOGISTICS_ITEM_PRESETS.map((preset) => (
+            {activeItemPresets.map((preset) => (
               <button
                 key={preset.id}
                 type="button"

@@ -37,6 +37,10 @@ import {
   saveVendor,
   deleteVendor,
   resetVendorsToDefault,
+  getSavedItemPresets,
+  saveItemPreset,
+  deleteItemPreset,
+  resetItemPresetsToDefault,
 } from '../services/billingProfileService';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
@@ -45,13 +49,14 @@ import GstRateSelect from '../components/ui/GstRateSelect';
 export default function BillingTemplatesPage() {
   const navigate = useNavigate();
 
-  // Active Tab: 'TEMPLATES' | 'BUYERS' | 'SHIPPERS' | 'VENDORS'
+  // Active Tab: 'TEMPLATES' | 'ITEMS' | 'BUYERS' | 'SHIPPERS' | 'VENDORS'
   const [activeTab, setActiveTab] = useState('TEMPLATES');
   const [search, setSearch] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
   // Data lists
   const [templates, setTemplates] = useState([]);
+  const [itemPresets, setItemPresets] = useState([]);
   const [buyers, setBuyers] = useState([]);
   const [shippers, setShippers] = useState([]);
   const [vendors, setVendors] = useState([]);
@@ -59,6 +64,9 @@ export default function BillingTemplatesPage() {
   // Modal / Form Edit states
   const [isEditingTemplate, setIsEditingTemplate] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState(null);
+
+  const [isEditingItemPreset, setIsEditingItemPreset] = useState(false);
+  const [editingItemPreset, setEditingItemPreset] = useState(null);
 
   const [isEditingBuyer, setIsEditingBuyer] = useState(false);
   const [editingBuyer, setEditingBuyer] = useState(null);
@@ -68,6 +76,19 @@ export default function BillingTemplatesPage() {
 
   const [isEditingVendor, setIsEditingVendor] = useState(false);
   const [editingVendor, setEditingVendor] = useState(null);
+
+  // Item Preset Form State
+  const [itemPresetForm, setItemPresetForm] = useState({
+    id: null,
+    label: '',
+    description: '',
+    subText: '',
+    hsnCode: '48191010',
+    unit: 'Pcs',
+    price: 0,
+    gstRate: 18,
+    category: 'PACKAGING',
+  });
 
   // Vendor Form State
   const [vendorForm, setVendorForm] = useState({
@@ -148,6 +169,7 @@ export default function BillingTemplatesPage() {
 
   const loadAllData = () => {
     setTemplates(getSavedBillingProfiles());
+    setItemPresets(getSavedItemPresets());
     setBuyers(getSavedBuyers());
     setShippers(getSavedShippers());
     setVendors(getSavedVendors());
@@ -160,6 +182,66 @@ export default function BillingTemplatesPage() {
   const showNotification = (msg) => {
     setSuccessMsg(msg);
     setTimeout(() => setSuccessMsg(''), 5000);
+  };
+
+  // --------------------------------------------------------------------------
+  // ITEM PRESETS DIRECTORY HANDLERS
+  // --------------------------------------------------------------------------
+  const handleStartCreateItemPreset = () => {
+    setEditingItemPreset(null);
+    setItemPresetForm({
+      id: null,
+      label: '',
+      description: '',
+      subText: '',
+      hsnCode: '48191010',
+      unit: 'Pcs',
+      price: 0,
+      gstRate: 18,
+      category: 'PACKAGING',
+    });
+    setIsEditingItemPreset(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleStartEditItemPreset = (item) => {
+    setEditingItemPreset(item);
+    setItemPresetForm({ ...item });
+    setIsEditingItemPreset(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSaveItemPreset = (e) => {
+    e.preventDefault();
+    if (!itemPresetForm.description) {
+      alert('Please enter Item / Service Description.');
+      return;
+    }
+    const label = itemPresetForm.label || `+ ${itemPresetForm.description} (${itemPresetForm.hsnCode || 'HSN'})`;
+    saveItemPreset({
+      ...itemPresetForm,
+      label,
+    });
+    loadAllData();
+    setIsEditingItemPreset(false);
+    setEditingItemPreset(null);
+    showNotification(`Item Preset "${itemPresetForm.description}" saved to directory!`);
+  };
+
+  const handleDeleteItemPreset = (id) => {
+    if (window.confirm('Delete this item preset from directory?')) {
+      deleteItemPreset(id);
+      loadAllData();
+      showNotification('Item preset removed from directory.');
+    }
+  };
+
+  const handleResetItemPresets = () => {
+    if (window.confirm('Reset all item presets to built-in standard logistics list?')) {
+      resetItemPresetsToDefault();
+      loadAllData();
+      showNotification('Item presets restored to default.');
+    }
   };
 
   // --------------------------------------------------------------------------
@@ -552,6 +634,18 @@ export default function BillingTemplatesPage() {
     );
   });
 
+  const filteredItemPresets = itemPresets.filter((item) => {
+    const q = search.toLowerCase().trim();
+    if (!q) return true;
+    return (
+      (item.label || '').toLowerCase().includes(q) ||
+      (item.description || '').toLowerCase().includes(q) ||
+      (item.subText || '').toLowerCase().includes(q) ||
+      (item.hsnCode || '').toLowerCase().includes(q) ||
+      (item.category || '').toLowerCase().includes(q)
+    );
+  });
+
   const filteredBuyers = buyers.filter((b) => {
     const q = search.toLowerCase().trim();
     if (!q) return true;
@@ -599,7 +693,7 @@ export default function BillingTemplatesPage() {
             </h1>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Manage full invoice templates, customer buyer profiles, delivery destinations, and vendor expense profiles.
+            Manage full invoice templates, cargo & packaging item presets, customer buyer profiles, delivery destinations, and vendor profiles.
           </p>
         </div>
 
@@ -612,6 +706,17 @@ export default function BillingTemplatesPage() {
               className="rounded text-xs"
             >
               <RotateCcw size={13} className="mr-1.5 inline" /> Reset Defaults
+            </Button>
+          )}
+
+          {activeTab === 'ITEMS' && (
+            <Button
+              variant="secondary"
+              onClick={handleResetItemPresets}
+              title="Reset standard logistics items to initial state"
+              className="rounded text-xs"
+            >
+              <RotateCcw size={13} className="mr-1.5 inline" /> Reset Items
             </Button>
           )}
 
@@ -638,6 +743,16 @@ export default function BillingTemplatesPage() {
               className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold"
             >
               <Plus size={13} className="mr-1.5 inline" /> New Template
+            </Button>
+          )}
+
+          {activeTab === 'ITEMS' && (
+            <Button
+              variant="primary"
+              onClick={handleStartCreateItemPreset}
+              className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold"
+            >
+              <Plus size={13} className="mr-1.5 inline" /> Add Item Preset
             </Button>
           )}
 
@@ -702,6 +817,7 @@ export default function BillingTemplatesPage() {
           onClick={() => {
             setActiveTab('TEMPLATES');
             setIsEditingTemplate(false);
+            setIsEditingItemPreset(false);
             setIsEditingBuyer(false);
             setIsEditingShipper(false);
             setIsEditingVendor(false);
@@ -714,6 +830,26 @@ export default function BillingTemplatesPage() {
         <button
           type="button"
           className={`px-3.5 py-2 rounded text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
+            activeTab === 'ITEMS'
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+          }`}
+          onClick={() => {
+            setActiveTab('ITEMS');
+            setIsEditingTemplate(false);
+            setIsEditingItemPreset(false);
+            setIsEditingBuyer(false);
+            setIsEditingShipper(false);
+            setIsEditingVendor(false);
+          }}
+        >
+          <Package size={14} className={activeTab === 'ITEMS' ? 'text-white' : 'text-amber-400'} />
+          <span>Cargo & Packaging Items ({itemPresets.length})</span>
+        </button>
+
+        <button
+          type="button"
+          className={`px-3.5 py-2 rounded text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
             activeTab === 'BUYERS'
               ? 'bg-indigo-600 text-white shadow-sm'
               : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
@@ -721,6 +857,7 @@ export default function BillingTemplatesPage() {
           onClick={() => {
             setActiveTab('BUYERS');
             setIsEditingTemplate(false);
+            setIsEditingItemPreset(false);
             setIsEditingBuyer(false);
             setIsEditingShipper(false);
             setIsEditingVendor(false);
@@ -740,6 +877,7 @@ export default function BillingTemplatesPage() {
           onClick={() => {
             setActiveTab('SHIPPERS');
             setIsEditingTemplate(false);
+            setIsEditingItemPreset(false);
             setIsEditingBuyer(false);
             setIsEditingShipper(false);
             setIsEditingVendor(false);
@@ -759,6 +897,7 @@ export default function BillingTemplatesPage() {
           onClick={() => {
             setActiveTab('VENDORS');
             setIsEditingTemplate(false);
+            setIsEditingItemPreset(false);
             setIsEditingBuyer(false);
             setIsEditingShipper(false);
             setIsEditingVendor(false);
@@ -783,6 +922,7 @@ export default function BillingTemplatesPage() {
         </div>
         <div className="text-xs text-slate-400 font-mono">
           {activeTab === 'TEMPLATES' && `Showing ${filteredTemplates.length} of ${templates.length} templates`}
+          {activeTab === 'ITEMS' && `Showing ${filteredItemPresets.length} of ${itemPresets.length} item presets`}
           {activeTab === 'BUYERS' && `Showing ${filteredBuyers.length} of ${buyers.length} customers`}
           {activeTab === 'SHIPPERS' && `Showing ${filteredShippers.length} of ${shippers.length} destinations`}
           {activeTab === 'VENDORS' && `Showing ${filteredVendors.length} of ${vendors.length} vendor templates`}
@@ -1281,6 +1421,207 @@ export default function BillingTemplatesPage() {
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB: CARGO & LOGISTICS ITEM PRESETS */}
+      {/* ========================================================================= */}
+      {activeTab === 'ITEMS' && (
+        <div className="space-y-6">
+          {/* Item Preset Create / Edit Card */}
+          {isEditingItemPreset && (
+            <div className="p-5 bg-slate-900/95 border border-indigo-500/50 rounded-md shadow-xl space-y-5 animate-scale-in">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                <h2 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+                  <Package size={16} className="text-amber-400" />
+                  <span>{editingItemPreset ? `Edit Item Preset: ${editingItemPreset.description}` : 'Add New Item Preset'}</span>
+                </h2>
+                <button
+                  type="button"
+                  className="text-xs text-slate-400 hover:text-white px-2.5 py-1 bg-slate-800 rounded hover:bg-slate-700 transition-colors flex items-center gap-1"
+                  onClick={() => setIsEditingItemPreset(false)}
+                >
+                  <X size={13} /> Close
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveItemPreset} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <Input
+                    label="Item / Service Description *"
+                    placeholder="e.g. UN APPROVED BOX X3"
+                    value={itemPresetForm.description}
+                    onChange={(e) => setItemPresetForm({ ...itemPresetForm, description: e.target.value })}
+                    required
+                  />
+
+                  <Input
+                    label="Fast-Add Button Label"
+                    placeholder="e.g. + UN Box X3 (4819)"
+                    value={itemPresetForm.label}
+                    onChange={(e) => setItemPresetForm({ ...itemPresetForm, label: e.target.value })}
+                  />
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-slate-400 font-medium">Service / Logistics Category</label>
+                    <select
+                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                      value={itemPresetForm.category}
+                      onChange={(e) => setItemPresetForm({ ...itemPresetForm, category: e.target.value })}
+                    >
+                      <option value="PACKAGING">PACKAGING (UN Boxes, Drums, Shrink Wrap)</option>
+                      <option value="DOCUMENTATION">DOCUMENTATION (IATA DGD, IMO DGD)</option>
+                      <option value="FREIGHT">FREIGHT (Air / Ocean Freight Charges)</option>
+                      <option value="TRANSPORT">TRANSPORT (Cartage, Road Transport)</option>
+                      <option value="CLEARANCE">CLEARANCE (Airport TSP, Customs CHA)</option>
+                      <option value="WAREHOUSE">WAREHOUSE (Palletization, Storage)</option>
+                      <option value="OTHER">OTHER SERVICE</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-slate-400 font-medium">Sub-Text / Technical Specs</label>
+                  <input
+                    type="text"
+                    className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200 placeholder-slate-500"
+                    placeholder="e.g. UN Approved 4G Fibreboard Packaging Box or UN 3465/6.1/III"
+                    value={itemPresetForm.subText}
+                    onChange={(e) => setItemPresetForm({ ...itemPresetForm, subText: e.target.value })}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <Input
+                    label="HSN / SAC Code *"
+                    placeholder="e.g. 48191010 or 998319"
+                    value={itemPresetForm.hsnCode}
+                    onChange={(e) => setItemPresetForm({ ...itemPresetForm, hsnCode: e.target.value })}
+                    required
+                  />
+
+                  <Input
+                    label="Unit of Measurement"
+                    placeholder="e.g. Pcs, Box, Drum, Job, Trip"
+                    value={itemPresetForm.unit}
+                    onChange={(e) => setItemPresetForm({ ...itemPresetForm, unit: e.target.value })}
+                  />
+
+                  <Input
+                    label="Default Unit Price (₹)"
+                    type="number"
+                    step="any"
+                    placeholder="e.g. 110.00"
+                    value={itemPresetForm.price}
+                    onChange={(e) => setItemPresetForm({ ...itemPresetForm, price: e.target.value })}
+                  />
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-slate-400 font-medium">GST Rate %</label>
+                    <select
+                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                      value={itemPresetForm.gstRate}
+                      onChange={(e) => setItemPresetForm({ ...itemPresetForm, gstRate: parseFloat(e.target.value) || 0 })}
+                    >
+                      <option value="0">0% (Nil / Exempt)</option>
+                      <option value="5">5% (UN Boxes)</option>
+                      <option value="12">12%</option>
+                      <option value="18">18% (DGD, Drums & Freight)</option>
+                      <option value="28">28%</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800">
+                  <Button type="button" variant="secondary" onClick={() => setIsEditingItemPreset(false)} className="rounded text-xs">
+                    Cancel
+                  </Button>
+                  <Button type="submit" variant="primary" className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold">
+                    <Save size={13} className="mr-1.5 inline" /> Save Item Preset
+                  </Button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* Items Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredItemPresets.map((item) => (
+              <div
+                key={item.id}
+                className="p-4 bg-slate-900/70 border border-slate-800 hover:border-indigo-500/50 rounded-md space-y-3.5 shadow-sm transition-all flex flex-col justify-between"
+              >
+                <div className="space-y-2.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded bg-amber-600/20 text-amber-400 flex items-center justify-center shrink-0">
+                        <Package size={14} />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-slate-100 text-xs leading-tight">{item.description}</h3>
+                        <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/15 text-amber-300 rounded border border-amber-500/30 font-medium">
+                          {item.category || 'PACKAGING'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-xs space-y-1 text-slate-300 pt-2 border-t border-slate-800/80">
+                    {item.subText && (
+                      <div className="text-[11px] text-slate-400 italic">
+                        {item.subText}
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span className="text-slate-500 font-medium">HSN / SAC: </span>
+                      <span className="font-mono text-indigo-300 font-bold">{item.hsnCode || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500 font-medium">Default Price: </span>
+                      <span className="font-mono font-bold text-slate-100">₹{(parseFloat(item.price) || 0).toFixed(2)} / {item.unit || 'Pcs'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500 font-medium">GST Slab: </span>
+                      <span className="font-mono font-semibold text-emerald-400">{item.gstRate || 0}% GST</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-2.5 border-t border-slate-800/80 gap-2">
+                  <button
+                    type="button"
+                    className="px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-500/40 text-indigo-200 hover:text-white rounded text-xs font-semibold transition-colors flex-1 flex items-center justify-center gap-1"
+                    onClick={() => {
+                      navigate('/documents/new/TAX_INVOICE');
+                    }}
+                  >
+                    <Plus size={13} />
+                    <span>Use in Invoice</span>
+                  </button>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      className="p-1.5 text-slate-400 hover:text-indigo-300 hover:bg-slate-800 rounded transition-colors"
+                      onClick={() => handleStartEditItemPreset(item)}
+                      title="Edit Item Preset"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition-colors"
+                      onClick={() => handleDeleteItemPreset(item.id)}
+                      title="Delete Item Preset"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

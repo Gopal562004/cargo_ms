@@ -37,6 +37,7 @@ import {
   saveBuyer,
   getSavedShippers,
   saveShipper,
+  getSavedItemPresets,
 } from '../../services/billingProfileService';
 import BillingTemplateManagerModal from './BillingTemplateManagerModal';
 import VisualTaxInvoiceSheet from './VisualTaxInvoiceSheet';
@@ -426,16 +427,18 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
   const initialMode = searchParams.get('mode') === 'form' ? 'FORM' : 'VISUAL';
   const [editorMode, setEditorMode] = useState(initialMode);
 
-  // Saved Profiles, Buyers, & Shippers Directory State
+  // Saved Profiles, Buyers, Shippers & Item Presets Directory State
   const [savedProfiles, setSavedProfiles] = useState(() => getSavedBillingProfiles());
   const [savedBuyers, setSavedBuyers] = useState(() => getSavedBuyers());
   const [savedShippers, setSavedShippers] = useState(() => getSavedShippers());
+  const [savedItemPresets, setSavedItemPresets] = useState(() => getSavedItemPresets());
   const [templateManagerOpen, setTemplateManagerOpen] = useState(false);
 
   const refreshDirectories = () => {
     setSavedProfiles(getSavedBillingProfiles());
     setSavedBuyers(getSavedBuyers());
     setSavedShippers(getSavedShippers());
+    setSavedItemPresets(getSavedItemPresets());
   };
 
   // Form State
@@ -1095,7 +1098,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
             <span>1-Click Add Freight & DG Packaging Items:</span>
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
-            {LOGISTICS_ITEM_PRESETS.map((preset) => (
+            {(savedItemPresets.length > 0 ? savedItemPresets : LOGISTICS_ITEM_PRESETS).map((preset) => (
               <button
                 key={preset.id}
                 type="button"
@@ -1165,6 +1168,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
           totals={totals}
           savedBuyers={savedBuyers}
           savedShippers={savedShippers}
+          itemPresets={savedItemPresets}
           handleSelectBuyer={handleSelectBuyer}
           handleSelectShipper={handleSelectShipper}
           handleAddPresetItem={handleAddPresetItem}

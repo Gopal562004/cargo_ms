@@ -660,3 +660,209 @@ export function resetVendorsToDefault() {
   localStorage.setItem(VENDORS_STORAGE_KEY, JSON.stringify(DEFAULT_VENDORS));
   return DEFAULT_VENDORS;
 }
+
+const ITEM_PRESETS_STORAGE_KEY = 'cargo_billing_item_presets_directory';
+
+export const DEFAULT_ITEM_PRESETS = [
+  {
+    id: 'preset_box_x3',
+    label: '+ UN Box X3 (4819)',
+    description: 'UN APPROVED BOX X3',
+    subText: 'UN Approved 4G Fibreboard Packaging Box',
+    hsnCode: '48191010',
+    unit: 'Pcs',
+    price: 110,
+    gstRate: 5,
+    category: 'PACKAGING',
+    isBuiltIn: true,
+  },
+  {
+    id: 'preset_box_x6',
+    label: '+ UN Box X6 (4819)',
+    description: 'UN APPROVED BOX X6',
+    subText: 'UN Approved 4G Fibreboard Packaging Box',
+    hsnCode: '48191010',
+    unit: 'Pcs',
+    price: 160,
+    gstRate: 5,
+    category: 'PACKAGING',
+    isBuiltIn: true,
+  },
+  {
+    id: 'preset_box_x22',
+    label: '+ UN Box X22 (4819)',
+    description: 'UN APPROVED BOX X22',
+    subText: 'UN Approved 4G Fibreboard Packaging Box',
+    hsnCode: '48191010',
+    unit: 'Pcs',
+    price: 270,
+    gstRate: 5,
+    category: 'PACKAGING',
+    isBuiltIn: true,
+  },
+  {
+    id: 'preset_box_x55',
+    label: '+ UN Box X55 (4819)',
+    description: 'UN APPROVED BOX X55',
+    subText: 'UN Approved 4G Fibreboard Packaging Box',
+    hsnCode: '48191010',
+    unit: 'Box',
+    price: 630,
+    gstRate: 5,
+    category: 'PACKAGING',
+    isBuiltIn: true,
+  },
+  {
+    id: 'preset_drum_y75',
+    label: '+ UN Drum Y75 (3923)',
+    description: 'UN APPROVED Y 75 OPEN TOP DRUM',
+    subText: 'DG Packaging Open Top Plastic Drum',
+    hsnCode: '39233090',
+    unit: 'Pcs',
+    price: 560,
+    gstRate: 18,
+    category: 'PACKAGING',
+    isBuiltIn: true,
+  },
+  {
+    id: 'preset_drum_y30',
+    label: '+ UN Drum Y30 (3923)',
+    description: 'UN APP MC Y 30 KG OPEN TOP PLASTIC DRUMS',
+    subText: 'DG Packaging Open Top Plastic Drum',
+    hsnCode: '39233090',
+    unit: 'Drum',
+    price: 600,
+    gstRate: 18,
+    category: 'PACKAGING',
+    isBuiltIn: true,
+  },
+  {
+    id: 'preset_dgd_charges',
+    label: '+ IATA DGD Charges (9983)',
+    description: 'Dangerous Goods Declaration (DGD) & Inspection',
+    subText: 'IATA DG Documentation & Compliance',
+    hsnCode: '998319',
+    unit: 'Job',
+    price: 1500,
+    gstRate: 18,
+    category: 'DOCUMENTATION',
+    isBuiltIn: true,
+  },
+  {
+    id: 'preset_packing_charges',
+    label: '+ DG Packing Fee (9967)',
+    description: 'DG Cargo Repacking & Palletization Charges',
+    subText: '',
+    hsnCode: '996713',
+    unit: 'Pcs',
+    price: 800,
+    gstRate: 18,
+    category: 'PACKAGING',
+    isBuiltIn: true,
+  },
+  {
+    id: 'preset_air_freight',
+    label: '+ Air Freight (9965)',
+    description: 'Airline Master Freight Charges & Surcharges (FSC/SSC)',
+    subText: 'Air Waybill Freight Logistics',
+    hsnCode: '996511',
+    unit: 'Shipment',
+    price: 5000,
+    gstRate: 18,
+    category: 'FREIGHT',
+    isBuiltIn: true,
+  },
+  {
+    id: 'preset_transport_lr',
+    label: '+ Transport / Cartage (9965)',
+    description: 'Local Transport & Cartage Charges',
+    subText: 'Delivery to Sahar Cargo / Bhiwandi',
+    hsnCode: '996531',
+    unit: 'Trip',
+    price: 2500,
+    gstRate: 18,
+    category: 'TRANSPORT',
+    isBuiltIn: true,
+  },
+  {
+    id: 'preset_terminal_tsp',
+    label: '+ Terminal / TSP (9967)',
+    description: 'Airport TSP & Terminal Handling Charges (MIAL/AAI)',
+    subText: 'Air Cargo Complex Clearance',
+    hsnCode: '996719',
+    unit: 'Job',
+    price: 2000,
+    gstRate: 18,
+    category: 'CLEARANCE',
+    isBuiltIn: true,
+  },
+];
+
+/**
+ * Load all Item & Service Presets
+ */
+export function getSavedItemPresets() {
+  try {
+    const raw = localStorage.getItem(ITEM_PRESETS_STORAGE_KEY);
+    if (!raw) {
+      localStorage.setItem(ITEM_PRESETS_STORAGE_KEY, JSON.stringify(DEFAULT_ITEM_PRESETS));
+      return DEFAULT_ITEM_PRESETS;
+    }
+    const items = JSON.parse(raw);
+    if (!Array.isArray(items) || items.length === 0) {
+      localStorage.setItem(ITEM_PRESETS_STORAGE_KEY, JSON.stringify(DEFAULT_ITEM_PRESETS));
+      return DEFAULT_ITEM_PRESETS;
+    }
+    return items;
+  } catch (err) {
+    console.error('Error loading item presets directory:', err);
+    return DEFAULT_ITEM_PRESETS;
+  }
+}
+
+/**
+ * Save / Update Item Preset
+ */
+export function saveItemPreset(preset) {
+  const all = getSavedItemPresets();
+  const id = preset.id || `preset_${Date.now()}`;
+  const label = preset.label || `+ ${preset.description || 'New Item'} (${preset.hsnCode || 'HSN'})`;
+  const newPreset = {
+    ...preset,
+    id,
+    label,
+    price: parseFloat(preset.price) || 0,
+    gstRate: parseFloat(preset.gstRate) || 18,
+    updatedAt: new Date().toISOString(),
+  };
+
+  const existingIndex = all.findIndex((p) => p.id === id);
+  let updated;
+  if (existingIndex >= 0) {
+    updated = all.map((p, i) => (i === existingIndex ? { ...p, ...newPreset, id: p.id } : p));
+  } else {
+    updated = [newPreset, ...all];
+  }
+
+  localStorage.setItem(ITEM_PRESETS_STORAGE_KEY, JSON.stringify(updated));
+  return newPreset;
+}
+
+/**
+ * Delete Item Preset
+ */
+export function deleteItemPreset(presetId) {
+  const all = getSavedItemPresets();
+  const filtered = all.filter((p) => p.id !== presetId);
+  localStorage.setItem(ITEM_PRESETS_STORAGE_KEY, JSON.stringify(filtered));
+  return true;
+}
+
+/**
+ * Reset item presets to default built-in list
+ */
+export function resetItemPresetsToDefault() {
+  localStorage.setItem(ITEM_PRESETS_STORAGE_KEY, JSON.stringify(DEFAULT_ITEM_PRESETS));
+  return DEFAULT_ITEM_PRESETS;
+}
+
