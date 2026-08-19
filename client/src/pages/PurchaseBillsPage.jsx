@@ -1321,12 +1321,27 @@ export default function PurchaseBillsPage() {
                     <tr key={doc.id} className="hover:bg-slate-800/40 transition-colors group">
                       {/* Voucher & Bill Number */}
                       <td className="py-3 px-4">
-                        <div className="font-mono font-bold text-indigo-400 flex items-center gap-1.5">
-                          <span>{data.billNumber || doc.documentNumber || '—'}</span>
+                        <div className="font-mono font-bold flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenDetailModal(doc)}
+                            className="text-left font-mono font-bold text-indigo-400 hover:text-indigo-300 underline decoration-dotted underline-offset-4 hover:underline transition-colors"
+                            title="Click to view complete purchase bill details & voucher"
+                          >
+                            {data.billNumber || doc.documentNumber || '—'}
+                          </button>
                           {data.billFileBase64 && (
-                            <span title="Original Invoice Attached" className="text-indigo-400">
-                              <Paperclip size={12} />
-                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenViewFile(data.billFileBase64, data.billFileName, data.billFileType);
+                              }}
+                              title={`View Attached Invoice (${data.billFileName || 'Document'})`}
+                              className="text-indigo-400 hover:text-indigo-200 p-0.5 hover:bg-slate-800 rounded transition-colors"
+                            >
+                              <Paperclip size={13} />
+                            </button>
                           )}
                         </div>
                         {data.voucherNumber && data.voucherNumber !== data.billNumber && (
@@ -1467,20 +1482,15 @@ export default function PurchaseBillsPage() {
           </div>
         )}
 
-        {/* Pagination Footer */}
-        {filteredBills.length > pageSize && (
-          <div className="p-3 border-t border-slate-800 flex items-center justify-between">
-            <Pagination
-              currentPage={currentPage}
-              totalPages={Math.ceil(filteredBills.length / pageSize)}
-              onPageChange={(page) => setCurrentPage(page)}
-            />
-            <div className="text-[11px] text-slate-400 font-mono">
-              Showing {(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, filteredBills.length)} of{' '}
-              {filteredBills.length}
-            </div>
-          </div>
-        )}
+        {/* Pagination Controls */}
+        <Pagination
+          currentPage={currentPage}
+          totalItems={filteredBills.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+          pageSizeOptions={[10, 25, 50, 100]}
+        />
       </div>
 
       {/* =========================================================================
