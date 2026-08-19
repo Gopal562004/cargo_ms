@@ -47,13 +47,13 @@ export default function VisualTaxInvoiceSheet({
             <span>Fast-Add Item:</span>
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
-            {LOGISTICS_ITEM_PRESETS.slice(0, 6).map((preset) => (
+            {LOGISTICS_ITEM_PRESETS.map((preset) => (
               <button
                 key={preset.id}
                 type="button"
                 onClick={() => handleAddPresetItem(preset)}
                 className="px-2 py-0.5 bg-slate-950 hover:bg-indigo-600/30 border border-slate-800 hover:border-indigo-500 text-slate-300 hover:text-white rounded text-[10.5px] font-medium transition-all flex items-center gap-1"
-                title={`Add ${preset.description}`}
+                title={`Add ${preset.description} (₹${preset.price})`}
               >
                 <Plus size={10} className="text-indigo-400" />
                 <span>{preset.label}</span>
