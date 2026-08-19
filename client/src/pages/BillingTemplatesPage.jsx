@@ -21,6 +21,7 @@ import {
   Copy,
   CreditCard,
   ShoppingBag,
+  Package,
 } from 'lucide-react';
 import {
   getSavedBillingProfiles,
