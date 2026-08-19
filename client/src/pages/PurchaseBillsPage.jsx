@@ -116,6 +116,46 @@ function formatINR(val) {
   return num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+export function getBillGstBreakdown(data = {}) {
+  const taxable = parseFloat(data.taxableAmount) || 0;
+  const gstRate = parseFloat(data.gstRate) || 0;
+  const grandTotal = parseFloat(data.grandTotal) || (taxable + (taxable * gstRate) / 100);
+  const isInterState = data.taxType === 'INTER_STATE';
+
+  // Compute total GST accurately
+  let totalGst = parseFloat(data.totalGst) || 0;
+  if (!totalGst && grandTotal > taxable) {
+    totalGst = grandTotal - taxable;
+  } else if (!totalGst && gstRate > 0) {
+    totalGst = (taxable * gstRate) / 100;
+  }
+
+  let cgst = parseFloat(data.cgstAmount) || 0;
+  let sgst = parseFloat(data.sgstAmount) || 0;
+  let igst = parseFloat(data.igstAmount) || 0;
+
+  if (isInterState) {
+    igst = igst || totalGst;
+    cgst = 0;
+    sgst = 0;
+  } else {
+    cgst = cgst || totalGst / 2;
+    sgst = sgst || totalGst / 2;
+    igst = 0;
+  }
+
+  return {
+    taxable,
+    gstRate,
+    totalGst,
+    cgst,
+    sgst,
+    igst,
+    grandTotal,
+    isInterState,
+  };
+}
+
 function addActivityLog(existingLogs = [], action, actor = 'Admin', details = '') {
   const newLog = {
     id: 'log_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
@@ -814,8 +854,17 @@ export default function PurchaseBillsPage() {
 
     setSaving(true);
     try {
-      const grandTotalNum = parseFloat(formData.grandTotal) || parseFloat(formData.taxableAmount) || 0;
-      const netPayableNum = parseFloat(formData.netPayable) || grandTotalNum;
+      const taxableNum = parseFloat(formData.taxableAmount) || 0;
+      const gstRateNum = parseFloat(formData.gstRate) || 0;
+      const calc = calculateGstBreakdown(taxableNum, gstRateNum, formData.taxType, formData.tdsSection);
+
+      const grandTotalNum = parseFloat(formData.grandTotal) || parseFloat(calc.grandTotal) || taxableNum;
+      const netPayableNum = parseFloat(formData.netPayable) || parseFloat(calc.netPayable) || grandTotalNum;
+
+      const cgstVal = parseFloat(formData.cgstAmount) || calc.cgstAmount || 0;
+      const sgstVal = parseFloat(formData.sgstAmount) || calc.sgstAmount || 0;
+      const igstVal = parseFloat(formData.igstAmount) || calc.igstAmount || 0;
+      const totalGstVal = parseFloat(formData.totalGst) || calc.totalGst || (cgstVal + sgstVal + igstVal);
 
       let logs = [];
       if (editingBill) {
@@ -824,7 +873,7 @@ export default function PurchaseBillsPage() {
           existingLogs,
           'UPDATED',
           'Admin',
-          `Bill #${formData.billNumber} modified (Taxable: ₹${formatINR(formData.taxableAmount)}, Total: ₹${formatINR(grandTotalNum)}, Net: ₹${formatINR(netPayableNum)})`
+          `Bill #${formData.billNumber} modified (Taxable: ₹${formatINR(taxableNum)}, Total: ₹${formatINR(grandTotalNum)}, Net: ₹${formatINR(netPayableNum)})`
         );
       } else {
         logs = addActivityLog(
@@ -860,15 +909,15 @@ export default function PurchaseBillsPage() {
         hsnSacCode: formData.hsnSacCode.trim(),
         airwayBillNo: formData.airwayBillNo.trim(),
         description: formData.description.trim(),
-        taxableAmount: parseFloat(formData.taxableAmount) || 0,
-        gstRate: parseFloat(formData.gstRate) || 0,
-        cgstAmount: parseFloat(formData.cgstAmount) || 0,
-        sgstAmount: parseFloat(formData.sgstAmount) || 0,
-        igstAmount: parseFloat(formData.igstAmount) || 0,
-        totalGst: parseFloat(formData.totalGst) || 0,
+        taxableAmount: taxableNum,
+        gstRate: gstRateNum,
+        cgstAmount: cgstVal,
+        sgstAmount: sgstVal,
+        igstAmount: igstVal,
+        totalGst: totalGstVal,
         tdsSection: formData.tdsSection,
-        tdsRate: parseFloat(formData.tdsRate) || 0,
-        tdsAmount: parseFloat(formData.tdsAmount) || 0,
+        tdsRate: parseFloat(formData.tdsRate) || calc.tdsRate || 0,
+        tdsAmount: parseFloat(formData.tdsAmount) || calc.tdsAmount || 0,
         grandTotal: grandTotalNum,
         netPayable: netPayableNum,
         itcEligibility: formData.itcEligibility,
@@ -1389,31 +1438,56 @@ export default function PurchaseBillsPage() {
 
                       {/* Taxable */}
                       <td className="py-3 px-4 text-right font-mono text-slate-300">
-                        ₹{formatINR(data.taxableAmount)}
+                        {(() => {
+                          const brk = getBillGstBreakdown(data);
+                          return `₹${formatINR(brk.taxable)}`;
+                        })()}
                       </td>
 
                       {/* GST Split */}
-                      <td className="py-3 px-4 text-right font-mono text-slate-400 text-[11px]">
-                        {data.taxType === 'INTER_STATE' ? (
-                          <div>IGST ({data.gstRate}%): ₹{formatINR(data.igstAmount || data.totalGst)}</div>
-                        ) : (
-                          <div>
-                            CGST+SGST ({data.gstRate}%): ₹{formatINR((data.cgstAmount || 0) + (data.sgstAmount || 0) || data.totalGst)}
-                          </div>
-                        )}
+                      <td className="py-3 px-4 text-right font-mono text-[11px]">
+                        {(() => {
+                          const brk = getBillGstBreakdown(data);
+                          if (brk.isInterState) {
+                            return (
+                              <div className="text-indigo-300 font-semibold">
+                                IGST ({brk.gstRate}%): ₹{formatINR(brk.igst)}
+                              </div>
+                            );
+                          }
+                          return (
+                            <div>
+                              <div className="text-slate-200 font-medium">
+                                CGST+SGST ({brk.gstRate}%): ₹{formatINR(brk.totalGst)}
+                              </div>
+                              {brk.totalGst > 0 && (
+                                <div className="text-[10px] text-slate-400">
+                                  (CGST: ₹{formatINR(brk.cgst)} | SGST: ₹{formatINR(brk.sgst)})
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
                         {data.tdsAmount > 0 && (
-                          <div className="text-[10px] text-amber-400">TDS: -₹{formatINR(data.tdsAmount)}</div>
+                          <div className="text-[10px] text-amber-400 font-mono">TDS: -₹{formatINR(data.tdsAmount)}</div>
                         )}
                       </td>
 
                       {/* Grand Total */}
                       <td className="py-3 px-4 text-right font-mono font-bold text-slate-100">
-                        ₹{formatINR(data.grandTotal || data.taxableAmount)}
-                        {data.netPayable && data.netPayable !== data.grandTotal && (
-                          <div className="text-[10px] text-emerald-400 font-normal">
-                            Net: ₹{formatINR(data.netPayable)}
-                          </div>
-                        )}
+                        {(() => {
+                          const brk = getBillGstBreakdown(data);
+                          return (
+                            <>
+                              <div>₹{formatINR(brk.grandTotal)}</div>
+                              {data.netPayable && parseFloat(data.netPayable) !== brk.grandTotal && (
+                                <div className="text-[10px] text-emerald-400 font-normal">
+                                  Net: ₹{formatINR(data.netPayable)}
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
                       </td>
 
                       {/* Payment Status Badge */}
@@ -2526,37 +2600,47 @@ export default function PurchaseBillsPage() {
                 </div>
 
                 {/* Financials & GST Summary Box */}
-                <div className="p-3.5 bg-slate-950/70 border border-slate-800 rounded space-y-2.5">
-                  <div className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                    <Calculator size={13} className="text-indigo-400" /> Tax & Amount Breakdown
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-slate-200">
-                    <div>
-                      <span className="text-slate-500 block text-[10px]">Taxable Amount</span>
-                      <span className="font-mono font-bold text-slate-100">₹{formatINR(data.taxableAmount)}</span>
+                {(() => {
+                  const brk = getBillGstBreakdown(data);
+                  return (
+                    <div className="p-3.5 bg-slate-950/70 border border-slate-800 rounded space-y-2.5">
+                      <div className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                        <Calculator size={13} className="text-indigo-400" /> Tax & Amount Breakdown
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-slate-200">
+                        <div>
+                          <span className="text-slate-500 block text-[10px]">Taxable Amount</span>
+                          <span className="font-mono font-bold text-slate-100">₹{formatINR(brk.taxable)}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block text-[10px]">
+                            {brk.isInterState ? 'IGST' : 'CGST + SGST'} ({brk.gstRate}%)
+                          </span>
+                          <span className="font-mono text-slate-100 font-bold">₹{formatINR(brk.totalGst)}</span>
+                          {!brk.isInterState && brk.totalGst > 0 && (
+                            <span className="block text-[9px] text-slate-400 font-mono">
+                              (CGST: ₹{formatINR(brk.cgst)} | SGST: ₹{formatINR(brk.sgst)})
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block text-[10px]">Grand Total</span>
+                          <span className="font-mono font-bold text-indigo-400">₹{formatINR(brk.grandTotal)}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block text-[10px]">ITC Eligibility</span>
+                          <span className="font-semibold text-emerald-400">{data.itcEligibility || 'ELIGIBLE'}</span>
+                        </div>
+                      </div>
+                      {data.tdsAmount > 0 && (
+                        <div className="pt-1 border-t border-slate-800 text-[11px] flex items-center justify-between text-amber-300">
+                          <span>TDS Deducted ({data.tdsSection}): -₹{formatINR(data.tdsAmount)}</span>
+                          <span className="font-mono font-bold">Net Payable: ₹{formatINR(data.netPayable)}</span>
+                        </div>
+                      )}
                     </div>
-                    <div>
-                      <span className="text-slate-500 block text-[10px]">
-                        {data.taxType === 'INTER_STATE' ? 'IGST' : 'CGST + SGST'} ({data.gstRate}%)
-                      </span>
-                      <span className="font-mono text-slate-200">₹{formatINR(data.totalGst)}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block text-[10px]">Grand Total</span>
-                      <span className="font-mono font-bold text-indigo-400">₹{formatINR(data.grandTotal)}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block text-[10px]">ITC Eligibility</span>
-                      <span className="font-semibold text-emerald-400">{data.itcEligibility || 'ELIGIBLE'}</span>
-                    </div>
-                  </div>
-                  {data.tdsAmount > 0 && (
-                    <div className="pt-1 border-t border-slate-800 text-[11px] flex items-center justify-between text-amber-300">
-                      <span>TDS Deducted ({data.tdsSection}): -₹{formatINR(data.tdsAmount)}</span>
-                      <span className="font-mono font-bold">Net Payable: ₹{formatINR(data.netPayable)}</span>
-                    </div>
-                  )}
-                </div>
+                  );
+                })()}
 
                 {/* Settlement Information */}
                 {isPaid && (
