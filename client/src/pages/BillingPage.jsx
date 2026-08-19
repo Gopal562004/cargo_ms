@@ -21,6 +21,9 @@ import {
   Package,
   Bookmark,
   SlidersHorizontal,
+  FileSpreadsheet,
+  Layers,
+  ArrowRight,
 } from 'lucide-react';
 import { useDocumentStore } from '../store/documentStore';
 import { printDocumentPDF, downloadDocumentPDF, deleteDocument } from '../services/documentService';
@@ -67,6 +70,7 @@ export default function BillingPage() {
   });
 
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [showGstr1Summary, setShowGstr1Summary] = useState(false);
 
   // Active advanced filters count (excluding search & status)
   const activeAdvancedCount = [
@@ -259,14 +263,14 @@ export default function BillingPage() {
 
     const matchesSearch =
       (doc.documentNumber || '').toLowerCase().includes(q) ||
-      (doc.title || '').toLowerCase().includes(q) ||
-      (data.buyerName || '').toLowerCase().includes(q) ||
-      (data.consigneeName || '').toLowerCase().includes(q) ||
-      (data.shipperName || '').toLowerCase().includes(q) ||
       (data.invoiceNumber || '').toLowerCase().includes(q) ||
+      (data.buyerName || '').toLowerCase().includes(q) ||
+      (data.buyerGstin || '').toLowerCase().includes(q) ||
+      (data.consigneeName || '').toLowerCase().includes(q) ||
+      (data.consigneeAddress || '').toLowerCase().includes(q) ||
       (data.airwayBillNo || '').toLowerCase().includes(q) ||
+      (data.poNumberAndDate || '').toLowerCase().includes(q) ||
       (data.referenceName || '').toLowerCase().includes(q) ||
-      (data.companyName || '').toLowerCase().includes(q) ||
       items.some(
         (it) =>
           (it.description || '').toLowerCase().includes(q) ||
@@ -277,25 +281,109 @@ export default function BillingPage() {
     return matchesSearch;
   });
 
-  // Calculate Metrics
+  // Calculate Financial Aggregations & GSTR-1 Metrics
   const totalCount = invoices.length;
-  const draftCount = invoices.filter((d) => d.status === 'DRAFT').length;
-  const pendingPaymentCount = invoices.filter((d) => d.status === 'ISSUED').length;
-  const paidCount = invoices.filter((d) => ['COMPLETED', 'DELIVERED'].includes(d.status)).length;
-  const totalBilledAmount = invoices.reduce((acc, doc) => {
-    const grandTotal = doc.data?.grandTotal || 0;
-    return acc + (parseFloat(grandTotal) || 0);
-  }, 0);
+  const draftCount = invoices.filter((i) => i.status === 'DRAFT').length;
+  const pendingPaymentCount = invoices.filter((i) => i.status === 'ISSUED' || i.status === 'IN_TRANSIT').length;
+  const paidCount = invoices.filter((i) => i.status === 'COMPLETED').length;
 
-  // Paginate filtered results
-  const paginatedInvoices = filteredInvoices.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const totalBilledAmount = invoices.reduce((sum, d) => sum + (parseFloat(d.data?.grandTotal) || 0), 0);
+
+  // GSTR-1 Breakdown across filtered invoices
+  let totalBilledTaxable = 0;
+  let totalBilledCGST = 0;
+  let totalBilledSGST = 0;
+  let totalBilledIGST = 0;
+  let b2bTaxable = 0;
+  let b2bTotal = 0;
+  let b2bCount = 0;
+  let b2cTaxable = 0;
+  let b2cTotal = 0;
+  let b2cCount = 0;
+
+  filteredInvoices.forEach((doc) => {
+    const d = doc.data || {};
+    const taxable = parseFloat(d.totalTaxable) || 0;
+    const cgst = parseFloat(d.totalCGST) || 0;
+    const sgst = parseFloat(d.totalSGST) || 0;
+    const igst = parseFloat(d.totalIGST) || 0;
+    const grand = parseFloat(d.grandTotal) || (taxable + cgst + sgst + igst);
+
+    totalBilledTaxable += taxable;
+    totalBilledCGST += cgst;
+    totalBilledSGST += sgst;
+    totalBilledIGST += igst;
+
+    if (d.buyerGstin && d.buyerGstin.trim().length >= 10) {
+      b2bCount++;
+      b2bTaxable += taxable;
+      b2bTotal += grand;
+    } else {
+      b2cCount++;
+      b2cTaxable += taxable;
+      b2cTotal += grand;
+    }
+  });
+
+  const exportGstr1Csv = () => {
+    const headers = [
+      'Invoice Number',
+      'Invoice Date',
+      'Buyer Name',
+      'Buyer GSTIN',
+      'Place of Supply',
+      'Reverse Charge',
+      'Taxable Value (INR)',
+      'CGST (INR)',
+      'SGST (INR)',
+      'IGST (INR)',
+      'Grand Total (INR)',
+      'Status',
+      'Payment Mode',
+      'Txn Reference',
+    ];
+
+    const rows = filteredInvoices.map((doc) => {
+      const d = doc.data || {};
+      return [
+        `"${doc.documentNumber || d.invoiceNumber || ''}"`,
+        `"${d.invoiceDate || new Date(doc.createdAt).toLocaleDateString('en-GB')}"`,
+        `"${(d.buyerName || '').replace(/"/g, '""')}"`,
+        `"${d.buyerGstin || ''}"`,
+        `"${d.placeOfSupply || 'Maharashtra (27)'}"`,
+        `"${d.reverseCharge || 'N'}"`,
+        (parseFloat(d.totalTaxable) || 0).toFixed(2),
+        (parseFloat(d.totalCGST) || 0).toFixed(2),
+        (parseFloat(d.totalSGST) || 0).toFixed(2),
+        (parseFloat(d.totalIGST) || 0).toFixed(2),
+        (parseFloat(d.grandTotal) || 0).toFixed(2),
+        `"${doc.status}"`,
+        `"${d.paymentMode || ''}"`,
+        `"${d.transactionId || ''}"`,
+      ];
+    });
+
+    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `GSTR1_Sales_Report_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Pagination slicing
+  const startIndex = (currentPage - 1) * pageSize;
+  const paginatedInvoices = filteredInvoices.slice(startIndex, startIndex + pageSize);
 
   const handlePrint = async (docId) => {
     setPrintingId(docId);
     try {
       await printDocumentPDF(docId);
     } catch (err) {
-      alert('Error printing bill: ' + err.message);
+      alert('Error initiating print: ' + err.message);
     } finally {
       setPrintingId(null);
     }
@@ -346,7 +434,16 @@ export default function BillingPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <Button
+            variant="secondary"
+            onClick={exportGstr1Csv}
+            className="rounded text-xs bg-slate-800 hover:bg-slate-700 text-slate-200"
+            title="Download CSV for monthly GSTR-1 filing"
+          >
+            <FileSpreadsheet size={14} className="mr-1.5 inline text-emerald-400" /> Export GSTR-1 CSV
+          </Button>
+
           <Button
             variant="secondary"
             onClick={() => navigate('/billing/templates')}
@@ -415,6 +512,74 @@ export default function BillingPage() {
           <div className="text-xl font-bold text-slate-300 font-mono">{draftCount}</div>
           <div className="text-[10px] text-slate-500">Unsent drafts</div>
         </div>
+      </div>
+
+      {/* GSTR-1 Sales Summary Bar */}
+      <div className="p-4 bg-slate-900/80 border border-slate-800 rounded-md shadow-sm space-y-3">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+          <div className="flex items-center gap-2">
+            <Layers size={16} className="text-indigo-400" />
+            <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wide">
+              GSTR-1 Outward Sales Breakdown ({filteredInvoices.length} Active)
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowGstr1Summary(!showGstr1Summary)}
+            className="text-xs text-indigo-400 hover:text-indigo-300 font-medium"
+          >
+            {showGstr1Summary ? 'Hide Details ▲' : 'Show Tax Split ▼'}
+          </button>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="p-2.5 bg-slate-950/70 rounded border border-slate-800/80">
+            <span className="text-[11px] text-slate-400 font-medium block">Total Taxable Value</span>
+            <span className="text-sm font-bold text-slate-100 font-mono">₹{formatINR(totalBilledTaxable)}</span>
+          </div>
+          <div className="p-2.5 bg-slate-950/70 rounded border border-slate-800/80">
+            <span className="text-[11px] text-slate-400 font-medium block">Total CGST + SGST</span>
+            <span className="text-sm font-bold text-emerald-400 font-mono">₹{formatINR(totalBilledCGST + totalBilledSGST)}</span>
+          </div>
+          <div className="p-2.5 bg-slate-950/70 rounded border border-slate-800/80">
+            <span className="text-[11px] text-slate-400 font-medium block">Total IGST</span>
+            <span className="text-sm font-bold text-indigo-400 font-mono">₹{formatINR(totalBilledIGST)}</span>
+          </div>
+          <div className="p-2.5 bg-slate-950/70 rounded border border-slate-800/80">
+            <span className="text-[11px] text-slate-400 font-medium block">B2B vs B2C Split</span>
+            <span className="text-xs font-semibold text-slate-300 font-mono">
+              B2B: {b2bCount} (₹{formatINR(b2bTotal)}) | B2C: {b2cCount}
+            </span>
+          </div>
+        </div>
+
+        {showGstr1Summary && (
+          <div className="pt-2 border-t border-slate-800/80 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs animate-fade-in">
+            <div className="p-3 bg-slate-950 rounded border border-slate-800 space-y-1">
+              <div className="font-bold text-indigo-300">B2B Registered Sales (With GSTIN)</div>
+              <div className="flex justify-between text-slate-400">
+                <span>Invoices: {b2bCount}</span>
+                <span className="font-mono text-slate-200">Taxable: ₹{formatINR(b2bTaxable)}</span>
+              </div>
+              <div className="flex justify-between text-slate-400">
+                <span>Total Invoice Value:</span>
+                <span className="font-mono font-bold text-emerald-400">₹{formatINR(b2bTotal)}</span>
+              </div>
+            </div>
+
+            <div className="p-3 bg-slate-950 rounded border border-slate-800 space-y-1">
+              <div className="font-bold text-amber-300">B2C Unregistered Sales (Retail / Walk-in)</div>
+              <div className="flex justify-between text-slate-400">
+                <span>Invoices: {b2cCount}</span>
+                <span className="font-mono text-slate-200">Taxable: ₹{formatINR(b2cTaxable)}</span>
+              </div>
+              <div className="flex justify-between text-slate-400">
+                <span>Total Invoice Value:</span>
+                <span className="font-mono font-bold text-emerald-400">₹{formatINR(b2cTotal)}</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Long Search Bar & Controls */}

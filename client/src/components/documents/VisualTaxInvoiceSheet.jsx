@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
-import { Plus, X, Building, Truck, Copy } from 'lucide-react';
+import { Plus, X, Building, Truck, Copy, Package, Zap } from 'lucide-react';
 import GstRateSelect from '../ui/GstRateSelect';
+import { LOGISTICS_ITEM_PRESETS } from './TaxInvoiceEditor';
 
 /**
  * VisualTaxInvoiceSheet - Pixel-perfect, WYSIWYG printable A4 sheet editor for Tax Invoices.
@@ -19,6 +20,7 @@ export default function VisualTaxInvoiceSheet({
   savedShippers = [],
   handleSelectBuyer,
   handleSelectShipper,
+  handleAddPresetItem,
 }) {
   const logoInputRef = useRef(null);
 
@@ -33,9 +35,34 @@ export default function VisualTaxInvoiceSheet({
   };
 
   const unitLabel = totals.unitsSet.size === 1 ? (items[0]?.unit || 'Pcs') : 'Qty';
+  const isInterState = formData.taxType === 'INTER_STATE';
 
   return (
-    <div className="w-full flex justify-center py-4 bg-slate-950/60 rounded-md overflow-x-auto">
+    <div className="w-full flex flex-col items-center py-4 bg-slate-950/60 rounded-md overflow-x-auto space-y-4">
+      {/* 1-Click Fast Add Preset Bar */}
+      {handleAddPresetItem && (
+        <div className="w-[820px] max-w-full bg-slate-900 border border-slate-800 rounded-md p-2.5 flex items-center justify-between gap-3 shadow-md">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-200 shrink-0">
+            <Package size={14} className="text-amber-400" />
+            <span>Fast-Add Item:</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {LOGISTICS_ITEM_PRESETS.slice(0, 6).map((preset) => (
+              <button
+                key={preset.id}
+                type="button"
+                onClick={() => handleAddPresetItem(preset)}
+                className="px-2 py-0.5 bg-slate-950 hover:bg-indigo-600/30 border border-slate-800 hover:border-indigo-500 text-slate-300 hover:text-white rounded text-[10.5px] font-medium transition-all flex items-center gap-1"
+                title={`Add ${preset.description}`}
+              >
+                <Plus size={10} className="text-indigo-400" />
+                <span>{preset.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* A4 Printable Sheet Container */}
       <div
         className="w-[820px] min-w-[820px] bg-white text-black p-7 shadow-xl font-sans rounded text-[12px] leading-tight select-text border border-slate-300"
@@ -54,7 +81,6 @@ export default function VisualTaxInvoiceSheet({
 
         {/* Outer Invoice Box with Solid Black Border */}
         <div className="border-2 border-black">
-          
           {/* ========================================================================= */}
           {/* 1. HEADER SECTION (Logo + Title + Company Information) */}
           {/* ========================================================================= */}
@@ -98,192 +124,194 @@ export default function VisualTaxInvoiceSheet({
 
                 {/* Logo Action Tooltip / Reset */}
                 <div className="mt-1 flex flex-col items-center">
-                  <button
-                    type="button"
-                    onClick={() => logoInputRef.current?.click()}
-                    className="text-[9px] text-indigo-700 hover:underline font-semibold"
-                  >
-                    Change Logo
-                  </button>
+                  <span className="text-[9px] text-slate-500 italic text-center cursor-pointer hover:text-indigo-600" onClick={() => logoInputRef.current?.click()}>
+                    {formData.companyLogo ? 'Change logo' : 'Upload logo'}
+                  </span>
                   {formData.companyLogo && (
                     <button
                       type="button"
                       onClick={() => handleFieldChange('companyLogo', null)}
-                      className="text-[9px] text-rose-600 hover:underline"
+                      className="text-[9px] text-rose-500 hover:underline mt-0.5"
                     >
-                      Reset Logo
+                      Reset logo
                     </button>
                   )}
                 </div>
               </div>
 
-              {/* Company Info (Center) */}
-              <div className="flex-1 text-center px-2 space-y-0.5">
+              {/* Company Details (Center) */}
+              <div className="flex-1 text-center px-4 space-y-1">
                 <input
                   type="text"
-                  value={formData.companyName || 'DGR PACKAGING COMPANY'}
+                  value={formData.companyName}
                   onChange={(e) => handleFieldChange('companyName', e.target.value)}
-                  className="w-full text-center font-bold text-[15px] bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 rounded px-1 outline-none border border-transparent focus:border-indigo-400"
-                  placeholder="Company Name"
+                  className="w-full text-center font-bold text-[18px] uppercase tracking-tight bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 p-1 rounded outline-none border border-transparent focus:border-indigo-400"
+                  placeholder="DGR PACKAGING COMPANY"
                 />
 
-                <input
-                  type="text"
-                  value={formData.companyAddress || 'SHOP NO.2, OPP. BLUE DART, NEAR, SAHAR CARGO COMPLEX, ANDHERI (E)'}
+                <textarea
+                  rows={2}
+                  value={formData.companyAddress}
                   onChange={(e) => handleFieldChange('companyAddress', e.target.value)}
-                  className="w-full text-center text-[10px] bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 rounded px-1 outline-none border border-transparent focus:border-indigo-400"
-                  placeholder="Address Line"
+                  className="w-full text-center text-[10.5px] uppercase bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 p-1 rounded outline-none border border-transparent focus:border-indigo-400 resize-none font-medium leading-snug"
+                  placeholder="SHOP NO.2, OPP. BLUE DART, NEAR, SAHAR CARGO COMPLEX, ANDHERI (E)"
                 />
 
                 <input
                   type="text"
-                  value={formData.companyCityPin || 'MUMBAI - 400 099'}
+                  value={formData.companyCityPin}
                   onChange={(e) => handleFieldChange('companyCityPin', e.target.value)}
-                  className="w-full text-center text-[10px] bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 rounded px-1 outline-none border border-transparent focus:border-indigo-400"
-                  placeholder="City - Pincode"
+                  className="w-full text-center text-[11px] font-bold uppercase bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
+                  placeholder="MUMBAI - 400 099"
                 />
 
-                <div className="flex items-center justify-center gap-4 text-[10.5px] pt-0.5">
-                  <div className="flex items-center gap-1 font-bold">
-                    <span>PAN :</span>
-                    <input
-                      type="text"
-                      value={formData.companyPan || 'CBKPK7600K'}
-                      onChange={(e) => handleFieldChange('companyPan', e.target.value)}
-                      className="font-bold bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 rounded px-1 outline-none border border-transparent focus:border-indigo-400 w-28 uppercase"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-center gap-1 font-bold text-[11.5px]">
-                  <span>GSTIN :</span>
+                <div className="flex justify-center items-center gap-1 text-[11px] font-semibold">
+                  <span>PAN :</span>
                   <input
                     type="text"
-                    value={formData.companyGstin || '27CBKPK7600K1ZE'}
-                    onChange={(e) => handleFieldChange('companyGstin', e.target.value)}
-                    className="font-bold bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 rounded px-1 outline-none border border-transparent focus:border-indigo-400 w-44 uppercase text-center"
+                    value={formData.companyPan}
+                    onChange={(e) => handleFieldChange('companyPan', e.target.value.toUpperCase())}
+                    className="font-bold uppercase w-32 text-center bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
+                    placeholder="CBKPK7600K"
                   />
                 </div>
 
-                <div className="flex items-center justify-center gap-2 text-[10px] italic font-semibold text-slate-800">
+                <div className="flex justify-center items-center gap-1 text-[12px] font-bold">
+                  <span>GSTIN :</span>
+                  <input
+                    type="text"
+                    value={formData.companyGstin}
+                    onChange={(e) => handleFieldChange('companyGstin', e.target.value.toUpperCase())}
+                    className="font-extrabold uppercase w-44 text-center bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400 text-indigo-950"
+                    placeholder="27CBKPK7600K1ZE"
+                  />
+                </div>
+
+                <div className="flex justify-center items-center gap-4 text-[10.5px] text-slate-800 pt-0.5">
                   <div className="flex items-center gap-1">
                     <span>Tel. :</span>
                     <input
                       type="text"
-                      value={formData.companyTel || '022 - 26828108'}
+                      value={formData.companyTel}
                       onChange={(e) => handleFieldChange('companyTel', e.target.value)}
-                      className="bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 rounded px-1 outline-none border border-transparent focus:border-indigo-400 w-32"
+                      className="bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400 w-32"
+                      placeholder="022 - 26828108"
                     />
                   </div>
                   <div className="flex items-center gap-1">
                     <span>email :</span>
                     <input
                       type="text"
-                      value={formData.companyEmail || 'dgrpackaging@gmail.com'}
+                      value={formData.companyEmail}
                       onChange={(e) => handleFieldChange('companyEmail', e.target.value)}
-                      className="bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 rounded px-1 outline-none border border-transparent focus:border-indigo-400 w-48"
+                      className="bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400 w-52"
+                      placeholder="dgrpackaging@gmail.com"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Right Spacer for Balance */}
-              <div className="w-24 shrink-0" />
+              {/* Top Right Balance Spacer */}
+              <div className="w-16 shrink-0" />
             </div>
           </div>
 
           {/* ========================================================================= */}
-          {/* 2. TWO-COLUMN METADATA SECTION (Taller & more spacious) */}
+          {/* 2. INVOICE METADATA & TRANSPORT DETAILS (2 Columns Split) */}
           {/* ========================================================================= */}
-          <div className="grid grid-cols-2 border-b-2 border-black text-[11px]">
-            {/* Left Column Metadata */}
-            <div className="p-3.5 border-r-2 border-black space-y-2 min-h-[160px] flex flex-col justify-between">
-              <div className="flex items-center gap-1.5">
-                <span className="w-28 shrink-0 font-bold text-slate-800">Invoice No.</span>
-                <span className="font-bold">:</span>
+          <div className="grid grid-cols-2 border-b-2 border-black text-[10.5px]">
+            {/* Left Column: Invoice Details */}
+            <div className="p-3 border-r-2 border-black space-y-1.5">
+              <div className="flex items-center gap-1.5 font-bold">
+                <span className="w-32 shrink-0 text-slate-800">Invoice No.</span>
+                <span>:</span>
                 <input
                   type="text"
                   value={formData.invoiceNumber}
                   onChange={(e) => handleFieldChange('invoiceNumber', e.target.value)}
-                  className="flex-1 min-w-0 font-bold text-black bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1.5 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
+                  placeholder="DGR/0466/26-27"
+                  className="flex-1 min-w-0 font-extrabold text-indigo-950 bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1.5 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
                 />
               </div>
 
               <div className="flex items-center gap-1.5">
-                <span className="w-28 shrink-0 text-slate-700">Dated</span>
+                <span className="w-32 shrink-0 text-slate-700">Dated</span>
                 <span>:</span>
                 <input
                   type="text"
                   value={formData.invoiceDate}
                   onChange={(e) => handleFieldChange('invoiceDate', e.target.value)}
-                  className="flex-1 min-w-0 bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1.5 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
+                  placeholder="DD-MM-YYYY"
+                  className="flex-1 min-w-0 font-medium bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1.5 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
                 />
               </div>
 
               <div className="flex items-center gap-1.5">
-                <span className="w-28 shrink-0 text-slate-700">Place of Supply</span>
+                <span className="w-32 shrink-0 text-slate-700">Place of Supply</span>
                 <span>:</span>
                 <input
                   type="text"
                   value={formData.placeOfSupply}
                   onChange={(e) => handleFieldChange('placeOfSupply', e.target.value)}
-                  className="flex-1 min-w-0 bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1.5 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
+                  placeholder="Maharashtra (27)"
+                  className="flex-1 min-w-0 bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1.5 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400 font-medium"
                 />
               </div>
 
               <div className="flex items-center gap-1.5">
-                <span className="w-28 shrink-0 text-slate-700">Reverse Charge</span>
+                <span className="w-32 shrink-0 text-slate-700">Reverse Charge</span>
                 <span>:</span>
                 <input
                   type="text"
                   value={formData.reverseCharge}
-                  onChange={(e) => handleFieldChange('reverseCharge', e.target.value)}
-                  className="flex-1 min-w-0 bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1.5 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
+                  onChange={(e) => handleFieldChange('reverseCharge', e.target.value.toUpperCase())}
+                  placeholder="N"
+                  className="w-10 text-center bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1.5 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400 font-semibold"
                 />
               </div>
 
               <div className="flex items-center gap-1.5">
-                <span className="w-28 shrink-0 text-slate-700">Transport</span>
+                <span className="w-32 shrink-0 text-slate-700">Transport</span>
                 <span>:</span>
                 <input
                   type="text"
                   value={formData.transport}
                   onChange={(e) => handleFieldChange('transport', e.target.value)}
-                  placeholder="e.g. BY ROAD"
+                  placeholder="e.g. BY ROAD / AIR / SEA"
                   className="flex-1 min-w-0 bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1.5 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
                 />
               </div>
 
               <div className="flex items-center gap-1.5">
-                <span className="w-28 shrink-0 text-slate-700">E-Way Bill No.</span>
+                <span className="w-32 shrink-0 text-slate-700">E-Way Bill No.</span>
                 <span>:</span>
                 <input
                   type="text"
                   value={formData.ewayBillNo}
                   onChange={(e) => handleFieldChange('ewayBillNo', e.target.value)}
                   placeholder="e.g. 28109823901"
-                  className="flex-1 min-w-0 bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1.5 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
+                  className="flex-1 min-w-0 bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1.5 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400 font-mono"
                 />
               </div>
 
               <div className="flex items-center gap-1.5">
-                <span className="w-28 shrink-0 font-bold text-slate-800">AIRWAY BILL NO</span>
-                <span className="font-bold">:</span>
+                <span className="w-32 shrink-0 text-slate-700">AIRWAY BILL NO</span>
+                <span>:</span>
                 <input
                   type="text"
                   value={formData.airwayBillNo}
                   onChange={(e) => handleFieldChange('airwayBillNo', e.target.value)}
                   placeholder="e.g. 176-6268 0251"
-                  className="flex-1 min-w-0 font-bold bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1.5 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
+                  className="flex-1 min-w-0 bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1.5 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400 font-mono"
                 />
               </div>
             </div>
 
-            {/* Right Column Metadata */}
-            <div className="p-3.5 space-y-2 min-h-[160px] flex flex-col justify-between">
+            {/* Right Column: PO & Reference Details */}
+            <div className="p-3 space-y-1.5">
               <div className="flex items-center gap-1.5">
-                <span className="w-32 shrink-0 font-bold text-slate-800">P.O. NO. & DATE</span>
-                <span className="font-bold">:</span>
+                <span className="w-32 shrink-0 text-slate-700">P.O. NO. & DATE</span>
+                <span>:</span>
                 <input
                   type="text"
                   value={formData.poNumberAndDate}
@@ -348,8 +376,8 @@ export default function VisualTaxInvoiceSheet({
                   type="text"
                   value={formData.referenceName}
                   onChange={(e) => handleFieldChange('referenceName', e.target.value)}
-                  placeholder="e.g. Contact Person"
-                  className="flex-1 min-w-0 bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1.5 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
+                  placeholder="e.g. Mayur Kadam"
+                  className="flex-1 min-w-0 bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1.5 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400 font-medium"
                 />
               </div>
 
@@ -360,15 +388,15 @@ export default function VisualTaxInvoiceSheet({
                   type="text"
                   value={formData.contactNumber}
                   onChange={(e) => handleFieldChange('contactNumber', e.target.value)}
-                  placeholder="e.g. +91 9326392294"
-                  className="flex-1 min-w-0 bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1.5 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
+                  placeholder="e.g. 9028345261"
+                  className="flex-1 min-w-0 bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1.5 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400 font-mono"
                 />
               </div>
             </div>
           </div>
 
           {/* ========================================================================= */}
-          {/* 3. BILLED TO & SHIPPED TO SECTION (Taller & more spacious) */}
+          {/* 3. BILLED TO & SHIPPED TO SECTION */}
           {/* ========================================================================= */}
           <div className="grid grid-cols-2 border-b-2 border-black text-[11px]">
             {/* Billed To (Buyer) */}
@@ -427,9 +455,9 @@ export default function VisualTaxInvoiceSheet({
                   <input
                     type="text"
                     value={formData.buyerGstin}
-                    onChange={(e) => handleFieldChange('buyerGstin', e.target.value)}
+                    onChange={(e) => handleFieldChange('buyerGstin', e.target.value.toUpperCase())}
                     placeholder="27AAMCT0922D1Z1"
-                    className="flex-1 min-w-0 font-bold text-indigo-900 bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1.5 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
+                    className="flex-1 min-w-0 font-bold text-indigo-900 bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1.5 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400 uppercase"
                   />
                 </div>
               </div>
@@ -509,9 +537,9 @@ export default function VisualTaxInvoiceSheet({
                   <input
                     type="text"
                     value={formData.consigneeGstin}
-                    onChange={(e) => handleFieldChange('consigneeGstin', e.target.value)}
+                    onChange={(e) => handleFieldChange('consigneeGstin', e.target.value.toUpperCase())}
                     placeholder="27AAMCT0922D1Z1"
-                    className="flex-1 min-w-0 font-bold text-indigo-900 bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1.5 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
+                    className="flex-1 min-w-0 font-bold text-indigo-900 bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1.5 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400 uppercase"
                   />
                 </div>
               </div>
@@ -530,10 +558,19 @@ export default function VisualTaxInvoiceSheet({
                   <th className="w-16 p-1 border-r border-black">HSN/SAC Code</th>
                   <th className="w-16 p-1 border-r border-black">Qty. Unit</th>
                   <th className="w-16 p-1 border-r border-black text-right">Price</th>
-                  <th className="w-12 p-1 border-r border-black">CGST Rate</th>
-                  <th className="w-14 p-1 border-r border-black text-right">CGST Amount</th>
-                  <th className="w-12 p-1 border-r border-black">SGST Rate</th>
-                  <th className="w-14 p-1 border-r border-black text-right">SGST Amount</th>
+                  {isInterState ? (
+                    <>
+                      <th className="w-14 p-1 border-r border-black">IGST Rate</th>
+                      <th className="w-16 p-1 border-r border-black text-right">IGST Amount</th>
+                    </>
+                  ) : (
+                    <>
+                      <th className="w-12 p-1 border-r border-black">CGST Rate</th>
+                      <th className="w-14 p-1 border-r border-black text-right">CGST Amount</th>
+                      <th className="w-12 p-1 border-r border-black">SGST Rate</th>
+                      <th className="w-14 p-1 border-r border-black text-right">SGST Amount</th>
+                    </>
+                  )}
                   <th className="w-18 p-1 text-right">Amount(Rs.)</th>
                   <th className="w-6 p-1 no-print"></th>
                 </tr>
@@ -545,14 +582,17 @@ export default function VisualTaxInvoiceSheet({
                   const taxable = qty * price;
                   const cgstR = parseFloat(item.cgstRate) || 0;
                   const sgstR = parseFloat(item.sgstRate) || 0;
+                  const igstR = parseFloat(item.igstRate) || 0;
+
                   const cgstAmt = (taxable * cgstR) / 100;
                   const sgstAmt = (taxable * sgstR) / 100;
-                  const lineTotal = taxable + cgstAmt + sgstAmt;
+                  const igstAmt = (taxable * igstR) / 100;
+                  const lineTotal = taxable + cgstAmt + sgstAmt + igstAmt;
 
                   return (
                     <tr key={idx} className="border-b border-slate-300 group hover:bg-indigo-50/30">
                       <td className="p-1 border-r border-black text-center font-semibold">{idx + 1}.</td>
-                      
+
                       <td className="p-1 border-r border-black space-y-0.5">
                         <input
                           type="text"
@@ -575,7 +615,7 @@ export default function VisualTaxInvoiceSheet({
                           type="text"
                           value={item.hsnCode}
                           onChange={(e) => handleItemChange(idx, 'hsnCode', e.target.value)}
-                          className="w-full text-center bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
+                          className="w-full text-center bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400 font-mono"
                         />
                       </td>
 
@@ -583,6 +623,7 @@ export default function VisualTaxInvoiceSheet({
                         <div className="flex items-center gap-0.5">
                           <input
                             type="number"
+                            step="any"
                             value={item.qty}
                             onChange={(e) => handleItemChange(idx, 'qty', e.target.value)}
                             className="w-10 text-center font-semibold bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
@@ -599,37 +640,68 @@ export default function VisualTaxInvoiceSheet({
                       <td className="p-1 border-r border-black text-right">
                         <input
                           type="number"
+                          step="any"
                           value={item.price}
                           onChange={(e) => handleItemChange(idx, 'price', e.target.value)}
                           className="w-14 text-right font-semibold bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
                         />
                       </td>
 
-                      <td className="p-1 border-r border-black text-center">
-                        <GstRateSelect
-                          value={item.gstRate}
-                          onChange={(val) => handleItemChange(idx, 'gstRate', val)}
-                          className="text-[9.5px] bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-0.5 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400 cursor-pointer font-medium"
-                          showHalfRateOnly
-                        />
-                      </td>
-
-                      <td className="p-1 border-r border-black text-right font-mono text-[9.5px]">
-                        {cgstAmt > 0 ? cgstAmt.toFixed(2) : '-'}
-                      </td>
-
-                      <td className="p-1 border-r border-black text-center">
-                        <GstRateSelect
-                          value={item.gstRate}
-                          onChange={(val) => handleItemChange(idx, 'gstRate', val)}
-                          className="text-[9.5px] bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-0.5 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400 cursor-pointer font-medium"
-                          showHalfRateOnly
-                        />
-                      </td>
-
-                      <td className="p-1 border-r border-black text-right font-mono text-[9.5px]">
-                        {sgstAmt > 0 ? sgstAmt.toFixed(2) : '-'}
-                      </td>
+                      {isInterState ? (
+                        <>
+                          <td className="p-1 border-r border-black text-center font-medium">
+                            <select
+                              value={item.gstRate}
+                              onChange={(e) => handleItemChange(idx, 'gstRate', e.target.value)}
+                              className="text-[9.5px] bg-transparent outline-none cursor-pointer"
+                            >
+                              <option value="0">0%</option>
+                              <option value="5">5%</option>
+                              <option value="12">12%</option>
+                              <option value="18">18%</option>
+                              <option value="28">28%</option>
+                            </select>
+                          </td>
+                          <td className="p-1 border-r border-black text-right font-mono text-[9.5px]">
+                            {igstAmt > 0 ? igstAmt.toFixed(2) : '-'}
+                          </td>
+                        </>
+                      ) : (
+                        <>
+                          <td className="p-1 border-r border-black text-center font-medium">
+                            <select
+                              value={item.gstRate}
+                              onChange={(e) => handleItemChange(idx, 'gstRate', e.target.value)}
+                              className="text-[9.5px] bg-transparent outline-none cursor-pointer"
+                            >
+                              <option value="0">0%</option>
+                              <option value="5">2.5%</option>
+                              <option value="12">6%</option>
+                              <option value="18">9%</option>
+                              <option value="28">14%</option>
+                            </select>
+                          </td>
+                          <td className="p-1 border-r border-black text-right font-mono text-[9.5px]">
+                            {cgstAmt > 0 ? cgstAmt.toFixed(2) : '-'}
+                          </td>
+                          <td className="p-1 border-r border-black text-center font-medium">
+                            <select
+                              value={item.gstRate}
+                              onChange={(e) => handleItemChange(idx, 'gstRate', e.target.value)}
+                              className="text-[9.5px] bg-transparent outline-none cursor-pointer"
+                            >
+                              <option value="0">0%</option>
+                              <option value="5">2.5%</option>
+                              <option value="12">6%</option>
+                              <option value="18">9%</option>
+                              <option value="28">14%</option>
+                            </select>
+                          </td>
+                          <td className="p-1 border-r border-black text-right font-mono text-[9.5px]">
+                            {sgstAmt > 0 ? sgstAmt.toFixed(2) : '-'}
+                          </td>
+                        </>
+                      )}
 
                       <td className="p-1 text-right font-bold font-mono text-[10px]">
                         {lineTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -684,13 +756,19 @@ export default function VisualTaxInvoiceSheet({
           {/* 6. TAX SUMMARY BREAKDOWN TABLE */}
           {/* ========================================================================= */}
           <div className="p-2 border-b-2 border-black text-[10px]">
-            <table className="w-72 border-collapse text-center">
+            <table className="w-80 border-collapse text-center">
               <thead>
                 <tr className="font-bold border-b border-slate-400">
                   <th className="text-left py-0.5">Tax Rate</th>
                   <th className="text-right py-0.5">Taxable Amt.</th>
-                  <th className="text-right py-0.5">CGST Amt.</th>
-                  <th className="text-right py-0.5">SGST Amt.</th>
+                  {isInterState ? (
+                    <th className="text-right py-0.5">IGST Amt.</th>
+                  ) : (
+                    <>
+                      <th className="text-right py-0.5">CGST Amt.</th>
+                      <th className="text-right py-0.5">SGST Amt.</th>
+                    </>
+                  )}
                   <th className="text-right py-0.5">Total Tax</th>
                 </tr>
               </thead>
@@ -698,10 +776,26 @@ export default function VisualTaxInvoiceSheet({
                 {Object.values(totals.taxSlabs).map((slab, sIdx) => (
                   <tr key={sIdx} className="font-mono text-[9.5px]">
                     <td className="text-left py-0.5 font-sans font-semibold">{slab.rate}%</td>
-                    <td className="text-right py-0.5">{slab.taxable.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                    <td className="text-right py-0.5">{slab.cgst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                    <td className="text-right py-0.5">{slab.sgst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                    <td className="text-right py-0.5 font-bold">{slab.total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                    <td className="text-right py-0.5">
+                      {slab.taxable.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </td>
+                    {isInterState ? (
+                      <td className="text-right py-0.5">
+                        {slab.igst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                    ) : (
+                      <>
+                        <td className="text-right py-0.5">
+                          {slab.cgst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                        <td className="text-right py-0.5">
+                          {slab.sgst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                      </>
+                    )}
+                    <td className="text-right py-0.5 font-bold">
+                      {slab.total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -711,107 +805,98 @@ export default function VisualTaxInvoiceSheet({
           {/* ========================================================================= */}
           {/* 7. AMOUNT IN WORDS */}
           {/* ========================================================================= */}
-          <div className="p-2 border-b-2 border-black font-bold text-[11px] flex items-center gap-1">
-            <input
-              type="text"
-              value={formData.amountInWords || totals.amountInWords}
-              onChange={(e) => handleFieldChange('amountInWords', e.target.value)}
-              className="w-full font-bold text-black bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
-            />
+          <div className="p-2 border-b-2 border-black text-[11px] font-bold">
+            <span>Rupees </span>
+            <span className="font-normal italic">{totals.amountInWords.replace(/^Rupees\s*/i, '')}</span>
           </div>
 
           {/* ========================================================================= */}
           {/* 8. BANK DETAILS */}
           {/* ========================================================================= */}
-          <div className="p-2 border-b-2 border-black text-center space-y-1">
-            <div className="font-bold text-[11px]">Bank Details</div>
-            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[9.5px]">
-              <div className="flex items-center gap-1 font-semibold">
+          <div className="p-2 border-b-2 border-black text-center text-[10px] space-y-0.5">
+            <div className="font-bold text-[11px] uppercase tracking-wide">Bank Details</div>
+            <div className="flex flex-wrap items-center justify-center gap-x-4 text-slate-800">
+              <div className="flex items-center gap-1">
                 <span>Bank name :</span>
                 <input
                   type="text"
-                  value={formData.bankName || 'HDFC BANK LTD'}
+                  value={formData.bankName}
                   onChange={(e) => handleFieldChange('bankName', e.target.value)}
-                  className="bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400 w-28 uppercase font-bold"
+                  className="font-bold uppercase bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
+                  placeholder="HDFC BANK LTD"
                 />
               </div>
-
               <div className="flex items-center gap-1">
                 <span>A/c No:</span>
                 <input
                   type="text"
-                  value={formData.accountNumber || '06687630000070'}
+                  value={formData.accountNumber}
                   onChange={(e) => handleFieldChange('accountNumber', e.target.value)}
-                  className="bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400 w-36 font-mono font-bold"
+                  className="font-bold font-mono bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
+                  placeholder="06687630000070"
                 />
               </div>
-
               <div className="flex items-center gap-1">
                 <span>RTGS / NEFT no:</span>
                 <input
                   type="text"
-                  value={formData.ifscCode || 'HDFC0003126'}
-                  onChange={(e) => handleFieldChange('ifscCode', e.target.value)}
-                  className="bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400 w-28 font-mono font-bold"
+                  value={formData.ifscCode}
+                  onChange={(e) => handleFieldChange('ifscCode', e.target.value.toUpperCase())}
+                  className="font-bold font-mono bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400 uppercase"
+                  placeholder="HDFC0003126"
                 />
               </div>
-
-              <div className="flex items-center gap-1">
-                <span>Swift code:</span>
-                <input
-                  type="text"
-                  value={formData.swiftCode || 'HDFCINBBXXX'}
-                  onChange={(e) => handleFieldChange('swiftCode', e.target.value)}
-                  className="bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400 w-28 font-mono"
-                />
-              </div>
-
-              <div className="flex items-center gap-1">
-                <span>Branch :</span>
-                <input
-                  type="text"
-                  value={formData.branchName || 'MAHAD-4'}
-                  onChange={(e) => handleFieldChange('branchName', e.target.value)}
-                  className="bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400 w-28 uppercase"
-                />
-              </div>
+              {formData.swiftCode && (
+                <div className="flex items-center gap-1">
+                  <span>Swift code:</span>
+                  <input
+                    type="text"
+                    value={formData.swiftCode}
+                    onChange={(e) => handleFieldChange('swiftCode', e.target.value.toUpperCase())}
+                    className="font-bold font-mono bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
+                    placeholder="HDFCINBBXXX"
+                  />
+                </div>
+              )}
+              {formData.branchName && (
+                <div className="flex items-center gap-1">
+                  <span>Branch :</span>
+                  <input
+                    type="text"
+                    value={formData.branchName}
+                    onChange={(e) => handleFieldChange('branchName', e.target.value)}
+                    className="font-bold uppercase bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
+                    placeholder="MAHAD-4"
+                  />
+                </div>
+              )}
             </div>
           </div>
 
           {/* ========================================================================= */}
-          {/* 9. FOOTER (TERMS & CONDITIONS + SIGNATORY SEPARATION) */}
+          {/* 9. TERMS & SIGNATORY SECTION */}
           {/* ========================================================================= */}
-          <div className="grid grid-cols-12 min-h-[90px] text-[9px]">
+          <div className="grid grid-cols-2 text-[10px]">
             {/* Left: Terms & Conditions */}
-            <div className="col-span-6 p-2 border-r-2 border-black space-y-1">
-              <div className="font-bold text-[10px]">Terms & Conditions</div>
-              <ol className="list-decimal list-inside space-y-0.5 text-slate-800 leading-tight">
+            <div className="p-2 border-r-2 border-black space-y-1">
+              <div className="font-bold underline">Terms & Conditions</div>
+              <ol className="list-decimal list-inside space-y-0.5 text-[9px] text-slate-800 leading-snug">
                 <li>Goods once sold will not be taken back.</li>
-                <li>Interest @ 18% p.a. will be charged if the payment is not made with in the stipulated time.</li>
-                <li>Discrepancy if any,in billed item must be Communicated within 7 Days.</li>
+                <li>Interest @ 18% p.a. will be charged if payment is not made within stipulated time.</li>
+                <li>Discrepancy if any, in billed item must be communicated within 7 Days.</li>
                 <li>Subject to 'Maharashtra' Jurisdiction only.</li>
               </ol>
             </div>
 
-            {/* Right: Signature Box with Separation Line */}
-            <div className="col-span-6 flex flex-col justify-between">
-              {/* Receiver's Signature Header */}
-              <div className="p-2 border-b-2 border-black font-bold text-[9.5px]">
-                Receiver's Signature :
+            {/* Right: Signature Box */}
+            <div className="p-2 flex flex-col justify-between items-end min-h-[90px]">
+              <div className="w-full flex justify-between">
+                <span className="font-semibold text-slate-700">Receiver's Signature :</span>
+                <span className="font-bold text-[11px]">For {formData.companyName || 'DGR PACKAGING COMPANY'}</span>
               </div>
-
-              {/* Company Authorised Signatory Footer */}
-              <div className="p-3 text-right space-y-7">
-                <div className="font-bold text-[10px]">
-                  For {formData.companyName || 'DGR PACKAGING COMPANY'}
-                </div>
-                <div className="font-bold text-[10.5px]">
-                  Authorised Signatory
-                </div>
-              </div>
+              <div className="font-bold text-[11px] pt-4">Authorised Signatory</div>
             </div>
           </div>
-
         </div>
       </div>
     </div>

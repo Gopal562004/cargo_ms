@@ -20,6 +20,13 @@ import {
   X,
   ArrowLeft,
   Copy,
+  Package,
+  Layers,
+  Sparkles,
+  QrCode,
+  Landmark,
+  Phone,
+  User,
 } from 'lucide-react';
 import { useDocumentStore } from '../../store/documentStore';
 import { downloadDocumentPDF, printDocumentPDF } from '../../services/documentService';
@@ -39,8 +46,161 @@ import Badge from '../ui/Badge';
 import Input from '../ui/Input';
 import GstRateSelect from '../ui/GstRateSelect';
 
+export const INDIAN_GST_STATES = {
+  '01': 'Jammu & Kashmir (01)',
+  '02': 'Himachal Pradesh (02)',
+  '03': 'Punjab (03)',
+  '04': 'Chandigarh (04)',
+  '05': 'Uttarakhand (05)',
+  '06': 'Haryana (06)',
+  '07': 'Delhi (07)',
+  '08': 'Rajasthan (08)',
+  '09': 'Uttar Pradesh (09)',
+  '10': 'Bihar (10)',
+  '11': 'Sikkim (11)',
+  '12': 'Arunachal Pradesh (12)',
+  '13': 'Nagaland (13)',
+  '14': 'Manipur (14)',
+  '15': 'Mizoram (15)',
+  '16': 'Tripura (16)',
+  '17': 'Meghalaya (17)',
+  '18': 'Assam (18)',
+  '19': 'West Bengal (19)',
+  '20': 'Jharkhand (20)',
+  '21': 'Odisha (21)',
+  '22': 'Chhattisgarh (22)',
+  '23': 'Madhya Pradesh (23)',
+  '24': 'Gujarat (24)',
+  '26': 'Daman & Diu and Dadra & Nagar Haveli (26)',
+  '27': 'Maharashtra (27)',
+  '29': 'Karnataka (29)',
+  '30': 'Goa (30)',
+  '31': 'Lakshadweep (31)',
+  '32': 'Kerala (32)',
+  '33': 'Tamil Nadu (33)',
+  '34': 'Puducherry (34)',
+  '35': 'Andaman & Nicobar Islands (35)',
+  '36': 'Telangana (36)',
+  '37': 'Andhra Pradesh (37)',
+  '38': 'Ladakh (38)',
+  '97': 'Other Territory (97)',
+};
+
+export const LOGISTICS_ITEM_PRESETS = [
+  {
+    id: 'box_x3',
+    label: '+ UN Box X3 (4819)',
+    description: 'UN APPROVED BOX X3',
+    subText: 'UN Approved 4G Fibreboard Packaging Box',
+    hsnCode: '48191010',
+    unit: 'Pcs',
+    price: 110,
+    gstRate: 5,
+  },
+  {
+    id: 'box_x6',
+    label: '+ UN Box X6 (4819)',
+    description: 'UN APPROVED BOX X6',
+    subText: 'UN Approved 4G Fibreboard Packaging Box',
+    hsnCode: '48191010',
+    unit: 'Pcs',
+    price: 160,
+    gstRate: 5,
+  },
+  {
+    id: 'box_x22',
+    label: '+ UN Box X22 (4819)',
+    description: 'UN APPROVED BOX X22',
+    subText: 'UN Approved 4G Fibreboard Packaging Box',
+    hsnCode: '48191010',
+    unit: 'Pcs',
+    price: 270,
+    gstRate: 5,
+  },
+  {
+    id: 'box_x55',
+    label: '+ UN Box X55 (4819)',
+    description: 'UN APPROVED BOX X55',
+    subText: 'UN Approved 4G Fibreboard Packaging Box',
+    hsnCode: '48191010',
+    unit: 'Box',
+    price: 630,
+    gstRate: 5,
+  },
+  {
+    id: 'drum_y75',
+    label: '+ UN Drum Y75 (3923)',
+    description: 'UN APPROVED Y 75 OPEN TOP DRUM',
+    subText: 'DG Packaging Open Top Plastic Drum',
+    hsnCode: '39233090',
+    unit: 'Pcs',
+    price: 560,
+    gstRate: 18,
+  },
+  {
+    id: 'drum_y30',
+    label: '+ UN Drum Y30 (3923)',
+    description: 'UN APP MC Y 30 KG OPEN TOP PLASTIC DRUMS',
+    subText: 'DG Packaging Open Top Plastic Drum',
+    hsnCode: '39233090',
+    unit: 'Drum',
+    price: 600,
+    gstRate: 18,
+  },
+  {
+    id: 'dgd_charges',
+    label: '+ IATA DGD Charges (9983)',
+    description: 'Dangerous Goods Declaration (DGD) & Inspection',
+    subText: 'IATA DG Documentation & Compliance',
+    hsnCode: '998319',
+    unit: 'Job',
+    price: 1500,
+    gstRate: 18,
+  },
+  {
+    id: 'packing_charges',
+    label: '+ DG Packing Fee (9967)',
+    description: 'DG Cargo Repacking & Palletization Charges',
+    subText: '',
+    hsnCode: '996713',
+    unit: 'Pcs',
+    price: 800,
+    gstRate: 18,
+  },
+  {
+    id: 'air_freight',
+    label: '+ Air Freight (9965)',
+    description: 'Airline Master Freight Charges & Surcharges (FSC/SSC)',
+    subText: 'Air Waybill Freight Logistics',
+    hsnCode: '996511',
+    unit: 'Shipment',
+    price: 5000,
+    gstRate: 18,
+  },
+  {
+    id: 'transport_lr',
+    label: '+ Transport / Cartage (9965)',
+    description: 'Local Transport & Cartage Charges',
+    subText: 'Delivery to Sahar Cargo / Bhiwandi',
+    hsnCode: '996531',
+    unit: 'Trip',
+    price: 2500,
+    gstRate: 18,
+  },
+  {
+    id: 'terminal_tsp',
+    label: '+ Terminal / TSP (9967)',
+    description: 'Airport TSP & Terminal Handling Charges (MIAL/AAI)',
+    subText: 'Air Cargo Complex Clearance',
+    hsnCode: '996719',
+    unit: 'Job',
+    price: 2000,
+    gstRate: 18,
+  },
+];
+
 // Helper for Indian Currency Number to Words
-function numberToIndianWords(num) {
+export function numberToIndianWords(num) {
   if (num === null || num === undefined || isNaN(num)) return 'Rupees Zero Only';
 
   const a = [
@@ -92,13 +252,23 @@ function numberToIndianWords(num) {
   return result.replace(/\s+/g, ' ').trim();
 }
 
+function getIndianStateFromGstin(gstin) {
+  if (!gstin || typeof gstin !== 'string') return null;
+  const clean = gstin.trim();
+  if (clean.length >= 2) {
+    const code = clean.substring(0, 2);
+    return INDIAN_GST_STATES[code] || null;
+  }
+  return null;
+}
+
 function formatINR(val) {
   const num = parseFloat(val);
   if (isNaN(num)) return '0.00';
   return num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-// Complete Excel & PDF Presets matching user files
+// Complete Presets matching user files
 const INVOICE_TEMPLATES = {
   pdfTemplate: {
     label: 'INV DGR-0466 (PDF Standard)',
@@ -115,6 +285,7 @@ const INVOICE_TEMPLATES = {
       invoiceNumber: 'DGR/0466/26-27',
       invoiceDate: '27-06-2026',
       placeOfSupply: 'Maharashtra (27)',
+      taxType: 'INTRA_STATE',
       reverseCharge: 'N',
       transport: '',
       ewayBillNo: '',
@@ -124,8 +295,8 @@ const INVOICE_TEMPLATES = {
       grossWeight: '',
       transportName: '',
       paidToPaid: '',
-      referenceName: '',
-      contactNumber: '',
+      referenceName: 'Mayur Kadam',
+      contactNumber: '9028345261',
       buyerName: 'DGR GLOBAL LOGISTICS',
       buyerAddress: 'GROUND FLOOR ROOM -003\nG M NAGAR NARANGI BAYPASS ROAD\nVIRAR EAST VASAI VIRAR PALGHAR -401305',
       buyerState: 'Maharashtra (27)',
@@ -161,6 +332,7 @@ const INVOICE_TEMPLATES = {
       invoiceNumber: 'DGR/007/2026-27',
       invoiceDate: '17/07/2026',
       placeOfSupply: 'Maharashtra (27)',
+      taxType: 'INTRA_STATE',
       reverseCharge: 'N',
       transport: '',
       ewayBillNo: '',
@@ -206,6 +378,7 @@ const INVOICE_TEMPLATES = {
       invoiceNumber: 'DGR/013/2026-27',
       invoiceDate: '06/08/2026',
       placeOfSupply: 'Maharashtra (27)',
+      taxType: 'INTRA_STATE',
       reverseCharge: 'N',
       transport: 'BY ROAD',
       ewayBillNo: '',
@@ -236,101 +409,11 @@ const INVOICE_TEMPLATES = {
       { sn: 2, description: 'Transport Charges', subText: 'Delivery to Bhiwandi', hsnCode: '996791', qty: 1, unit: 'Trip', price: 2800, gstRate: 18, cgstRate: 9, sgstRate: 9, igstRate: 0 },
     ],
   },
-  manifest: {
-    label: 'Manifest Express (DGD Charges)',
-    data: {
-      copyType: 'Original Copy',
-      docTitle: 'TAX INVOICE',
-      companyName: 'DGR GLOBAL LOGISTICS',
-      companyAddress: 'GROUND FLOOR, ROOM-003, NX TOWER GM NAGAR, NARANGI BAYPASS ROAD, VIRAR EAST',
-      companyCityPin: '401305-PALGHAR, MAHARASHTRA, INDIA.',
-      companyPan: 'CBKPK7600K',
-      companyGstin: '27NSAPK0224B1Z7',
-      companyTel: '+91 9619507404',
-      companyEmail: 'dgr.export.logistics@gmail.com',
-      invoiceNumber: 'DGR/015/2026-27',
-      invoiceDate: '07/08/2026',
-      placeOfSupply: 'Maharashtra (27)',
-      reverseCharge: 'N',
-      transport: 'AIR',
-      ewayBillNo: '',
-      airwayBillNo: '176-6507-5415',
-      poNumberAndDate: 'EXP/26-27/075 DT. 30-JULY-2026',
-      noOfPackages: '01 PKG',
-      grossWeight: '',
-      transportName: '',
-      paidToPaid: '',
-      referenceName: 'AADISH IMPEX PRIVATE LIMITED',
-      contactNumber: '+91 9619507404',
-      buyerName: 'MANIFEST EXPRESS LOGISTICS LLP',
-      buyerAddress: '2ND FLOOR A WING, 218, Sagar Tech Plaza, Andheri Kurla Road, Sakinaka Junction, Mumbai, Mumbai Suburban, Maharashtra, 400072',
-      buyerState: 'Maharashtra (27)',
-      buyerGstin: '27ABYFM3165B1Z0',
-      consigneeName: 'MANIFEST EXPRESS LOGISTICS LLP',
-      consigneeAddress: '2ND FLOOR A WING, 218, Sagar Tech Plaza, Andheri Kurla Road, Sakinaka Junction, Mumbai, Mumbai Suburban, Maharashtra, 400072',
-      consigneeState: 'Maharashtra (27)',
-      consigneeGstin: '27ABYFM3165B1Z0',
-      bankName: 'HDFC BANK LTD',
-      accountNumber: '5020 0112 5568 92',
-      ifscCode: 'HDFC0000994',
-      swiftCode: 'HDFCINBBXXX',
-      branchName: 'VIRAR EAST - STATION ROAD',
-    },
-    items: [
-      { sn: 1, description: 'DGD Charges', subText: 'UN 1549/6.1/III', hsnCode: '996713', qty: 1, unit: 'Pcs', price: 2000, gstRate: 18, cgstRate: 9, sgstRate: 9, igstRate: 0 },
-      { sn: 2, description: 'Packing Charges', subText: '01 Box X3 Rs. 850/-', hsnCode: '996713', qty: 1, unit: 'Box', price: 850, gstRate: 18, cgstRate: 9, sgstRate: 9, igstRate: 0 },
-    ],
-  },
-  multiGst: {
-    label: 'Multiple GST Slabs (5% & 18%)',
-    data: {
-      copyType: 'Original Copy',
-      docTitle: 'TAX INVOICE',
-      companyName: 'DGR GLOBAL LOGISTICS',
-      companyAddress: 'GROUND FLOOR, ROOM-003, NX TOWER GM NAGAR, NARANGI BAYPASS ROAD, VIRAR EAST',
-      companyCityPin: '401305-PALGHAR, MAHARASHTRA, INDIA.',
-      companyPan: 'CBKPK7600K',
-      companyGstin: '27NSAPK0224B1Z7',
-      companyTel: '+91 91062 35771',
-      companyEmail: 'dgr.export.logistics@gmail.com',
-      invoiceNumber: 'DGR/010/2026-27',
-      invoiceDate: '25/07/2026',
-      placeOfSupply: 'Maharashtra (27)',
-      reverseCharge: 'N',
-      transport: 'BY ROAD',
-      ewayBillNo: '',
-      airwayBillNo: '',
-      poNumberAndDate: '',
-      noOfPackages: '02 BOXES',
-      grossWeight: '',
-      transportName: 'COURIER',
-      paidToPaid: 'PAID',
-      referenceName: 'Ravi',
-      contactNumber: '70211 57707',
-      buyerName: 'EFFICIENT FREIGHT FORWARDERS PVT LTD',
-      buyerAddress: '2nd Floor/ C-205, Damji Shamji Corporate Square, Ghatkopar Andheri Link Road, Ghatkopar East, Mumbai-400077, Maharashtra, INDIA.',
-      buyerState: 'Maharashtra (27)',
-      buyerGstin: '27AAECE7206P1Z9',
-      consigneeName: 'Unisource Chemicals Pvt Ltd',
-      consigneeAddress: 'L-15, Tarapur M.I.D.C, Kalvada Naka, Kolavade, Maharashtra 401506',
-      consigneeState: 'Maharashtra (27)',
-      consigneeGstin: '27AAECE7206P1Z9',
-      bankName: 'HDFC BANK LTD',
-      accountNumber: '5020 0112 5568 92',
-      ifscCode: 'HDFC0000994',
-      swiftCode: 'HDFCINBBXXX',
-      branchName: 'VIRAR EAST - STATION ROAD',
-    },
-    items: [
-      { sn: 1, description: 'UN APPROVED BOX X55', subText: '', hsnCode: '48191010', qty: 2, unit: 'Box', price: 630, gstRate: 5, cgstRate: 2.5, sgstRate: 2.5, igstRate: 0 },
-      { sn: 2, description: 'COURIER CHARGES', subText: 'To Tarapur MIDC', hsnCode: '996713', qty: 1, unit: 'Trip', price: 500, gstRate: 18, cgstRate: 9, sgstRate: 9, igstRate: 0 },
-    ],
-  },
 };
 
 export default function TaxInvoiceEditor({ documentId, initialData, currentDocument, onSaved, onCancel, isEmbedded }) {
   const navigate = useNavigate();
-  const { createDocument, updateDocument } = useDocumentStore();
+  const { documents, createDocument, updateDocument } = useDocumentStore();
 
   const isEdit = !!documentId;
   const [loading, setLoading] = useState(false);
@@ -358,8 +441,14 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
   // Form State
   const [formData, setFormData] = useState(() => {
     const d = initialData || currentDocument?.data || {};
+    const currentYear = new Date().getFullYear().toString().slice(-2);
+    const nextYear = (parseInt(currentYear, 10) + 1).toString();
+    const defaultInvNo = `DGR/0496/${currentYear}-${nextYear}`;
+
     return {
       ...INVOICE_TEMPLATES.pdfTemplate.data,
+      invoiceNumber: d.invoiceNumber || defaultInvNo,
+      taxType: d.taxType || (d.buyerGstin?.startsWith('27') || !d.buyerGstin ? 'INTRA_STATE' : 'INTER_STATE'),
       ...d,
     };
   });
@@ -387,8 +476,52 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
     }
   }, [initialData, currentDocument]);
 
+  // Recalculate item tax rates based on taxType (INTRA_STATE vs INTER_STATE)
+  const applyTaxTypeToItems = (taxType, currentItems) => {
+    return currentItems.map((item) => {
+      const gstRate = parseFloat(item.gstRate) || 0;
+      if (taxType === 'INTRA_STATE') {
+        return {
+          ...item,
+          cgstRate: gstRate / 2,
+          sgstRate: gstRate / 2,
+          igstRate: 0,
+        };
+      } else {
+        return {
+          ...item,
+          cgstRate: 0,
+          sgstRate: 0,
+          igstRate: gstRate,
+        };
+      }
+    });
+  };
+
   const handleFieldChange = (field, val) => {
-    setFormData((prev) => ({ ...prev, [field]: val }));
+    setFormData((prev) => {
+      const updated = { ...prev, [field]: val };
+
+      // Auto-detect State & POS when Buyer GSTIN is changed
+      if (field === 'buyerGstin') {
+        const detectedState = getIndianStateFromGstin(val);
+        if (detectedState) {
+          updated.buyerState = detectedState;
+          updated.placeOfSupply = detectedState;
+        }
+        const taxType = (val.startsWith('27') || !val) ? 'INTRA_STATE' : 'INTER_STATE';
+        updated.taxType = taxType;
+        setItems((itList) => applyTaxTypeToItems(taxType, itList));
+      } else if (field === 'taxType') {
+        setItems((itList) => applyTaxTypeToItems(val, itList));
+      } else if (field === 'placeOfSupply') {
+        const taxType = val.includes('(27)') ? 'INTRA_STATE' : 'INTER_STATE';
+        updated.taxType = taxType;
+        setItems((itList) => applyTaxTypeToItems(taxType, itList));
+      }
+
+      return updated;
+    });
   };
 
   const applyProfile = (profile) => {
@@ -396,6 +529,8 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
     const comp = profile.companyDetails || {};
     const buyer = profile.buyer || {};
     const cons = profile.consignee || {};
+
+    const taxType = (buyer.buyerGstin?.startsWith('27') || !buyer.buyerGstin) ? 'INTRA_STATE' : 'INTER_STATE';
 
     setFormData((prev) => ({
       ...prev,
@@ -423,6 +558,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
       invoiceNumber: profile.invoiceNumber || prev.invoiceNumber,
       invoiceDate: profile.invoiceDate || prev.invoiceDate,
       placeOfSupply: profile.placeOfSupply || prev.placeOfSupply,
+      taxType,
       reverseCharge: profile.reverseCharge || prev.reverseCharge,
       transport: profile.transport !== undefined ? profile.transport : prev.transport,
       ewayBillNo: profile.ewayBillNo !== undefined ? profile.ewayBillNo : prev.ewayBillNo,
@@ -438,7 +574,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
     }));
 
     if (Array.isArray(profile.items) && profile.items.length > 0) {
-      setItems(profile.items);
+      setItems(applyTaxTypeToItems(taxType, profile.items));
     }
   };
 
@@ -479,6 +615,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
       invoiceNumber: formData.invoiceNumber,
       invoiceDate: formData.invoiceDate,
       placeOfSupply: formData.placeOfSupply,
+      taxType: formData.taxType,
       reverseCharge: formData.reverseCharge,
       transport: formData.transport,
       ewayBillNo: formData.ewayBillNo,
@@ -495,7 +632,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
     };
 
     saveBillingProfile(payload);
-    refreshProfilesAndParties();
+    refreshDirectories();
     alert(`Template "${presetName.trim()}" saved successfully!`);
   };
 
@@ -503,15 +640,23 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
     if (!buyerName) return;
     const found = savedBuyers.find((b) => b.name === buyerName);
     if (found) {
+      const gstin = found.gstin || '';
+      const state = found.state || getIndianStateFromGstin(gstin) || 'Maharashtra (27)';
+      const taxType = (gstin.startsWith('27') || !gstin) ? 'INTRA_STATE' : 'INTER_STATE';
+
       setFormData((prev) => ({
         ...prev,
         buyerName: found.name,
         buyerAddress: found.address,
-        buyerState: found.state || 'Maharashtra (27)',
-        buyerGstin: found.gstin || '',
+        buyerState: state,
+        buyerGstin: gstin,
+        placeOfSupply: state,
+        taxType,
         referenceName: found.contactPerson || prev.referenceName,
         contactNumber: found.phone || prev.contactNumber,
       }));
+
+      setItems((itList) => applyTaxTypeToItems(taxType, itList));
     }
   };
 
@@ -569,9 +714,15 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
       if (field === 'gstRate') {
         const rate = parseFloat(value) || 0;
         item.gstRate = rate;
-        item.cgstRate = rate / 2;
-        item.sgstRate = rate / 2;
-        item.igstRate = 0;
+        if (formData.taxType === 'INTER_STATE') {
+          item.cgstRate = 0;
+          item.sgstRate = 0;
+          item.igstRate = rate;
+        } else {
+          item.cgstRate = rate / 2;
+          item.sgstRate = rate / 2;
+          item.igstRate = 0;
+        }
       }
 
       next[index] = item;
@@ -579,7 +730,29 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
     });
   };
 
+  const handleAddPresetItem = (preset) => {
+    const isInterState = formData.taxType === 'INTER_STATE';
+    const gstRate = preset.gstRate || 18;
+    setItems((prev) => [
+      ...prev,
+      {
+        sn: prev.length + 1,
+        description: preset.description,
+        subText: preset.subText || '',
+        hsnCode: preset.hsnCode || '9983',
+        qty: 1,
+        unit: preset.unit || 'Pcs',
+        price: preset.price || 0,
+        gstRate,
+        cgstRate: isInterState ? 0 : gstRate / 2,
+        sgstRate: isInterState ? 0 : gstRate / 2,
+        igstRate: isInterState ? gstRate : 0,
+      },
+    ]);
+  };
+
   const addItem = () => {
+    const isInterState = formData.taxType === 'INTER_STATE';
     setItems((prev) => [
       ...prev,
       {
@@ -591,9 +764,9 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
         unit: 'Pcs',
         price: 0,
         gstRate: 5,
-        cgstRate: 2.5,
-        sgstRate: 2.5,
-        igstRate: 0,
+        cgstRate: isInterState ? 0 : 2.5,
+        sgstRate: isInterState ? 0 : 2.5,
+        igstRate: isInterState ? 5 : 0,
       },
     ]);
   };
@@ -640,9 +813,10 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
     totalIGST += igstA;
     grandTotal += lineTotal;
 
-    const slabKey = `${cgstR + sgstR + igstR}%`;
+    const totalRate = cgstR + sgstR + igstR;
+    const slabKey = `${totalRate}%`;
     if (!taxSlabs[slabKey]) {
-      taxSlabs[slabKey] = { rate: cgstR + sgstR + igstR, taxable: 0, cgst: 0, sgst: 0, igst: 0, total: 0 };
+      taxSlabs[slabKey] = { rate: totalRate, taxable: 0, cgst: 0, sgst: 0, igst: 0, total: 0 };
     }
     taxSlabs[slabKey].taxable += taxable;
     taxSlabs[slabKey].cgst += cgstA;
@@ -685,7 +859,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
         resultDoc = await updateDocument(documentId, {
           title: `Tax Invoice ${formData.invoiceNumber}`,
           documentNumber: formData.invoiceNumber,
-          status: formData.status,
+          status: formData.status || 'ISSUED',
           statusNote: `Status updated via Invoice Editor`,
           data: payloadData,
         });
@@ -731,7 +905,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
         resultDoc = await updateDocument(documentId, {
           title: `Tax Invoice ${formData.invoiceNumber}`,
           documentNumber: formData.invoiceNumber,
-          status: formData.status,
+          status: formData.status || 'ISSUED',
           statusNote: `Status updated via Invoice Editor`,
           data: payloadData,
         });
@@ -748,28 +922,23 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
       if (targetId) {
         await printDocumentPDF(targetId);
       }
-      
+
       if (onSaved) {
         onSaved(resultDoc);
         return;
       }
-
-      navigate('/billing');
     } catch (err) {
-      alert('Failed to save & print bill: ' + err.message);
+      alert('Failed to save and print invoice: ' + err.message);
     } finally {
       setLoading(false);
     }
   };
 
   const handleDownload = async () => {
-    if (!documentId) {
-      alert('Please save the invoice first to download its PDF.');
-      return;
-    }
+    if (!documentId) return;
     setDownloadingPdf(true);
     try {
-      await downloadDocumentPDF(documentId, `${formData.invoiceNumber || 'Tax_Invoice'}.pdf`);
+      await downloadDocumentPDF(documentId, `Invoice_${formData.invoiceNumber || 'Document'}.pdf`);
     } catch (err) {
       alert('Error downloading PDF: ' + err.message);
     } finally {
@@ -781,21 +950,20 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64 = event.target?.result;
-      setFormData((prev) => ({ ...prev, companyLogo: base64 }));
+    reader.onload = (ev) => {
+      handleFieldChange('companyLogo', ev.target?.result);
     };
     reader.readAsDataURL(file);
   };
 
   const handleRemoveLogo = () => {
-    setFormData((prev) => ({ ...prev, companyLogo: null }));
+    handleFieldChange('companyLogo', null);
   };
 
   return (
-    <div className="space-y-6 animate-fade-in pb-16">
-      {/* Top Action Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+    <div className="space-y-5 animate-fade-in pb-16">
+      {/* Top Header & Actions Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/90 border border-slate-800 rounded-md p-4 shadow-sm">
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -877,7 +1045,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
         </div>
       </div>
 
-      {/* Quick Template Selector & Mode Switcher */}
+      {/* Quick Template Selector & Fast-Add Item Presets Bar */}
       <div className="bg-slate-900/80 border border-slate-800 rounded-md p-3.5 space-y-3 shadow-sm">
         {/* Row 1: Mode Switcher */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
@@ -908,16 +1076,45 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
             </button>
           </div>
 
-          <span className="text-[11px] text-slate-400 font-medium">
-            {editorMode === 'VISUAL' ? 'Type directly into the invoice sheet below' : 'Edit through standard categorized form cards'}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-slate-400 font-medium">Tax Routing:</span>
+            <span className={`px-2 py-0.5 rounded text-[11px] font-bold border ${
+              formData.taxType === 'INTRA_STATE'
+                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30'
+            }`}>
+              {formData.taxType === 'INTRA_STATE' ? 'Intra-State (CGST + SGST)' : 'Inter-State (IGST)'}
+            </span>
+          </div>
         </div>
 
-        {/* Row 2: Preset Templates */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+        {/* Row 2: 1-Click Fast-Add Freight & Packaging Item Presets */}
+        <div className="space-y-1.5 pt-1">
+          <div className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5">
+            <Package size={13} className="text-amber-400" />
+            <span>1-Click Add Freight & DG Packaging Items:</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {LOGISTICS_ITEM_PRESETS.map((preset) => (
+              <button
+                key={preset.id}
+                type="button"
+                onClick={() => handleAddPresetItem(preset)}
+                className="px-2.5 py-1 bg-slate-950 hover:bg-indigo-600/30 border border-slate-800 hover:border-indigo-500 text-slate-300 hover:text-white rounded text-[11px] font-medium transition-all flex items-center gap-1"
+                title={`Add ${preset.description} (₹${preset.price})`}
+              >
+                <Plus size={11} className="text-indigo-400" />
+                <span>{preset.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Row 3: Preset Templates */}
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 pt-2 border-t border-slate-800/60">
           <div className="flex items-center gap-2 text-xs font-semibold text-slate-300">
             <span className="text-indigo-400 flex items-center gap-1">
-              <Zap size={13} /> Quick Auto-Fill Presets:
+              <Zap size={13} /> Full Invoice Presets:
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -937,7 +1134,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
               type="button"
               className="px-2.5 py-1 text-xs bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/40 rounded transition-all font-semibold flex items-center gap-1"
               onClick={handleSaveCurrentAsPreset}
-              title="Save current invoice details, buyer, items, bank info as a reusable template"
+              title="Save current invoice details as a reusable template"
             >
               <Save size={12} />
               <span>Save as Template</span>
@@ -970,709 +1167,601 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
           savedShippers={savedShippers}
           handleSelectBuyer={handleSelectBuyer}
           handleSelectShipper={handleSelectShipper}
+          handleAddPresetItem={handleAddPresetItem}
         />
       ) : (
         <div className="space-y-5">
-        
-        {/* LOGO & ISSUER BRANDING SECTION */}
-        <div className="bg-slate-900/70 border border-slate-800 rounded-md p-4 shadow-sm space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-3">
-            <div>
-              <h2 className="text-sm font-bold text-slate-200 flex items-center gap-2">
-                <Image size={15} className="text-indigo-400" />
-                <span>Company Logo & Branding</span>
-              </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Upload a custom PNG/JPG logo to show on the top-left of the Tax Invoice, or use the default DGR logo.
-              </p>
+          {/* LOGO & ISSUER BRANDING SECTION */}
+          <div className="bg-slate-900/70 border border-slate-800 rounded-md p-4 shadow-sm space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-3">
+              <div>
+                <h2 className="text-sm font-bold text-slate-200 flex items-center gap-2">
+                  <Image size={15} className="text-indigo-400" />
+                  <span>Company Logo & Branding</span>
+                </h2>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Upload a custom PNG/JPG logo to show on the top-left of the Tax Invoice, or use the default DGR logo.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2.5">
+                <label className="cursor-pointer px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-semibold transition-colors flex items-center gap-1.5">
+                  <Folder size={13} />
+                  <span>Upload Logo Image</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleLogoUpload}
+                  />
+                </label>
+
+                {formData.companyLogo && (
+                  <button
+                    type="button"
+                    className="px-2.5 py-1.5 bg-slate-800 hover:bg-rose-900/40 text-slate-400 hover:text-rose-300 rounded text-xs border border-slate-700 transition-colors"
+                    onClick={handleRemoveLogo}
+                  >
+                    Reset to Default DGR Logo
+                  </button>
+                )}
+              </div>
             </div>
 
-            <div className="flex items-center gap-2.5">
-              <label className="cursor-pointer px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-semibold transition-colors flex items-center gap-1.5">
-                <Folder size={13} />
-                <span>Upload Logo Image</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleLogoUpload}
-                />
-              </label>
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded border border-slate-700 bg-slate-950 flex items-center justify-center p-1 overflow-hidden shrink-0">
+                {formData.companyLogo ? (
+                  <img
+                    src={formData.companyLogo}
+                    alt="Company Logo"
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-full border border-slate-700 flex items-center justify-center font-bold text-xs text-slate-300 font-mono">
+                    DGR
+                  </div>
+                )}
+              </div>
 
-              {formData.companyLogo && (
-                <button
-                  type="button"
-                  className="px-2.5 py-1.5 bg-slate-800 hover:bg-rose-900/40 text-slate-400 hover:text-rose-300 rounded text-xs border border-slate-700 transition-colors"
-                  onClick={handleRemoveLogo}
-                >
-                  Reset to Default DGR Logo
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded border border-slate-700 bg-slate-950 flex items-center justify-center p-1 overflow-hidden shrink-0">
-              {formData.companyLogo ? (
-                <img
-                  src={formData.companyLogo}
-                  alt="Company Logo"
-                  className="w-full h-full object-contain"
-                />
-              ) : (
-                <div className="w-12 h-12 rounded-full border border-slate-700 flex items-center justify-center font-bold text-xs text-slate-300 font-mono">
-                  DGR
+              <div className="text-xs space-y-0.5">
+                <div className="font-semibold text-slate-200">
+                  {formData.companyLogo ? 'Custom Logo Active' : 'Default DGR Vector Logo'}
                 </div>
-              )}
-            </div>
-
-            <div className="text-xs space-y-0.5">
-              <div className="font-semibold text-slate-200">
-                {formData.companyLogo ? 'Custom Logo Active' : 'Default DGR Vector Logo'}
-              </div>
-              <div className="text-slate-400 text-[11px]">
-                {formData.companyLogo
-                  ? 'This image will be rendered at the top-left header of the printed PDF invoice.'
-                  : 'The standard circular DGR logo will be drawn on the invoice PDF.'}
+                <div className="text-slate-400 text-[11px]">
+                  {formData.companyLogo
+                    ? 'This image will be rendered at the top-left header of the printed PDF invoice.'
+                    : 'The standard circular DGR logo will be drawn on the invoice PDF.'}
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* 1. INVOICE & DISPATCH DETAILS */}
-        <div className="bg-slate-900/70 border border-slate-800 rounded-md p-4 shadow-sm space-y-3">
-          <h2 className="text-sm font-bold text-slate-200 flex items-center gap-2 border-b border-slate-800 pb-2.5">
-            <FileText size={15} className="text-indigo-400" />
-            <span>1. Invoice & Transport Information</span>
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            <Input
-              label="Invoice Number *"
-              value={formData.invoiceNumber}
-              onChange={(e) => handleFieldChange('invoiceNumber', e.target.value)}
-              placeholder="e.g. DGR/0466/26-27"
-              required
-            />
-            <Input
-              label="Invoice Date *"
-              value={formData.invoiceDate}
-              onChange={(e) => handleFieldChange('invoiceDate', e.target.value)}
-              placeholder="DD-MM-YYYY"
-              required
-            />
-            <Input
-              label="Place of Supply"
-              value={formData.placeOfSupply}
-              onChange={(e) => handleFieldChange('placeOfSupply', e.target.value)}
-              placeholder="Maharashtra (27)"
-            />
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-slate-400 font-medium">Reverse Charge</label>
-              <select
-                className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-                value={formData.reverseCharge}
-                onChange={(e) => handleFieldChange('reverseCharge', e.target.value)}
-              >
-                <option value="N">No (N)</option>
-                <option value="Y">Yes (Y)</option>
-              </select>
-            </div>
-
-            <Input
-              label="Airway Bill No (AWB)"
-              value={formData.airwayBillNo}
-              onChange={(e) => handleFieldChange('airwayBillNo', e.target.value)}
-              placeholder="e.g. 176-6268 0251"
-            />
-            <Input
-              label="Transport Mode / Transport"
-              value={formData.transport}
-              onChange={(e) => handleFieldChange('transport', e.target.value)}
-              placeholder="e.g. BY ROAD / AIR"
-            />
-            <Input
-              label="E-Way Bill No."
-              value={formData.ewayBillNo}
-              onChange={(e) => handleFieldChange('ewayBillNo', e.target.value)}
-              placeholder="e.g. 28109823901"
-            />
-            <Input
-              label="P.O. No. & Date"
-              value={formData.poNumberAndDate}
-              onChange={(e) => handleFieldChange('poNumberAndDate', e.target.value)}
-              placeholder="e.g. PO-9821 DT. 15-JUN-2026"
-            />
-
-            <Input
-              label="No. of Packages"
-              value={formData.noOfPackages}
-              onChange={(e) => handleFieldChange('noOfPackages', e.target.value)}
-              placeholder="e.g. 02 (01 BOX DG, 01 NON DG)"
-            />
-            <Input
-              label="Gross Weight"
-              value={formData.grossWeight}
-              onChange={(e) => handleFieldChange('grossWeight', e.target.value)}
-              placeholder="e.g. 50.00 KG"
-            />
-            <Input
-              label="Transport Name"
-              value={formData.transportName}
-              onChange={(e) => handleFieldChange('transportName', e.target.value)}
-              placeholder="e.g. Sai Warehouse & Transport"
-            />
-            <Input
-              label="Paid / To-Paid"
-              value={formData.paidToPaid}
-              onChange={(e) => handleFieldChange('paidToPaid', e.target.value)}
-              placeholder="e.g. PAID / TO-PAY"
-            />
-
-            <Input
-              label="Reference Name"
-              value={formData.referenceName}
-              onChange={(e) => handleFieldChange('referenceName', e.target.value)}
-              placeholder="e.g. Contact person or reference"
-            />
-            <Input
-              label="Contact Number"
-              value={formData.contactNumber}
-              onChange={(e) => handleFieldChange('contactNumber', e.target.value)}
-              placeholder="e.g. +91 9326392294"
-            />
-            <Input
-              label="Copy Type Label"
-              value={formData.copyType}
-              onChange={(e) => handleFieldChange('copyType', e.target.value)}
-              placeholder="Original Copy"
-            />
-          </div>
-        </div>
-
-        {/* 2. BILLED TO & SHIPPED TO ADDRESSES */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Billed To */}
+          {/* 1. INVOICE & DISPATCH DETAILS */}
           <div className="bg-slate-900/70 border border-slate-800 rounded-md p-4 shadow-sm space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
-              <h2 className="text-sm font-bold text-slate-200 flex items-center gap-2">
-                <Building size={15} className="text-indigo-400" />
-                <span>2. Billed To (Buyer / Customer)</span>
-              </h2>
-              <button
-                type="button"
-                className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1 px-2 py-1 bg-emerald-950/40 border border-emerald-500/30 rounded hover:bg-emerald-900/40 transition-colors"
-                onClick={handleSaveCurrentBuyer}
-                title="Save current buyer details to saved customer directory"
-              >
-                <Save size={12} />
-                <span>Save to Directory</span>
-              </button>
-            </div>
+            <h2 className="text-sm font-bold text-slate-200 flex items-center gap-2 border-b border-slate-800 pb-2.5">
+              <FileText size={15} className="text-indigo-400" />
+              <span>1. Invoice & Transport Information</span>
+            </h2>
 
-            {/* Search & Select Existing Customer */}
-            <div className="p-2.5 bg-slate-950/80 border border-slate-800 rounded space-y-1.5">
-              <div className="flex items-center justify-between text-xs text-slate-400 font-medium">
-                <span className="flex items-center gap-1.5 text-indigo-300 font-semibold">
-                  <Building size={13} /> Select from Customer Directory:
-                </span>
-                <span className="text-[11px] text-slate-500">Auto-fills address & GSTIN</span>
-              </div>
-              <select
-                className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700/80 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-                onChange={(e) => {
-                  handleSelectBuyer(e.target.value);
-                  e.target.value = '';
-                }}
-                defaultValue=""
-              >
-                <option value="" disabled>
-                  -- Choose from Customer Directory ({savedBuyers.length} saved) --
-                </option>
-                {savedBuyers.map((b, idx) => (
-                  <option key={idx} value={b.name}>
-                    {b.name} {b.gstin ? `(${b.gstin})` : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <Input
-              label="Buyer Company Name *"
-              value={formData.buyerName}
-              onChange={(e) => handleFieldChange('buyerName', e.target.value)}
-              placeholder="e.g. TAKAI CHEMTECH / DGR GLOBAL LOGISTICS"
-              required
-            />
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-slate-400 font-medium">Buyer Address *</label>
-              <textarea
-                rows={3}
-                className="w-full p-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-                value={formData.buyerAddress}
-                onChange={(e) => handleFieldChange('buyerAddress', e.target.value)}
-                placeholder="Full address of the buyer"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               <Input
-                label="State"
-                value={formData.buyerState}
-                onChange={(e) => handleFieldChange('buyerState', e.target.value)}
-                placeholder="Maharashtra (27)"
+                label="Invoice Number *"
+                value={formData.invoiceNumber}
+                onChange={(e) => handleFieldChange('invoiceNumber', e.target.value)}
+                placeholder="e.g. DGR/0466/26-27"
+                required
               />
               <Input
-                label="GSTIN / UIN"
-                value={formData.buyerGstin}
-                onChange={(e) => handleFieldChange('buyerGstin', e.target.value)}
-                placeholder="27AAMCT0922D1Z1"
+                label="Invoice Date *"
+                value={formData.invoiceDate}
+                onChange={(e) => handleFieldChange('invoiceDate', e.target.value)}
+                placeholder="DD-MM-YYYY"
+                required
+              />
+              <div>
+                <label className="text-xs text-slate-400 font-medium block mb-1">Place of Supply (POS)</label>
+                <select
+                  className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                  value={formData.placeOfSupply}
+                  onChange={(e) => handleFieldChange('placeOfSupply', e.target.value)}
+                >
+                  {Object.entries(INDIAN_GST_STATES).map(([code, name]) => (
+                    <option key={code} value={name}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-slate-400 font-medium">Tax Structure</label>
+                <select
+                  className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                  value={formData.taxType}
+                  onChange={(e) => handleFieldChange('taxType', e.target.value)}
+                >
+                  <option value="INTRA_STATE">Intra-State (CGST + SGST)</option>
+                  <option value="INTER_STATE">Inter-State (IGST)</option>
+                </select>
+              </div>
+
+              <Input
+                label="Airway Bill No (AWB)"
+                value={formData.airwayBillNo}
+                onChange={(e) => handleFieldChange('airwayBillNo', e.target.value)}
+                placeholder="e.g. 176-6268 0251"
+              />
+              <Input
+                label="Transport Mode / Transport"
+                value={formData.transport}
+                onChange={(e) => handleFieldChange('transport', e.target.value)}
+                placeholder="e.g. BY ROAD / AIR / SEA"
+              />
+              <Input
+                label="E-Way Bill No."
+                value={formData.ewayBillNo}
+                onChange={(e) => handleFieldChange('ewayBillNo', e.target.value)}
+                placeholder="e.g. 28109823901"
+              />
+              <Input
+                label="P.O. No. & Date"
+                value={formData.poNumberAndDate}
+                onChange={(e) => handleFieldChange('poNumberAndDate', e.target.value)}
+                placeholder="e.g. PO-9821 DT. 15-JUN-2026"
+              />
+
+              <Input
+                label="No. of Packages"
+                value={formData.noOfPackages}
+                onChange={(e) => handleFieldChange('noOfPackages', e.target.value)}
+                placeholder="e.g. 02 (01 BOX DG, 01 NON DG)"
+              />
+              <Input
+                label="Gross Weight"
+                value={formData.grossWeight}
+                onChange={(e) => handleFieldChange('grossWeight', e.target.value)}
+                placeholder="e.g. 50.00 KG"
+              />
+              <Input
+                label="Transport Name / Vehicle #"
+                value={formData.transportName}
+                onChange={(e) => handleFieldChange('transportName', e.target.value)}
+                placeholder="e.g. Sai Warehouse & Transport / MH-04-XX-1234"
+              />
+              <Input
+                label="Paid / To-Paid"
+                value={formData.paidToPaid}
+                onChange={(e) => handleFieldChange('paidToPaid', e.target.value)}
+                placeholder="e.g. PAID / TO-PAY"
+              />
+
+              <Input
+                label="Reference Name"
+                value={formData.referenceName}
+                onChange={(e) => handleFieldChange('referenceName', e.target.value)}
+                placeholder="e.g. Mayur Kadam"
+              />
+              <Input
+                label="Contact Number"
+                value={formData.contactNumber}
+                onChange={(e) => handleFieldChange('contactNumber', e.target.value)}
+                placeholder="e.g. 9028345261"
+              />
+              <Input
+                label="Copy Type Label"
+                value={formData.copyType}
+                onChange={(e) => handleFieldChange('copyType', e.target.value)}
+                placeholder="Original Copy"
               />
             </div>
           </div>
 
-          {/* Shipped To */}
-          <div className="bg-slate-900/70 border border-slate-800 rounded-md p-4 shadow-sm space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
-              <h2 className="text-sm font-bold text-slate-200 flex items-center gap-2">
-                <Truck size={15} className="text-indigo-400" />
-                <span>3. Shipped To (Delivery Destination)</span>
-              </h2>
-              <div className="flex items-center gap-2">
+          {/* 2. BILLED TO & SHIPPED TO ADDRESSES */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Billed To */}
+            <div className="bg-slate-900/70 border border-slate-800 rounded-md p-4 shadow-sm space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                <h2 className="text-sm font-bold text-slate-200 flex items-center gap-2">
+                  <Building size={15} className="text-indigo-400" />
+                  <span>2. Billed To (Buyer / Customer)</span>
+                </h2>
                 <button
                   type="button"
-                  className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold px-2 py-0.5 bg-emerald-950/40 border border-emerald-500/30 rounded flex items-center gap-1"
-                  onClick={handleSaveCurrentShipper}
-                  title="Save current destination details to directory"
+                  className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1 px-2 py-1 bg-emerald-950/40 border border-emerald-500/30 rounded hover:bg-emerald-900/40 transition-colors"
+                  onClick={handleSaveCurrentBuyer}
+                  title="Save current buyer details to saved customer directory"
                 >
                   <Save size={12} />
-                  <span>Save Destination</span>
+                  <span>Save to Directory</span>
                 </button>
-                <button
-                  type="button"
-                  className="text-xs text-indigo-400 hover:text-indigo-300 font-medium underline flex items-center gap-1"
-                  onClick={() => {
-                    setFormData((p) => ({
-                      ...p,
-                      consigneeName: p.buyerName,
-                      consigneeAddress: p.buyerAddress,
-                      consigneeState: p.buyerState,
-                      consigneeGstin: p.buyerGstin,
-                    }));
+              </div>
+
+              {/* Search & Select Existing Customer */}
+              <div className="p-2.5 bg-slate-950/80 border border-slate-800 rounded space-y-1.5">
+                <div className="flex items-center justify-between text-xs text-slate-400 font-medium">
+                  <span className="flex items-center gap-1.5 text-indigo-300 font-semibold">
+                    <Building size={13} /> Select from Customer Directory:
+                  </span>
+                  <span className="text-[11px] text-slate-500">Auto-fills address & GSTIN</span>
+                </div>
+                <select
+                  className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700/80 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                  onChange={(e) => {
+                    handleSelectBuyer(e.target.value);
+                    e.target.value = '';
                   }}
+                  defaultValue=""
                 >
-                  <Copy size={11} /> Copy Buyer
-                </button>
-              </div>
-            </div>
-
-            {/* Search & Select Existing Destination */}
-            <div className="p-2.5 bg-slate-950/80 border border-slate-800 rounded space-y-1.5">
-              <div className="flex items-center justify-between text-xs text-slate-400 font-medium">
-                <span className="flex items-center gap-1.5 text-indigo-300 font-semibold">
-                  <Truck size={13} /> Select from Destination Directory:
-                </span>
-                <span className="text-[11px] text-slate-500">Auto-fills delivery info</span>
-              </div>
-              <select
-                className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700/80 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-                onChange={(e) => {
-                  handleSelectShipper(e.target.value);
-                  e.target.value = '';
-                }}
-                defaultValue=""
-              >
-                <option value="" disabled>
-                  -- Choose from saved destinations ({savedShippers.length} saved) --
-                </option>
-                {savedShippers.map((s, idx) => (
-                  <option key={idx} value={s.name}>
-                    {s.name}
+                  <option value="" disabled>
+                    -- Choose from Customer Directory ({savedBuyers.length} saved) --
                   </option>
-                ))}
-              </select>
-            </div>
+                  {savedBuyers.map((b, idx) => (
+                    <option key={idx} value={b.name}>
+                      {b.name} {b.gstin ? `(${b.gstin})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            <Input
-              label="Consignee / Destination Name"
-              value={formData.consigneeName}
-              onChange={(e) => handleFieldChange('consigneeName', e.target.value)}
-              placeholder="e.g. Delivery Warehouse or Buyer Name"
-            />
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-slate-400 font-medium">Delivery Address</label>
-              <textarea
-                rows={3}
-                className="w-full p-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-                value={formData.consigneeAddress}
-                onChange={(e) => handleFieldChange('consigneeAddress', e.target.value)}
-                placeholder="Full delivery destination address"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
               <Input
-                label="State"
-                value={formData.consigneeState}
-                onChange={(e) => handleFieldChange('consigneeState', e.target.value)}
-                placeholder="Maharashtra (27)"
+                label="Buyer Company Name *"
+                value={formData.buyerName}
+                onChange={(e) => handleFieldChange('buyerName', e.target.value)}
+                placeholder="e.g. TAKAI CHEMTECH / DGR GLOBAL LOGISTICS"
+                required
               />
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-slate-400 font-medium">Buyer Address *</label>
+                <textarea
+                  rows={3}
+                  className="w-full p-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                  value={formData.buyerAddress}
+                  onChange={(e) => handleFieldChange('buyerAddress', e.target.value)}
+                  placeholder="Full address of the buyer"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  label="State"
+                  value={formData.buyerState}
+                  onChange={(e) => handleFieldChange('buyerState', e.target.value)}
+                  placeholder="Maharashtra (27)"
+                />
+                <Input
+                  label="GSTIN / UIN"
+                  value={formData.buyerGstin}
+                  onChange={(e) => handleFieldChange('buyerGstin', e.target.value.toUpperCase())}
+                  placeholder="27AAMCT0922D1Z1"
+                />
+              </div>
+            </div>
+
+            {/* Shipped To */}
+            <div className="bg-slate-900/70 border border-slate-800 rounded-md p-4 shadow-sm space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                <h2 className="text-sm font-bold text-slate-200 flex items-center gap-2">
+                  <Truck size={15} className="text-indigo-400" />
+                  <span>3. Shipped To (Delivery Destination)</span>
+                </h2>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold px-2 py-0.5 bg-emerald-950/40 border border-emerald-500/30 rounded flex items-center gap-1"
+                    onClick={handleSaveCurrentShipper}
+                    title="Save current destination details to directory"
+                  >
+                    <Save size={12} />
+                    <span>Save Destination</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="text-xs text-indigo-400 hover:text-indigo-300 font-medium underline flex items-center gap-1"
+                    onClick={() => {
+                      setFormData((p) => ({
+                        ...p,
+                        consigneeName: p.buyerName,
+                        consigneeAddress: p.buyerAddress,
+                        consigneeState: p.buyerState,
+                        consigneeGstin: p.buyerGstin,
+                      }));
+                    }}
+                  >
+                    <Copy size={11} /> Copy Buyer
+                  </button>
+                </div>
+              </div>
+
+              {/* Search & Select Existing Destination */}
+              <div className="p-2.5 bg-slate-950/80 border border-slate-800 rounded space-y-1.5">
+                <div className="flex items-center justify-between text-xs text-slate-400 font-medium">
+                  <span className="flex items-center gap-1.5 text-indigo-300 font-semibold">
+                    <Truck size={13} /> Select from Destination Directory:
+                  </span>
+                  <span className="text-[11px] text-slate-500">Auto-fills delivery info</span>
+                </div>
+                <select
+                  className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700/80 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                  onChange={(e) => {
+                    handleSelectShipper(e.target.value);
+                    e.target.value = '';
+                  }}
+                  defaultValue=""
+                >
+                  <option value="" disabled>
+                    -- Choose from saved destinations ({savedShippers.length} saved) --
+                  </option>
+                  {savedShippers.map((s, idx) => (
+                    <option key={idx} value={s.name}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <Input
-                label="GSTIN / UIN"
-                value={formData.consigneeGstin}
-                onChange={(e) => handleFieldChange('consigneeGstin', e.target.value)}
-                placeholder="27AAMCT0922D1Z1"
+                label="Consignee / Destination Name"
+                value={formData.consigneeName}
+                onChange={(e) => handleFieldChange('consigneeName', e.target.value)}
+                placeholder="e.g. Sai Warehouse & Transport / Bhiwandi"
               />
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-slate-400 font-medium">Delivery Address</label>
+                <textarea
+                  rows={3}
+                  className="w-full p-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                  value={formData.consigneeAddress}
+                  onChange={(e) => handleFieldChange('consigneeAddress', e.target.value)}
+                  placeholder="Full delivery destination address"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  label="State"
+                  value={formData.consigneeState}
+                  onChange={(e) => handleFieldChange('consigneeState', e.target.value)}
+                  placeholder="Maharashtra (27)"
+                />
+                <Input
+                  label="GSTIN / UIN"
+                  value={formData.consigneeGstin}
+                  onChange={(e) => handleFieldChange('consigneeGstin', e.target.value.toUpperCase())}
+                  placeholder="27AAMCT0922D1Z1"
+                />
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* 3. LINE ITEMS FORM TABLE */}
-        <div className="bg-slate-900/70 border border-slate-800 rounded-md p-4 shadow-sm space-y-3">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <div>
-              <h2 className="text-sm font-bold text-slate-200 flex items-center gap-2">
-                <Receipt size={15} className="text-indigo-400" />
-                <span>4. Goods & Services Line Items</span>
-              </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Add line items, quantities, rates, and GST % slabs. Tax and total amounts calculate in real-time.
-              </p>
+          {/* 3. LINE ITEMS FORM TABLE */}
+          <div className="bg-slate-900/70 border border-slate-800 rounded-md p-4 shadow-sm space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div>
+                <h2 className="text-sm font-bold text-slate-200 flex items-center gap-2">
+                  <Receipt size={15} className="text-indigo-400" />
+                  <span>4. Goods & Services Line Items</span>
+                </h2>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Add line items, quantities, rates, and GST % slabs. Tax and total amounts calculate in real-time.
+                </p>
+              </div>
+              <Button variant="secondary" size="sm" onClick={addItem} className="rounded text-xs">
+                <Plus size={13} className="mr-1 inline" /> Add Item Row
+              </Button>
             </div>
-            <Button variant="secondary" size="sm" onClick={addItem} className="rounded text-xs">
-              <Plus size={13} className="mr-1 inline" /> Add Item Row
-            </Button>
-          </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left border border-slate-800 rounded overflow-hidden">
-              <thead className="bg-slate-950/90 text-slate-300 font-semibold border-b border-slate-800">
-                <tr>
-                  <th className="p-2.5 w-10 text-center">#</th>
-                  <th className="p-2.5 min-w-[220px]">Description & Details</th>
-                  <th className="p-2.5 w-24 text-center">HSN/SAC</th>
-                  <th className="p-2.5 w-20 text-center">Qty</th>
-                  <th className="p-2.5 w-20 text-center">Unit</th>
-                  <th className="p-2.5 w-24 text-right">Price (₹)</th>
-                  <th className="p-2.5 w-24 text-center">GST Rate</th>
-                  <th className="p-2.5 w-24 text-right">Tax (₹)</th>
-                  <th className="p-2.5 w-28 text-right">Total (₹)</th>
-                  <th className="p-2.5 w-16 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/80 bg-slate-900/40">
-                {items.map((item, idx) => {
-                  const qty = parseFloat(item.qty) || 0;
-                  const price = parseFloat(item.price) || 0;
-                  const taxable = qty * price;
-                  const gstR = parseFloat(item.gstRate) || 0;
-                  const taxAmt = (taxable * gstR) / 100;
-                  const lineTotal = taxable + taxAmt;
-
-                  return (
-                    <tr key={idx} className="hover:bg-slate-800/40 transition-colors">
-                      <td className="p-2 text-center text-slate-400 font-bold">{idx + 1}</td>
-                      <td className="p-2 space-y-1">
-                        <input
-                          type="text"
-                          className="w-full px-2.5 py-1 bg-slate-950/80 border border-slate-700/90 rounded text-slate-100 font-medium focus:outline-none focus:border-indigo-500"
-                          placeholder="Description of Goods & Service"
-                          value={item.description}
-                          onChange={(e) => handleItemChange(idx, 'description', e.target.value)}
-                        />
-                        <input
-                          type="text"
-                          className="w-full px-2 py-0.5 text-[11px] bg-slate-950/50 border border-slate-800 rounded text-slate-400 focus:outline-none focus:border-indigo-500"
-                          placeholder="Sub-details (e.g. UN 3465/6.1/III, Box specs)"
-                          value={item.subText || ''}
-                          onChange={(e) => handleItemChange(idx, 'subText', e.target.value)}
-                        />
-                      </td>
-                      <td className="p-2">
-                        <input
-                          type="text"
-                          className="w-full px-2 py-1 bg-slate-950/80 border border-slate-700/90 rounded text-slate-200 text-center font-mono focus:outline-none focus:border-indigo-500"
-                          placeholder="HSN"
-                          value={item.hsnCode || ''}
-                          onChange={(e) => handleItemChange(idx, 'hsnCode', e.target.value)}
-                        />
-                      </td>
-                      <td className="p-2">
-                        <input
-                          type="number"
-                          step="any"
-                          className="w-full px-2 py-1 bg-slate-950/80 border border-slate-700/90 rounded text-slate-200 text-center font-mono focus:outline-none focus:border-indigo-500"
-                          value={item.qty}
-                          onChange={(e) => handleItemChange(idx, 'qty', e.target.value)}
-                        />
-                      </td>
-                      <td className="p-2">
-                        <select
-                          className="w-full px-1.5 py-1 bg-slate-950/80 border border-slate-700/90 rounded text-slate-200 focus:outline-none focus:border-indigo-500 text-center"
-                          value={item.unit || 'Pcs'}
-                          onChange={(e) => handleItemChange(idx, 'unit', e.target.value)}
-                        >
-                          <option value="Pcs">Pcs</option>
-                          <option value="Box">Box</option>
-                          <option value="Drum">Drum</option>
-                          <option value="Nos">Nos</option>
-                          <option value="KG">KG</option>
-                          <option value="Trip">Trip</option>
-                          <option value="Set">Set</option>
-                        </select>
-                      </td>
-                      <td className="p-2">
-                        <input
-                          type="number"
-                          step="any"
-                          className="w-full px-2 py-1 bg-slate-950/80 border border-slate-700/90 rounded text-slate-200 text-right font-mono focus:outline-none focus:border-indigo-500"
-                          value={item.price}
-                          onChange={(e) => handleItemChange(idx, 'price', e.target.value)}
-                        />
-                      </td>
-                      <td className="p-2">
-                        <GstRateSelect
-                          className="w-full px-1.5 py-1 bg-slate-950/80 border border-slate-700/90 rounded text-slate-200 focus:outline-none focus:border-indigo-500 text-center font-medium text-xs"
-                          value={item.gstRate}
-                          onChange={(val) => handleItemChange(idx, 'gstRate', val)}
-                          compact
-                        />
-                      </td>
-                      <td className="p-2 text-right text-slate-300 font-mono">
-                        ₹{formatINR(taxAmt)}
-                      </td>
-                      <td className="p-2 text-right text-slate-100 font-mono font-bold">
-                        ₹{formatINR(lineTotal)}
-                      </td>
-                      <td className="p-2 text-center">
-                        <div className="flex items-center justify-center gap-1.5">
-                          <button
-                            type="button"
-                            className="p-1 text-slate-400 hover:text-indigo-400 transition-colors"
-                            title="Duplicate Row"
-                            onClick={() => duplicateItem(idx)}
-                          >
-                            <Copy size={13} />
-                          </button>
-                          <button
-                            type="button"
-                            className="p-1 text-slate-400 hover:text-rose-400 transition-colors"
-                            title="Delete Row"
-                            onClick={() => removeItem(idx)}
-                            disabled={items.length <= 1}
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* 4. TOTALS & GST BREAKDOWN */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-slate-800">
-            {/* GST Tax Slabs Table */}
-            <div className="bg-slate-950/70 border border-slate-800 rounded p-3 space-y-2">
-              <h3 className="text-xs font-semibold text-slate-300">GST Slab Breakdown</h3>
-              <table className="w-full text-[11px] text-left border border-slate-800 rounded overflow-hidden">
-                <thead className="bg-slate-900 text-slate-400">
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-left border border-slate-800 rounded overflow-hidden">
+                <thead className="bg-slate-950/90 text-slate-300 font-semibold border-b border-slate-800">
                   <tr>
-                    <th className="p-1.5">Tax Rate</th>
-                    <th className="p-1.5 text-right">Taxable Amt</th>
-                    <th className="p-1.5 text-right">CGST</th>
-                    <th className="p-1.5 text-right">SGST</th>
-                    <th className="p-1.5 text-right">Total Tax</th>
+                    <th className="p-2.5 w-10 text-center">#</th>
+                    <th className="p-2.5 min-w-[220px]">Description & Details</th>
+                    <th className="p-2.5 w-24 text-center">HSN/SAC</th>
+                    <th className="p-2.5 w-20 text-center">Qty</th>
+                    <th className="p-2.5 w-20 text-center">Unit</th>
+                    <th className="p-2.5 w-24 text-right">Price (₹)</th>
+                    <th className="p-2.5 w-24 text-center">GST Rate</th>
+                    <th className="p-2.5 w-24 text-right">Tax (₹)</th>
+                    <th className="p-2.5 w-28 text-right">Total (₹)</th>
+                    <th className="p-2.5 w-16 text-center">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800">
-                  {Object.values(taxSlabs).map((slab, i) => (
-                    <tr key={i} className="text-slate-300">
-                      <td className="p-1.5 font-medium">{slab.rate}%</td>
-                      <td className="p-1.5 text-right font-mono">₹{formatINR(slab.taxable)}</td>
-                      <td className="p-1.5 text-right font-mono">₹{formatINR(slab.cgst)}</td>
-                      <td className="p-1.5 text-right font-mono">₹{formatINR(slab.sgst)}</td>
-                      <td className="p-1.5 text-right font-mono font-semibold text-indigo-400">
-                        ₹{formatINR(slab.total)}
-                      </td>
-                    </tr>
-                  ))}
+                <tbody className="divide-y divide-slate-800/80 bg-slate-900/40">
+                  {items.map((item, idx) => {
+                    const qty = parseFloat(item.qty) || 0;
+                    const price = parseFloat(item.price) || 0;
+                    const taxable = qty * price;
+                    const gstR = parseFloat(item.gstRate) || 0;
+                    const taxAmt = (taxable * gstR) / 100;
+                    const lineTotal = taxable + taxAmt;
+
+                    return (
+                      <tr key={idx} className="hover:bg-slate-800/40 transition-colors">
+                        <td className="p-2 text-center text-slate-400 font-bold">{idx + 1}</td>
+                        <td className="p-2 space-y-1">
+                          <input
+                            type="text"
+                            className="w-full px-2.5 py-1 bg-slate-950/80 border border-slate-700/90 rounded text-slate-100 font-medium focus:outline-none focus:border-indigo-500"
+                            placeholder="Description of Goods & Service"
+                            value={item.description}
+                            onChange={(e) => handleItemChange(idx, 'description', e.target.value)}
+                          />
+                          <input
+                            type="text"
+                            className="w-full px-2 py-0.5 text-[11px] bg-slate-950/50 border border-slate-800 rounded text-slate-400 focus:outline-none focus:border-indigo-500"
+                            placeholder="Sub-details (e.g. UN 3465/6.1/III, Box specs)"
+                            value={item.subText || ''}
+                            onChange={(e) => handleItemChange(idx, 'subText', e.target.value)}
+                          />
+                        </td>
+                        <td className="p-2">
+                          <input
+                            type="text"
+                            className="w-full px-2 py-1 bg-slate-950/80 border border-slate-700/90 rounded text-slate-200 text-center font-mono focus:outline-none focus:border-indigo-500"
+                            placeholder="HSN"
+                            value={item.hsnCode || ''}
+                            onChange={(e) => handleItemChange(idx, 'hsnCode', e.target.value)}
+                          />
+                        </td>
+                        <td className="p-2">
+                          <input
+                            type="number"
+                            step="any"
+                            className="w-full px-2 py-1 bg-slate-950/80 border border-slate-700/90 rounded text-slate-100 text-center font-mono focus:outline-none focus:border-indigo-500"
+                            value={item.qty}
+                            onChange={(e) => handleItemChange(idx, 'qty', e.target.value)}
+                          />
+                        </td>
+                        <td className="p-2">
+                          <input
+                            type="text"
+                            className="w-full px-2 py-1 bg-slate-950/80 border border-slate-700/90 rounded text-slate-200 text-center focus:outline-none focus:border-indigo-500"
+                            placeholder="Pcs"
+                            value={item.unit || 'Pcs'}
+                            onChange={(e) => handleItemChange(idx, 'unit', e.target.value)}
+                          />
+                        </td>
+                        <td className="p-2">
+                          <input
+                            type="number"
+                            step="any"
+                            className="w-full px-2 py-1 bg-slate-950/80 border border-slate-700/90 rounded text-slate-100 text-right font-mono focus:outline-none focus:border-indigo-500"
+                            value={item.price}
+                            onChange={(e) => handleItemChange(idx, 'price', e.target.value)}
+                          />
+                        </td>
+                        <td className="p-2">
+                          <select
+                            className="w-full px-2 py-1 bg-slate-950/80 border border-slate-700/90 rounded text-xs text-slate-200 text-center focus:outline-none focus:border-indigo-500"
+                            value={item.gstRate}
+                            onChange={(e) => handleItemChange(idx, 'gstRate', e.target.value)}
+                          >
+                            <option value="0">0%</option>
+                            <option value="5">5%</option>
+                            <option value="12">12%</option>
+                            <option value="18">18%</option>
+                            <option value="28">28%</option>
+                          </select>
+                        </td>
+                        <td className="p-2 text-right font-mono text-slate-300 font-medium">
+                          ₹{formatINR(taxAmt)}
+                        </td>
+                        <td className="p-2 text-right font-mono font-bold text-slate-100">
+                          ₹{formatINR(lineTotal)}
+                        </td>
+                        <td className="p-2 text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              type="button"
+                              className="text-slate-400 hover:text-white p-1 hover:bg-slate-800 rounded"
+                              onClick={() => duplicateItem(idx)}
+                              title="Duplicate row"
+                            >
+                              <Copy size={13} />
+                            </button>
+                            <button
+                              type="button"
+                              className="text-slate-400 hover:text-rose-400 p-1 hover:bg-rose-900/20 rounded disabled:opacity-30"
+                              disabled={items.length <= 1}
+                              onClick={() => removeItem(idx)}
+                              title="Remove item"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
-
-            {/* Total Calculation Card */}
-            <div className="bg-slate-950/70 border border-slate-800 rounded p-4 space-y-2.5 flex flex-col justify-between">
-              <div className="space-y-1.5 text-xs">
-                <div className="flex justify-between text-slate-400">
-                  <span>Total Quantity:</span>
-                  <span className="font-semibold text-slate-200">{totalQty.toFixed(2)} Pcs</span>
-                </div>
-                <div className="flex justify-between text-slate-400">
-                  <span>Taxable Amount (Subtotal):</span>
-                  <span className="font-mono text-slate-200">₹{formatINR(totalTaxable)}</span>
-                </div>
-                <div className="flex justify-between text-slate-400">
-                  <span>Total CGST:</span>
-                  <span className="font-mono text-slate-200">₹{formatINR(totalCGST)}</span>
-                </div>
-                <div className="flex justify-between text-slate-400">
-                  <span>Total SGST:</span>
-                  <span className="font-mono text-slate-200">₹{formatINR(totalSGST)}</span>
-                </div>
-                <div className="flex justify-between text-sm font-bold text-slate-100 pt-2 border-t border-slate-800">
-                  <span>Grand Total:</span>
-                  <span className="font-mono text-emerald-400 text-base">₹{formatINR(grandTotal)}</span>
-                </div>
-              </div>
-              <div className="p-2.5 bg-indigo-500/10 border border-indigo-500/20 rounded text-xs text-indigo-300 font-medium">
-                <span className="font-bold text-indigo-400">Amount In Words: </span>
-                {amountInWords}
-              </div>
-            </div>
           </div>
-        </div>
 
-        {/* 5. ISSUER & BANK DETAILS (COLLAPSIBLE TOGGLE) */}
-        <div className="bg-slate-900/70 border border-slate-800 rounded-md p-4 shadow-sm space-y-3">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
-            <h2 className="text-sm font-bold text-slate-200 flex items-center gap-2">
-              <Building size={15} className="text-indigo-400" />
-              <span>5. Issuer Company & Bank Details</span>
+          {/* 4. FINANCIAL TOTALS & GST BREAKDOWN */}
+          <div className="bg-slate-900/70 border border-slate-800 rounded-md p-4 shadow-sm space-y-4">
+            <h2 className="text-sm font-bold text-slate-200 flex items-center gap-2 border-b border-slate-800 pb-2.5">
+              <Receipt size={15} className="text-indigo-400" />
+              <span>5. Tax Summary & Grand Total</span>
             </h2>
-            <button
-              type="button"
-              className="text-xs text-indigo-400 hover:text-indigo-300 font-medium"
-              onClick={() => setShowCompanyDetails(!showCompanyDetails)}
-            >
-              {showCompanyDetails ? 'Hide Details ▲' : 'Show / Edit Details ▼'}
-            </button>
-          </div>
 
-          {showCompanyDetails && (
-            <div className="space-y-4 pt-2">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                <Input
-                  label="Company Name"
-                  value={formData.companyName}
-                  onChange={(e) => handleFieldChange('companyName', e.target.value)}
-                />
-                <Input
-                  label="GSTIN"
-                  value={formData.companyGstin}
-                  onChange={(e) => handleFieldChange('companyGstin', e.target.value)}
-                />
-                <Input
-                  label="PAN"
-                  value={formData.companyPan}
-                  onChange={(e) => handleFieldChange('companyPan', e.target.value)}
-                />
-                <Input
-                  label="Phone Number"
-                  value={formData.companyTel}
-                  onChange={(e) => handleFieldChange('companyTel', e.target.value)}
-                />
-                <Input
-                  label="Email"
-                  value={formData.companyEmail}
-                  onChange={(e) => handleFieldChange('companyEmail', e.target.value)}
-                />
-                <Input
-                  label="City & PIN"
-                  value={formData.companyCityPin}
-                  onChange={(e) => handleFieldChange('companyCityPin', e.target.value)}
-                />
-                <div className="md:col-span-2 lg:col-span-3">
-                  <Input
-                    label="Company Full Address"
-                    value={formData.companyAddress}
-                    onChange={(e) => handleFieldChange('companyAddress', e.target.value)}
-                  />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Tax Slabs Summary */}
+              <div className="p-3 bg-slate-950/80 rounded border border-slate-800 space-y-2">
+                <div className="text-xs font-semibold text-slate-300">GST Slab Breakdown:</div>
+                <div className="grid grid-cols-5 gap-2 text-[11px] font-semibold text-slate-400 border-b border-slate-800 pb-1">
+                  <span>Rate</span>
+                  <span className="text-right">Taxable</span>
+                  <span className="text-right">CGST</span>
+                  <span className="text-right">SGST</span>
+                  <span className="text-right">Total Tax</span>
+                </div>
+                {Object.values(taxSlabs).map((slab, i) => (
+                  <div key={i} className="grid grid-cols-5 gap-2 text-xs font-mono text-slate-200">
+                    <span className="font-bold text-indigo-400">{slab.rate}%</span>
+                    <span className="text-right">₹{formatINR(slab.taxable)}</span>
+                    <span className="text-right">₹{formatINR(slab.cgst)}</span>
+                    <span className="text-right">₹{formatINR(slab.sgst)}</span>
+                    <span className="text-right font-bold text-slate-100">₹{formatINR(slab.total)}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Grand Total Cards */}
+              <div className="p-3 bg-slate-950/80 rounded border border-slate-800 space-y-2">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-400">Total Taxable Value:</span>
+                  <span className="font-mono font-bold text-slate-200">₹{formatINR(totalTaxable)}</span>
+                </div>
+                {formData.taxType === 'INTER_STATE' ? (
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-400">Total IGST:</span>
+                    <span className="font-mono font-bold text-slate-200">₹{formatINR(totalIGST)}</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-slate-400">Total CGST:</span>
+                      <span className="font-mono font-bold text-slate-200">₹{formatINR(totalCGST)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-slate-400">Total SGST:</span>
+                      <span className="font-mono font-bold text-slate-200">₹{formatINR(totalSGST)}</span>
+                    </div>
+                  </>
+                )}
+                <div className="pt-2 border-t border-slate-800 flex justify-between items-center text-sm">
+                  <span className="font-bold text-slate-100">Grand Total Invoice Value:</span>
+                  <span className="font-mono font-extrabold text-indigo-400 text-lg">₹{formatINR(grandTotal)}</span>
+                </div>
+                <div className="text-[11px] italic text-slate-400 pt-1">
+                  {amountInWords}
                 </div>
               </div>
-
-              <div className="pt-2 border-t border-slate-800 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                <Input
-                  label="Bank Name"
-                  value={formData.bankName}
-                  onChange={(e) => handleFieldChange('bankName', e.target.value)}
-                />
-                <Input
-                  label="Account Number"
-                  value={formData.accountNumber}
-                  onChange={(e) => handleFieldChange('accountNumber', e.target.value)}
-                />
-                <Input
-                  label="RTGS / NEFT IFSC"
-                  value={formData.ifscCode}
-                  onChange={(e) => handleFieldChange('ifscCode', e.target.value)}
-                />
-                <Input
-                  label="Swift Code"
-                  value={formData.swiftCode}
-                  onChange={(e) => handleFieldChange('swiftCode', e.target.value)}
-                />
-                <Input
-                  label="Branch"
-                  value={formData.branchName}
-                  onChange={(e) => handleFieldChange('branchName', e.target.value)}
-                />
-              </div>
             </div>
-          )}
+          </div>
         </div>
+      )}
 
-        {/* BOTTOM ACTION BAR */}
-        <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-800">
-          <Button
-            variant="secondary"
-            onClick={() => {
-              if (onCancel) onCancel();
-              else navigate('/billing');
-            }}
-            className="rounded text-xs"
-          >
-            {isEmbedded ? 'Close Form' : 'Cancel'}
-          </Button>
-
-          <Button variant="secondary" onClick={handleSave} loading={loading} className="rounded text-xs">
-            Save as Draft
-          </Button>
-
-          <Button
-            variant="primary"
-            loading={loading}
-            onClick={handleSaveAndPrint}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-5 py-2 text-xs shadow-sm rounded"
-          >
-            <Printer size={14} className="mr-1.5 inline" /> Save & Print Bill
-          </Button>
-        </div>
-      </div>
+      {/* Template Manager Modal */}
+      {templateManagerOpen && (
+        <BillingTemplateManagerModal
+          isOpen={templateManagerOpen}
+          onClose={() => {
+            setTemplateManagerOpen(false);
+            refreshDirectories();
+          }}
+          onApplyProfile={(profile) => {
+            applyProfile(profile);
+            setTemplateManagerOpen(false);
+          }}
+        />
       )}
 
       {/* PDF Preview Modal */}
       {previewOpen && documentId && (
         <PdfPreviewModal
           isOpen={previewOpen}
-          documentId={documentId}
-          title={formData.invoiceNumber || 'Tax Invoice'}
           onClose={() => setPreviewOpen(false)}
-        />
-      )}
-
-      {/* Template & Customer Directory Manager Modal */}
-      {templateManagerOpen && (
-        <BillingTemplateManagerModal
-          isOpen={templateManagerOpen}
-          onClose={() => {
-            setTemplateManagerOpen(false);
-            refreshProfilesAndParties();
-          }}
-          onSelectTemplate={(tpl) => {
-            applyProfile(tpl);
-            refreshProfilesAndParties();
-          }}
+          documentId={documentId}
+          title={`Tax Invoice ${formData.invoiceNumber || ''}`}
         />
       )}
     </div>

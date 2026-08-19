@@ -120,6 +120,9 @@ export function generateTaxInvoicePDF(document) {
         }
       ];
 
+      // Check if Inter-State invoice
+      const isInterState = d.taxType === 'INTER_STATE' || items.some((it) => (parseFloat(it.igstRate) || 0) > 0);
+
       // Outer boundary box on A4 (595.28 x 841.89)
       const left = 22;
       const top = 22;
@@ -149,94 +152,112 @@ export function generateTaxInvoicePDF(document) {
       doc.text(d.companyName || 'DGR PACKAGING COMPANY', headerCenter, top + 19, { width: headerWidth, align: 'center' });
 
       doc.font('Helvetica').fontSize(8);
-      doc.text(
-        d.companyAddress || 'SHOP NO.2, OPP. BLUE DART, NEAR, SAHAR CARGO COMPLEX, ANDHERI (E)',
-        headerCenter, top + 35, { width: headerWidth, align: 'center' }
-      );
-      doc.text(d.companyCityPin || 'MUMBAI - 400 099', headerCenter, top + 45, { width: headerWidth, align: 'center' });
+      const companyAddr = `${d.companyAddress || 'SHOP NO.2, OPP. BLUE DART, NEAR, SAHAR CARGO COMPLEX, ANDHERI (E)'}\n${d.companyCityPin || 'MUMBAI - 400 099'}`;
+      doc.text(companyAddr, headerCenter, top + 36, { width: headerWidth, align: 'center', lineGap: 1 });
 
+      const midY = top + 57;
       doc.font('Helvetica-Bold').fontSize(8.5);
-      doc.text(`PAN : ${d.companyPan || 'CBKPK7600K'}`, headerCenter, top + 56, { width: headerWidth, align: 'center' });
-      doc.font('Helvetica-Bold').fontSize(9.5);
-      doc.text(`GSTIN : ${d.companyGstin || '27CBKPK7600K1ZE'}`, headerCenter, top + 66, { width: headerWidth, align: 'center' });
+      doc.text(`PAN : ${d.companyPan || 'CBKPK7600K'}`, headerCenter, midY, { width: headerWidth, align: 'center' });
 
-      doc.font('Helvetica-BoldOblique').fontSize(8);
-      doc.text(
-        `Tel. : ${d.companyTel || '022 - 26828108'}   email : ${d.companyEmail || 'dgrpackaging@gmail.com'}`,
-        headerCenter, top + 77, { width: headerWidth, align: 'center' }
-      );
+      doc.fontSize(9);
+      doc.text(`GSTIN : ${d.companyGstin || '27CBKPK7600K1ZE'}`, headerCenter, midY + 11, { width: headerWidth, align: 'center' });
 
-      // Horizontal line below Header
-      let currY = top + 90;
-      doc.moveTo(left, currY).lineTo(right, currY).lineWidth(0.8).stroke();
+      doc.font('Helvetica').fontSize(8);
+      const contactLine = `Tel. : ${d.companyTel || '022 - 26828108'}   email : ${d.companyEmail || 'dgrpackaging@gmail.com'}`;
+      doc.text(contactLine, headerCenter, midY + 23, { width: headerWidth, align: 'center' });
+
+      let currY = top + 93;
+      doc.moveTo(left, currY).lineTo(right, currY).lineWidth(0.8).strokeColor('#000000').stroke();
 
       // ==========================================
-      // 2. TWO-COLUMN METADATA SECTION (Increased height & spacious rows)
+      // 2. INVOICE DISPATCH METADATA (2-Columns)
       // ==========================================
-      const midX = left + width * 0.52; // 22 + 286 = 308
-      const metaHeight = 98;
+      const midX = left + width * 0.5; // 22 + 275.5 = 297.5
+      const metaHeight = 77;
       const metaBottom = currY + metaHeight;
 
-      // Vertical divider
+      // Vertical divider between left and right meta columns
       doc.moveTo(midX, currY).lineTo(midX, metaBottom).lineWidth(0.8).stroke();
 
       // Left Column Metadata
       const leftColX = left + 6;
-      const leftValX = left + 85;
-      let leftY = currY + 5;
-      const rowGap = 13.0;
+      const leftValX = left + 105;
+      let leftY = currY + 4;
+      const metaLineH = 10.5;
 
-      const leftMeta = [
-        ['Invoice No.', `: ${d.invoiceNumber || document.documentNumber || 'DGR/0466/26-27'}`, true],
-        ['Dated', `: ${d.invoiceDate || '27-06-2026'}`, false],
-        ['Place of Supply', `: ${d.placeOfSupply || 'Maharashtra (27)'}`, false],
-        ['Reverse Charge', `: ${d.reverseCharge || 'N'}`, false],
-        ['Transport', `: ${d.transport || ''}`, false],
-        ['E-Way Bill No.', `: ${d.ewayBillNo || ''}`, false],
-        ['AIRWAY BILL NO', `: ${d.airwayBillNo || d.awbNumber || ''}`, true],
-      ];
+      doc.font('Helvetica-Bold').fontSize(7.5).fillColor('#000000');
+      doc.text('Invoice No.', leftColX, leftY);
+      doc.font('Helvetica-Bold').text(`: ${d.invoiceNumber || 'DGR/0466/26-27'}`, leftValX, leftY);
+      leftY += metaLineH;
 
-      leftMeta.forEach(([lbl, val, isBold]) => {
-        doc.font(isBold ? 'Helvetica-Bold' : 'Helvetica').fontSize(8.5).fillColor('#000000');
-        doc.text(lbl, leftColX, leftY, { width: 78 });
-        doc.text(val, leftValX, leftY, { width: midX - leftValX - 4 });
-        leftY += rowGap;
-      });
+      doc.font('Helvetica').fontSize(7.5);
+      doc.text('Dated', leftColX, leftY);
+      doc.text(`: ${d.invoiceDate || '27-06-2026'}`, leftValX, leftY);
+      leftY += metaLineH;
+
+      doc.text('Place of Supply', leftColX, leftY);
+      doc.text(`: ${d.placeOfSupply || 'Maharashtra (27)'}`, leftValX, leftY);
+      leftY += metaLineH;
+
+      doc.text('Reverse Charge', leftColX, leftY);
+      doc.text(`: ${d.reverseCharge || 'N'}`, leftValX, leftY);
+      leftY += metaLineH;
+
+      doc.text('Transport', leftColX, leftY);
+      doc.text(`: ${d.transport || ''}`, leftValX, leftY);
+      leftY += metaLineH;
+
+      doc.text('E-Way Bill No.', leftColX, leftY);
+      doc.text(`: ${d.ewayBillNo || ''}`, leftValX, leftY);
+      leftY += metaLineH;
+
+      doc.text('AIRWAY BILL NO', leftColX, leftY);
+      doc.text(`: ${d.airwayBillNo || ''}`, leftValX, leftY);
 
       // Right Column Metadata
       const rightColX = midX + 6;
-      const rightValX = midX + 90;
-      let rightY = currY + 5;
+      const rightValX = midX + 115;
+      let rightY = currY + 4;
 
-      const rightMeta = [
-        ['P.O. NO. & DATE', `: ${d.poNumberAndDate || ''}`, false],
-        ['NO OF PACKAGES', `: ${d.noOfPackages || ''}`, false],
-        ['GROSS WEIGHT', `: ${d.grossWeight || ''}`, false],
-        ['TRANSPORT NAME', `: ${d.transportName || ''}`, false],
-        ['PAID / TO-PAID', `: ${d.paidToPaid || ''}`, false],
-        ['REFERENCE NAME', `: ${d.referenceName || ''}`, false],
-        ['CONTACT NUMBER', `: ${d.contactNumber || ''}`, false],
-      ];
+      doc.text('P.O. NO. & DATE', rightColX, rightY);
+      doc.text(`: ${d.poNumberAndDate || ''}`, rightValX, rightY);
+      rightY += metaLineH;
 
-      rightMeta.forEach(([lbl, val, isBold]) => {
-        doc.font(isBold ? 'Helvetica-Bold' : 'Helvetica').fontSize(8.5).fillColor('#000000');
-        doc.text(lbl, rightColX, rightY, { width: 83 });
-        doc.text(val, rightValX, rightY, { width: right - rightValX - 4 });
-        rightY += rowGap;
-      });
+      doc.text('NO OF PACKAGES', rightColX, rightY);
+      doc.text(`: ${d.noOfPackages || ''}`, rightValX, rightY);
+      rightY += metaLineH;
+
+      doc.text('GROSS WEIGHT', rightColX, rightY);
+      doc.text(`: ${d.grossWeight || ''}`, rightValX, rightY);
+      rightY += metaLineH;
+
+      doc.text('TRANSPORT NAME', rightColX, rightY);
+      doc.text(`: ${d.transportName || ''}`, rightValX, rightY);
+      rightY += metaLineH;
+
+      doc.text('PAID / TO-PAID', rightColX, rightY);
+      doc.text(`: ${d.paidToPaid || ''}`, rightValX, rightY);
+      rightY += metaLineH;
+
+      doc.text('REFERENCE NAME:', rightColX, rightY);
+      doc.text(`: ${d.referenceName || ''}`, rightValX, rightY);
+      rightY += metaLineH;
+
+      doc.text('CONTACT NUMBER', rightColX, rightY);
+      doc.text(`: ${d.contactNumber || ''}`, rightValX, rightY);
 
       currY = metaBottom;
       doc.moveTo(left, currY).lineTo(right, currY).lineWidth(0.8).stroke();
 
       // ==========================================
-      // 3. BILLED TO & SHIPPED TO SECTION (Increased height & spacious layout)
+      // 3. BILLED TO & SHIPPED TO SECTION
       // ==========================================
       const buyerAddr = d.buyerAddress || 'GROUND FLOOR ROOM -003\nG M NAGAR NARANGI BAYPASS ROAD\nVIRAR EAST VASAI VIRAR PALGHAR -401305';
-      const shipAddr = d.consigneeAddress || d.buyerAddress || 'GROUND FLOOR ROOM -003\nG M NAGAR NARANGI BAYPASS ROAD\nVIRAR EAST VASAI VIRAR PALGHAR -401305';
+      const shipAddr = d.consigneeAddress || buyerAddr;
 
       doc.font('Helvetica').fontSize(8);
-      const bAddrH = doc.heightOfString(buyerAddr, { width: midX - leftColX - 6, lineGap: 1 });
-      const sAddrH = doc.heightOfString(shipAddr, { width: right - rightColX - 6, lineGap: 1 });
+      const bAddrH = doc.heightOfString(buyerAddr, { width: midX - leftColX - 6, lineGap: 1.2 });
+      const sAddrH = doc.heightOfString(shipAddr, { width: right - rightColX - 6, lineGap: 1.2 });
       const maxAddrContentH = Math.max(bAddrH, sAddrH);
       const addrHeight = Math.max(98, maxAddrContentH + 42);
       const addrBottom = currY + addrHeight;
@@ -294,18 +315,29 @@ export function generateTaxInvoicePDF(document) {
       // ==========================================
       // 4. ITEMS TABLE (Auto-adjusting height & row heights)
       // ==========================================
-      const colX = {
-        sn: left,                 // 22
-        desc: left + 20,          // 42  (width: 170)
-        hsn: left + 212,          // 234 (width: 50)
-        qty: left + 262,          // 284 (width: 58)
-        price: left + 320,        // 342 (width: 44)
-        cgstRate: left + 364,     // 386 (width: 32)
-        cgstAmt: left + 396,      // 418 (width: 38)
-        sgstRate: left + 434,     // 456 (width: 32)
-        sgstAmt: left + 466,      // 488 (width: 38)
-        amount: left + 504,       // 526 (width: 47 -> 573)
-      };
+      const colX = isInterState
+        ? {
+            sn: left,                 // 22
+            desc: left + 20,          // 42  (width: 220)
+            hsn: left + 242,          // 264 (width: 55)
+            qty: left + 297,          // 319 (width: 60)
+            price: left + 357,        // 379 (width: 50)
+            igstRate: left + 407,     // 429 (width: 40)
+            igstAmt: left + 447,      // 469 (width: 50)
+            amount: left + 497,       // 519 (width: 54 -> 573)
+          }
+        : {
+            sn: left,                 // 22
+            desc: left + 20,          // 42  (width: 170)
+            hsn: left + 212,          // 234 (width: 50)
+            qty: left + 262,          // 284 (width: 58)
+            price: left + 320,        // 342 (width: 44)
+            cgstRate: left + 364,     // 386 (width: 32)
+            cgstAmt: left + 396,      // 418 (width: 38)
+            sgstRate: left + 434,     // 456 (width: 32)
+            sgstAmt: left + 466,      // 488 (width: 38)
+            amount: left + 504,       // 526 (width: 47 -> 573)
+          };
 
       const tableHeadH = 22;
       const tableHeadBottom = currY + tableHeadH;
@@ -313,15 +345,26 @@ export function generateTaxInvoicePDF(document) {
       // Table Header row
       doc.font('Helvetica-Bold').fontSize(6.5).fillColor('#000000');
       doc.text('S.N.', colX.sn, currY + 7, { width: 20, align: 'center' });
-      doc.text('Description of Goods & Service', colX.desc + 4, currY + 7, { width: 165 });
-      doc.text('HSN/SAC\nCode', colX.hsn, currY + 3, { width: 50, align: 'center' });
-      doc.text('Qty. Unit', colX.qty, currY + 7, { width: 58, align: 'center' });
-      doc.text('Price', colX.price, currY + 7, { width: 42, align: 'right' });
-      doc.text('CGST\nRate', colX.cgstRate, currY + 3, { width: 32, align: 'center' });
-      doc.text('CGST\nAmount', colX.cgstAmt, currY + 3, { width: 36, align: 'right' });
-      doc.text('SGST\nRate', colX.sgstRate, currY + 3, { width: 32, align: 'center' });
-      doc.text('SGST\nAmount', colX.sgstAmt, currY + 3, { width: 36, align: 'right' });
-      doc.text('Amount(Rs.)', colX.amount, currY + 7, { width: 45, align: 'right' });
+
+      if (isInterState) {
+        doc.text('Description of Goods & Service', colX.desc + 4, currY + 7, { width: 215 });
+        doc.text('HSN/SAC\nCode', colX.hsn, currY + 3, { width: 55, align: 'center' });
+        doc.text('Qty. Unit', colX.qty, currY + 7, { width: 60, align: 'center' });
+        doc.text('Price', colX.price, currY + 7, { width: 48, align: 'right' });
+        doc.text('IGST\nRate', colX.igstRate, currY + 3, { width: 40, align: 'center' });
+        doc.text('IGST\nAmount', colX.igstAmt, currY + 3, { width: 48, align: 'right' });
+        doc.text('Amount(Rs.)', colX.amount, currY + 7, { width: 52, align: 'right' });
+      } else {
+        doc.text('Description of Goods & Service', colX.desc + 4, currY + 7, { width: 165 });
+        doc.text('HSN/SAC\nCode', colX.hsn, currY + 3, { width: 50, align: 'center' });
+        doc.text('Qty. Unit', colX.qty, currY + 7, { width: 58, align: 'center' });
+        doc.text('Price', colX.price, currY + 7, { width: 42, align: 'right' });
+        doc.text('CGST\nRate', colX.cgstRate, currY + 3, { width: 32, align: 'center' });
+        doc.text('CGST\nAmount', colX.cgstAmt, currY + 3, { width: 36, align: 'right' });
+        doc.text('SGST\nRate', colX.sgstRate, currY + 3, { width: 32, align: 'center' });
+        doc.text('SGST\nAmount', colX.sgstAmt, currY + 3, { width: 36, align: 'right' });
+        doc.text('Amount(Rs.)', colX.amount, currY + 7, { width: 45, align: 'right' });
+      }
 
       // Horizontal line below Header
       doc.moveTo(left, tableHeadBottom).lineTo(right, tableHeadBottom).lineWidth(0.8).stroke();
@@ -359,9 +402,10 @@ export function generateTaxInvoicePDF(document) {
         totalIGST += igstA;
         grandTotal += lineTotal;
 
-        const slabKey = `${cgstR + sgstR + igstR}%`;
+        const totalRate = cgstR + sgstR + igstR;
+        const slabKey = `${totalRate}%`;
         if (!taxSlabs[slabKey]) {
-          taxSlabs[slabKey] = { rate: cgstR + sgstR + igstR, taxable: 0, cgst: 0, sgst: 0, igst: 0, total: 0 };
+          taxSlabs[slabKey] = { rate: totalRate, taxable: 0, cgst: 0, sgst: 0, igst: 0, total: 0 };
         }
         taxSlabs[slabKey].taxable += taxable;
         taxSlabs[slabKey].cgst += cgstA;
@@ -370,12 +414,13 @@ export function generateTaxInvoicePDF(document) {
         taxSlabs[slabKey].total += (cgstA + sgstA + igstA);
 
         // Calculate dynamic height based on text length
+        const descWidth = isInterState ? 215 : 165;
         doc.font('Helvetica').fontSize(7.5);
-        const descH = doc.heightOfString(item.description || '', { width: 165, lineGap: 0.5 });
+        const descH = doc.heightOfString(item.description || '', { width: descWidth, lineGap: 0.5 });
         let subH = 0;
         if (item.subText) {
           doc.font('Helvetica-Oblique').fontSize(6.5);
-          subH = doc.heightOfString(item.subText, { width: 165, lineGap: 0.5 }) + 2;
+          subH = doc.heightOfString(item.subText, { width: descWidth, lineGap: 0.5 }) + 2;
         }
         const rowH = Math.max(16, descH + subH + 4);
 
@@ -418,40 +463,42 @@ export function generateTaxInvoicePDF(document) {
       // Render Item Rows
       let rowY = tableHeadBottom + 4;
       computedItems.forEach((item) => {
+        const descWidth = isInterState ? 215 : 165;
         doc.font('Helvetica').fontSize(7.5).fillColor('#000000');
         doc.text(String(item.sn) + '.', colX.sn, rowY, { width: 20, align: 'center' });
-        doc.text(item.description, colX.desc + 4, rowY, { width: 165, lineGap: 0.5 });
-        
-        let subTextOffset = doc.heightOfString(item.description, { width: 165, lineGap: 0.5 });
+        doc.text(item.description, colX.desc + 4, rowY, { width: descWidth, lineGap: 0.5 });
+
+        let subTextOffset = doc.heightOfString(item.description, { width: descWidth, lineGap: 0.5 });
         if (item.subText) {
-          doc.font('Helvetica-Oblique').fontSize(6.5).text(item.subText, colX.desc + 4, rowY + subTextOffset + 1, { width: 165, lineGap: 0.5 });
+          doc.font('Helvetica-Oblique').fontSize(6.5).text(item.subText, colX.desc + 4, rowY + subTextOffset + 1, { width: descWidth, lineGap: 0.5 });
         }
 
         doc.font('Helvetica').fontSize(7.5);
-        doc.text(item.hsnCode, colX.hsn, rowY, { width: 50, align: 'center' });
-        doc.text(`${item.qty.toFixed(2)} ${item.unit}`, colX.qty, rowY, { width: 58, align: 'center' });
-        doc.text(formatAmount(item.price), colX.price, rowY, { width: 42, align: 'right' });
-        doc.text(item.cgstR > 0 ? `${item.cgstR.toFixed(2)} %` : '-', colX.cgstRate, rowY, { width: 32, align: 'center' });
-        doc.text(item.cgstA > 0 ? formatAmount(item.cgstA) : '-', colX.cgstAmt, rowY, { width: 36, align: 'right' });
-        doc.text(item.sgstR > 0 ? `${item.sgstR.toFixed(2)} %` : '-', colX.sgstRate, rowY, { width: 32, align: 'center' });
-        doc.text(item.sgstA > 0 ? formatAmount(item.sgstA) : '-', colX.sgstAmt, rowY, { width: 36, align: 'right' });
-        doc.text(formatAmount(item.lineTotal), colX.amount, rowY, { width: 45, align: 'right' });
+        if (isInterState) {
+          doc.text(item.hsnCode, colX.hsn, rowY, { width: 55, align: 'center' });
+          doc.text(`${item.qty.toFixed(2)} ${item.unit}`, colX.qty, rowY, { width: 60, align: 'center' });
+          doc.text(formatAmount(item.price), colX.price, rowY, { width: 48, align: 'right' });
+          doc.text(item.igstR > 0 ? `${item.igstR.toFixed(2)} %` : '-', colX.igstRate, rowY, { width: 40, align: 'center' });
+          doc.text(item.igstA > 0 ? formatAmount(item.igstA) : '-', colX.igstAmt, rowY, { width: 48, align: 'right' });
+          doc.text(formatAmount(item.lineTotal), colX.amount, rowY, { width: 52, align: 'right' });
+        } else {
+          doc.text(item.hsnCode, colX.hsn, rowY, { width: 50, align: 'center' });
+          doc.text(`${item.qty.toFixed(2)} ${item.unit}`, colX.qty, rowY, { width: 58, align: 'center' });
+          doc.text(formatAmount(item.price), colX.price, rowY, { width: 42, align: 'right' });
+          doc.text(item.cgstR > 0 ? `${item.cgstR.toFixed(2)} %` : '-', colX.cgstRate, rowY, { width: 32, align: 'center' });
+          doc.text(item.cgstA > 0 ? formatAmount(item.cgstA) : '-', colX.cgstAmt, rowY, { width: 36, align: 'right' });
+          doc.text(item.sgstR > 0 ? `${item.sgstR.toFixed(2)} %` : '-', colX.sgstRate, rowY, { width: 32, align: 'center' });
+          doc.text(item.sgstA > 0 ? formatAmount(item.sgstA) : '-', colX.sgstAmt, rowY, { width: 36, align: 'right' });
+          doc.text(formatAmount(item.lineTotal), colX.amount, rowY, { width: 45, align: 'right' });
+        }
 
         rowY += item.rowH;
       });
 
       // Draw Full-height Column Vertical Dividers for items table
-      const dividers = [
-        colX.desc,
-        colX.hsn,
-        colX.qty,
-        colX.price,
-        colX.cgstRate,
-        colX.cgstAmt,
-        colX.sgstRate,
-        colX.sgstAmt,
-        colX.amount
-      ];
+      const dividers = isInterState
+        ? [colX.desc, colX.hsn, colX.qty, colX.price, colX.igstRate, colX.igstAmt, colX.amount]
+        : [colX.desc, colX.hsn, colX.qty, colX.price, colX.cgstRate, colX.cgstAmt, colX.sgstRate, colX.sgstAmt, colX.amount];
 
       dividers.forEach((x) => {
         doc.moveTo(x, currY).lineTo(x, tableBottom).lineWidth(0.6).strokeColor('#000000').stroke();
@@ -466,9 +513,9 @@ export function generateTaxInvoicePDF(document) {
       const unitLabel = unitsSet.size === 1 ? (items[0]?.unit || 'Pcs') : 'Qty';
       doc.font('Helvetica-Bold').fontSize(8.5).fillColor('#000000');
       doc.text('Grand Total', colX.desc + 40, tableBottom + 4.5, { width: 120, align: 'right' });
-      doc.text(`${totalQty.toFixed(2)} ${unitLabel}`, colX.qty, tableBottom + 4.5, { width: 58, align: 'center' });
+      doc.text(`${totalQty.toFixed(2)} ${unitLabel}`, colX.qty, tableBottom + 4.5, { width: isInterState ? 60 : 58, align: 'center' });
       doc.text('Rs.', colX.amount - 20, tableBottom + 4.5, { width: 18, align: 'right' });
-      doc.text(formatAmount(grandTotal), colX.amount, tableBottom + 4.5, { width: 45, align: 'right' });
+      doc.text(formatAmount(grandTotal), colX.amount, tableBottom + 4.5, { width: isInterState ? 52 : 45, align: 'right' });
 
       doc.moveTo(left, grandTotalBottom).lineTo(right, grandTotalBottom).lineWidth(0.8).stroke();
       currY = grandTotalBottom;
@@ -480,29 +527,48 @@ export function generateTaxInvoicePDF(document) {
       const taxRowH = 11;
       const taxBottom = currY + taxTableH;
 
-      const taxCol = {
-        rate: left + 6,
-        taxable: left + 50,
-        cgst: left + 115,
-        sgst: left + 175,
-        total: left + 235,
-      };
+      const taxCol = isInterState
+        ? {
+            rate: left + 6,
+            taxable: left + 50,
+            igst: left + 135,
+            total: left + 205,
+          }
+        : {
+            rate: left + 6,
+            taxable: left + 50,
+            cgst: left + 115,
+            sgst: left + 175,
+            total: left + 235,
+          };
 
       doc.font('Helvetica-Bold').fontSize(7.5).fillColor('#000000');
       doc.text('Tax Rate', taxCol.rate, currY + 2, { width: 40 });
       doc.text('Taxable Amt.', taxCol.taxable, currY + 2, { width: 60, align: 'right' });
-      doc.text('CGST Amt.', taxCol.cgst, currY + 2, { width: 55, align: 'right' });
-      doc.text('SGST Amt.', taxCol.sgst, currY + 2, { width: 55, align: 'right' });
-      doc.text('Total Tax', taxCol.total, currY + 2, { width: 55, align: 'right' });
+
+      if (isInterState) {
+        doc.text('IGST Amt.', taxCol.igst, currY + 2, { width: 65, align: 'right' });
+        doc.text('Total Tax', taxCol.total, currY + 2, { width: 65, align: 'right' });
+      } else {
+        doc.text('CGST Amt.', taxCol.cgst, currY + 2, { width: 55, align: 'right' });
+        doc.text('SGST Amt.', taxCol.sgst, currY + 2, { width: 55, align: 'right' });
+        doc.text('Total Tax', taxCol.total, currY + 2, { width: 55, align: 'right' });
+      }
 
       let tY = currY + taxHeadH + 1;
       Object.values(taxSlabs).forEach((slab) => {
         doc.font('Helvetica').fontSize(7.5);
         doc.text(`${slab.rate}%`, taxCol.rate, tY, { width: 40 });
         doc.text(formatAmount(slab.taxable), taxCol.taxable, tY, { width: 60, align: 'right' });
-        doc.text(formatAmount(slab.cgst), taxCol.cgst, tY, { width: 55, align: 'right' });
-        doc.text(formatAmount(slab.sgst), taxCol.sgst, tY, { width: 55, align: 'right' });
-        doc.text(formatAmount(slab.total), taxCol.total, tY, { width: 55, align: 'right' });
+
+        if (isInterState) {
+          doc.text(formatAmount(slab.igst), taxCol.igst, tY, { width: 65, align: 'right' });
+          doc.text(formatAmount(slab.total), taxCol.total, tY, { width: 65, align: 'right' });
+        } else {
+          doc.text(formatAmount(slab.cgst), taxCol.cgst, tY, { width: 55, align: 'right' });
+          doc.text(formatAmount(slab.sgst), taxCol.sgst, tY, { width: 55, align: 'right' });
+          doc.text(formatAmount(slab.total), taxCol.total, tY, { width: 55, align: 'right' });
+        }
         tY += taxRowH;
       });
 
