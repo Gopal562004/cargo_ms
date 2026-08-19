@@ -28,12 +28,87 @@ import {
   Tag,
   ExternalLink,
   ShieldCheck,
+  Percent,
+  Calculator,
+  ArrowRight,
+  Info,
+  Layers,
+  FileCheck,
+  Landmark,
+  User,
+  Phone,
+  Truck,
+  MapPin,
 } from 'lucide-react';
 import { useDocumentStore } from '../store/documentStore';
 import { deleteDocument, parseInvoiceDocument } from '../services/documentService';
 import { getSavedVendors, saveVendor } from '../services/billingProfileService';
 import Button from '../components/ui/Button';
 import Pagination from '../components/ui/Pagination';
+
+export const INDIAN_GST_STATES = {
+  '01': 'Jammu & Kashmir (01)',
+  '02': 'Himachal Pradesh (02)',
+  '03': 'Punjab (03)',
+  '04': 'Chandigarh (04)',
+  '05': 'Uttarakhand (05)',
+  '06': 'Haryana (06)',
+  '07': 'Delhi (07)',
+  '08': 'Rajasthan (08)',
+  '09': 'Uttar Pradesh (09)',
+  '10': 'Bihar (10)',
+  '11': 'Sikkim (11)',
+  '12': 'Arunachal Pradesh (12)',
+  '13': 'Nagaland (13)',
+  '14': 'Manipur (14)',
+  '15': 'Mizoram (15)',
+  '16': 'Tripura (16)',
+  '17': 'Meghalaya (17)',
+  '18': 'Assam (18)',
+  '19': 'West Bengal (19)',
+  '20': 'Jharkhand (20)',
+  '21': 'Odisha (21)',
+  '22': 'Chhattisgarh (22)',
+  '23': 'Madhya Pradesh (23)',
+  '24': 'Gujarat (24)',
+  '26': 'Daman & Diu and Dadra & Nagar Haveli (26)',
+  '27': 'Maharashtra (27)',
+  '29': 'Karnataka (29)',
+  '30': 'Goa (30)',
+  '31': 'Lakshadweep (31)',
+  '32': 'Kerala (32)',
+  '33': 'Tamil Nadu (33)',
+  '34': 'Puducherry (34)',
+  '35': 'Andaman & Nicobar Islands (35)',
+  '36': 'Telangana (36)',
+  '37': 'Andhra Pradesh (37)',
+  '38': 'Ladakh (38)',
+  '97': 'Other Territory (97)',
+};
+
+const TODAY_DATE_STR = new Date().toISOString().split('T')[0];
+
+export const EXPENSE_CATEGORIES = [
+  { id: 'PACKAGING', label: 'UN 4G Boxes & DG Packaging Material', sac: '4819', color: 'text-blue-400 bg-blue-500/10 border-blue-500/30' },
+  { id: 'DGD', label: 'IATA DGD Inspection & Certification', sac: '9983', color: 'text-amber-400 bg-amber-500/10 border-amber-500/30' },
+  { id: 'AIR_FREIGHT', label: 'Airline Master Freight & Surcharges (FSC/SSC)', sac: '9965', color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/30' },
+  { id: 'SEA_FREIGHT', label: 'Ocean Freight & Sea Shipping Line Charges', sac: '9965', color: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30' },
+  { id: 'TERMINAL_HANDLING', label: 'Airport TSP / CFS Terminal & Storage (MIAL/AAI)', sac: '9967', color: 'text-orange-400 bg-orange-500/10 border-orange-500/30' },
+  { id: 'CUSTOMS', label: 'CHA & Customs Brokerage Clearance', sac: '9967', color: 'text-purple-400 bg-purple-500/10 border-purple-500/30' },
+  { id: 'TRANSPORT', label: 'Local Cartage, Tempo & Transporter LR', sac: '9965', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' },
+  { id: 'FUMIGATION', label: 'Fumigation, Palletization & Phytosanitary', sac: '9988', color: 'text-teal-400 bg-teal-500/10 border-teal-500/30' },
+  { id: 'DOCUMENTATION', label: 'AWB Pouch Postage & Courier Logistics', sac: '9983', color: 'text-pink-400 bg-pink-500/10 border-pink-500/30' },
+  { id: 'OTHER', label: 'General / Office & Software Subscriptions', sac: '9983', color: 'text-slate-400 bg-slate-500/10 border-slate-500/30' },
+];
+
+export const TDS_SECTIONS = [
+  { id: 'NONE', label: 'No TDS Applicable (0%)', rate: 0 },
+  { id: '194C_IND', label: 'Sec 194C - Contractor (Individual / Prop) (1%)', rate: 1 },
+  { id: '194C_CO', label: 'Sec 194C - Contractor (Company / Firm) (2%)', rate: 2 },
+  { id: '194J_TECH', label: 'Sec 194J - Technical / Professional Fee (2%)', rate: 2 },
+  { id: '194J_PROF', label: 'Sec 194J - Professional / Consultancy (10%)', rate: 10 },
+  { id: '194Q', label: 'Sec 194Q - Purchase of Goods > 50L (0.1%)', rate: 0.1 },
+];
 
 function formatINR(val) {
   const num = parseFloat(val);
@@ -64,16 +139,15 @@ function formatActivityDate(dateStr) {
   });
 }
 
-const EXPENSE_CATEGORIES = [
-  { id: 'DGD', label: 'DGD Documentation Charges', color: 'text-amber-400 bg-amber-500/10 border-amber-500/30' },
-  { id: 'PACKAGING', label: 'Packaging & UN Boxes', color: 'text-blue-400 bg-blue-500/10 border-blue-500/30' },
-  { id: 'AIR_FREIGHT', label: 'Airline Freight Cost', color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/30' },
-  { id: 'SEA_FREIGHT', label: 'Ocean Freight Cost', color: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30' },
-  { id: 'CUSTOMS', label: 'Customs Clearance & Brokerage', color: 'text-purple-400 bg-purple-500/10 border-purple-500/30' },
-  { id: 'TRANSPORT', label: 'Transport / Cartage / Courier', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' },
-  { id: 'WAREHOUSE', label: 'Warehouse & Handling', color: 'text-orange-400 bg-orange-500/10 border-orange-500/30' },
-  { id: 'OTHER', label: 'Other Vendor Expense', color: 'text-slate-400 bg-slate-500/10 border-slate-500/30' },
-];
+function getIndianStateFromGstin(gstin) {
+  if (!gstin || typeof gstin !== 'string') return null;
+  const clean = gstin.trim();
+  if (clean.length >= 2) {
+    const code = clean.substring(0, 2);
+    return INDIAN_GST_STATES[code] || null;
+  }
+  return null;
+}
 
 export default function PurchaseBillsPage() {
   const navigate = useNavigate();
@@ -96,6 +170,7 @@ export default function PurchaseBillsPage() {
   // Auto-extraction states
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractSuccess, setExtractSuccess] = useState('');
+  const [lastExtractedData, setLastExtractedData] = useState(null);
 
   // Filter input states
   const [search, setSearch] = useState('');
@@ -141,44 +216,113 @@ export default function PurchaseBillsPage() {
 
   // Form State for creating/editing purchase bill
   const [formData, setFormData] = useState({
+    voucherNumber: '',
     vendorName: '',
     vendorGstin: '',
+    vendorPan: '',
     vendorAddress: '',
+    placeOfSupply: 'Maharashtra (27)',
+    taxType: 'INTRA_STATE', // INTRA_STATE (CGST+SGST) | INTER_STATE (IGST) | EXEMPT
     billNumber: '',
-    billDate: new Date().toISOString().split('T')[0],
+    billDate: TODAY_DATE_STR,
     dueDate: '',
-    expenseCategory: 'DGD',
+    expenseCategory: 'PACKAGING',
+    hsnSacCode: '4819',
     airwayBillNo: '',
     description: '',
     taxableAmount: '',
     gstRate: 18,
+    cgstAmount: 0,
+    sgstAmount: 0,
+    igstAmount: 0,
+    totalGst: 0,
+    tdsSection: 'NONE',
+    tdsRate: 0,
+    tdsAmount: 0,
     grandTotal: '',
+    netPayable: '',
+    itcEligibility: 'ELIGIBLE', // ELIGIBLE | INELIGIBLE | RCM
     billFileBase64: null,
     billFileName: '',
-    status: 'ISSUED', // 'ISSUED' (Pending Payment) or 'COMPLETED' (Paid)
+    vendorBankName: '',
+    vendorBankAccount: '',
+    vendorBankIfsc: '',
+    vendorBankBranch: '',
+    referenceName: '',
+    contactNumber: '',
+    shippedToName: '',
+    shippedToAddress: '',
+    status: 'ISSUED', // ISSUED (Pending) | COMPLETED (Paid) | DRAFT
     paymentMode: 'NEFT_RTGS',
+    bankName: '',
     transactionId: '',
     paidDate: '',
     remarks: '',
   });
 
+  // Calculate Indian GST & Totals
+  const calculateGstBreakdown = (taxableVal, rateVal, taxTypeVal, tdsSecVal) => {
+    const taxable = parseFloat(taxableVal) || 0;
+    const gstRate = parseFloat(rateVal) || 0;
+    const tdsSec = TDS_SECTIONS.find((s) => s.id === tdsSecVal) || TDS_SECTIONS[0];
+    const tdsRate = tdsSec.rate;
+
+    let cgst = 0;
+    let sgst = 0;
+    let igst = 0;
+
+    if (taxTypeVal === 'INTRA_STATE' && gstRate > 0) {
+      const halfRate = gstRate / 2;
+      cgst = (taxable * halfRate) / 100;
+      sgst = (taxable * halfRate) / 100;
+    } else if (taxTypeVal === 'INTER_STATE' && gstRate > 0) {
+      igst = (taxable * gstRate) / 100;
+    }
+
+    const totalGst = cgst + sgst + igst;
+    const grandTotal = taxable + totalGst;
+    const tdsAmount = (taxable * tdsRate) / 100;
+    const netPayable = Math.max(0, grandTotal - tdsAmount);
+
+    return {
+      taxableAmount: taxableVal,
+      gstRate,
+      cgstAmount: parseFloat(cgst.toFixed(2)),
+      sgstAmount: parseFloat(sgst.toFixed(2)),
+      igstAmount: parseFloat(igst.toFixed(2)),
+      totalGst: parseFloat(totalGst.toFixed(2)),
+      tdsSection: tdsSecVal,
+      tdsRate,
+      tdsAmount: parseFloat(tdsAmount.toFixed(2)),
+      grandTotal: grandTotal > 0 ? grandTotal.toFixed(2) : '',
+      netPayable: netPayable > 0 ? netPayable.toFixed(2) : '',
+    };
+  };
+
   const loadVendors = () => {
-    setSavedVendors(getSavedVendors());
+    const list = getSavedVendors();
+    setSavedVendors(list);
   };
 
   useEffect(() => {
-    fetchDocuments({ documentType: 'TAX_INVOICE', limit: 100, sortBy: 'createdAt', sortOrder: 'desc' });
     loadVendors();
+    fetchDocuments({ documentType: 'TAX_INVOICE', limit: 100, sortBy: 'createdAt', sortOrder: 'desc' });
   }, []);
 
-  // Filter documents for PURCHASE bills
-  const purchaseBills = documents.filter(
-    (d) => d.documentType === 'TAX_INVOICE' && d.data?.invoiceKind === 'PURCHASE'
-  );
+  // Filter purchase bills (TAX_INVOICE documents with invoiceKind === 'PURCHASE')
+  const purchaseBills = documents.filter((doc) => {
+    if (doc.documentType !== 'TAX_INVOICE') return false;
+    const data = doc.data || {};
+    return data.invoiceKind === 'PURCHASE' || data.isPurchase === true || (doc.title || '').toLowerCase().includes('purchase bill');
+  });
 
-  // Distinct filter lists
+  // Extract distinct vendor list for filter
   const distinctVendors = Array.from(
-    new Set(purchaseBills.map((d) => (d.data?.vendorName || '').trim()).filter(Boolean))
+    new Set(
+      purchaseBills
+        .map((d) => (d.data?.vendorName || '').trim())
+        .filter(Boolean)
+    )
   ).sort();
 
   const isAnyFilterActive =
@@ -266,10 +410,14 @@ export default function PurchaseBillsPage() {
       (doc.documentNumber || '').toLowerCase().includes(q) ||
       (data.vendorName || '').toLowerCase().includes(q) ||
       (data.billNumber || '').toLowerCase().includes(q) ||
+      (data.voucherNumber || '').toLowerCase().includes(q) ||
       (data.airwayBillNo || '').toLowerCase().includes(q) ||
       (data.description || '').toLowerCase().includes(q) ||
       (data.expenseCategory || '').toLowerCase().includes(q) ||
-      (data.transactionId || '').toLowerCase().includes(q)
+      (data.transactionId || '').toLowerCase().includes(q) ||
+      (data.vendorGstin || '').toLowerCase().includes(q) ||
+      (data.vendorPan || '').toLowerCase().includes(q) ||
+      (data.referenceName || '').toLowerCase().includes(q)
     );
   });
 
@@ -289,29 +437,58 @@ export default function PurchaseBillsPage() {
   const handleOpenCreateModal = () => {
     setEditingBill(null);
     setExtractSuccess('');
+    setLastExtractedData(null);
     setIsExtracting(false);
     setSelectedVendorTemplateId('');
     setTemplateAutoFillToast('');
     setVendorSaveSuccessToast('');
     setSaveVendorToTemplatesChecked(false);
     loadVendors();
+
+    const currentYear = new Date().getFullYear().toString().slice(-2);
+    const nextYear = (parseInt(currentYear, 10) + 1).toString();
+    const defaultVoucherNo = `PB/${currentYear}-${nextYear}/${(purchaseBills.length + 1).toString().padStart(4, '0')}`;
+
     setFormData({
+      voucherNumber: defaultVoucherNo,
       vendorName: '',
       vendorGstin: '',
+      vendorPan: '',
       vendorAddress: '',
+      placeOfSupply: 'Maharashtra (27)',
+      taxType: 'INTRA_STATE',
       billNumber: '',
-      billDate: new Date().toISOString().split('T')[0],
+      billDate: TODAY_DATE_STR,
       dueDate: '',
-      expenseCategory: 'DGD',
+      expenseCategory: 'PACKAGING',
+      hsnSacCode: '4819',
       airwayBillNo: '',
       description: '',
       taxableAmount: '',
       gstRate: 18,
+      cgstAmount: 0,
+      sgstAmount: 0,
+      igstAmount: 0,
+      totalGst: 0,
+      tdsSection: 'NONE',
+      tdsRate: 0,
+      tdsAmount: 0,
       grandTotal: '',
+      netPayable: '',
+      itcEligibility: 'ELIGIBLE',
       billFileBase64: null,
       billFileName: '',
+      vendorBankName: '',
+      vendorBankAccount: '',
+      vendorBankIfsc: '',
+      vendorBankBranch: '',
+      referenceName: '',
+      contactNumber: '',
+      shippedToName: '',
+      shippedToAddress: '',
       status: 'ISSUED',
       paymentMode: 'NEFT_RTGS',
+      bankName: '',
       transactionId: '',
       paidDate: '',
       remarks: '',
@@ -332,6 +509,7 @@ export default function PurchaseBillsPage() {
   const handleOpenEditModal = (doc) => {
     setEditingBill(doc);
     setExtractSuccess('');
+    setLastExtractedData(null);
     setIsExtracting(false);
     setSelectedVendorTemplateId('');
     setTemplateAutoFillToast('');
@@ -339,23 +517,54 @@ export default function PurchaseBillsPage() {
     setSaveVendorToTemplatesChecked(false);
     loadVendors();
     const data = doc.data || {};
+
+    const taxableVal = data.taxableAmount || '';
+    const rateVal = data.gstRate !== undefined ? data.gstRate : 18;
+    const taxTypeVal = data.taxType || (data.vendorGstin?.startsWith('27') ? 'INTRA_STATE' : 'INTER_STATE');
+    const tdsSecVal = data.tdsSection || 'NONE';
+
+    const calculations = calculateGstBreakdown(taxableVal, rateVal, taxTypeVal, tdsSecVal);
+
     setFormData({
+      voucherNumber: data.voucherNumber || doc.documentNumber || '',
       vendorName: data.vendorName || '',
       vendorGstin: data.vendorGstin || '',
+      vendorPan: data.vendorPan || '',
       vendorAddress: data.vendorAddress || '',
+      placeOfSupply: data.placeOfSupply || 'Maharashtra (27)',
+      taxType: taxTypeVal,
       billNumber: data.billNumber || doc.documentNumber || '',
       billDate: data.billDate || new Date(doc.createdAt).toISOString().split('T')[0],
       dueDate: data.dueDate || '',
-      expenseCategory: data.expenseCategory || 'DGD',
+      expenseCategory: data.expenseCategory || 'PACKAGING',
+      hsnSacCode: data.hsnSacCode || '4819',
       airwayBillNo: data.airwayBillNo || '',
       description: data.description || '',
-      taxableAmount: data.taxableAmount || '',
-      gstRate: data.gstRate !== undefined ? data.gstRate : 18,
-      grandTotal: data.grandTotal || '',
+      taxableAmount: taxableVal,
+      gstRate: rateVal,
+      cgstAmount: data.cgstAmount !== undefined ? data.cgstAmount : calculations.cgstAmount,
+      sgstAmount: data.sgstAmount !== undefined ? data.sgstAmount : calculations.sgstAmount,
+      igstAmount: data.igstAmount !== undefined ? data.igstAmount : calculations.igstAmount,
+      totalGst: data.totalGst !== undefined ? data.totalGst : calculations.totalGst,
+      tdsSection: tdsSecVal,
+      tdsRate: data.tdsRate !== undefined ? data.tdsRate : calculations.tdsRate,
+      tdsAmount: data.tdsAmount !== undefined ? data.tdsAmount : calculations.tdsAmount,
+      grandTotal: data.grandTotal || calculations.grandTotal,
+      netPayable: data.netPayable || calculations.netPayable,
+      itcEligibility: data.itcEligibility || 'ELIGIBLE',
       billFileBase64: data.billFileBase64 || null,
       billFileName: data.billFileName || '',
+      vendorBankName: data.vendorBankName || '',
+      vendorBankAccount: data.vendorBankAccount || '',
+      vendorBankIfsc: data.vendorBankIfsc || '',
+      vendorBankBranch: data.vendorBankBranch || '',
+      referenceName: data.referenceName || '',
+      contactNumber: data.contactNumber || '',
+      shippedToName: data.shippedToName || '',
+      shippedToAddress: data.shippedToAddress || '',
       status: doc.status || 'ISSUED',
       paymentMode: data.paymentMode || 'NEFT_RTGS',
+      bankName: data.bankName || '',
       transactionId: data.transactionId || data.paymentInfo?.transactionId || '',
       paidDate: data.paidDate || data.paymentInfo?.paymentDate || '',
       remarks: data.remarks || data.paymentInfo?.remarks || '',
@@ -363,37 +572,58 @@ export default function PurchaseBillsPage() {
     setModalOpen(true);
   };
 
-  const handleCalculateTotal = (taxable, gst) => {
-    const t = parseFloat(taxable) || 0;
-    const g = parseFloat(gst) || 0;
-    const total = t + (t * g) / 100;
-    return total > 0 ? total.toFixed(2) : '';
-  };
-
   const handleResetForm = () => {
+    const currentYear = new Date().getFullYear().toString().slice(-2);
+    const nextYear = (parseInt(currentYear, 10) + 1).toString();
+    const defaultVoucherNo = `PB/${currentYear}-${nextYear}/${(purchaseBills.length + 1).toString().padStart(4, '0')}`;
+
     setFormData({
+      voucherNumber: defaultVoucherNo,
       vendorName: '',
       vendorGstin: '',
+      vendorPan: '',
       vendorAddress: '',
+      placeOfSupply: 'Maharashtra (27)',
+      taxType: 'INTRA_STATE',
       billNumber: '',
-      billDate: new Date().toISOString().split('T')[0],
+      billDate: TODAY_DATE_STR,
       dueDate: '',
-      expenseCategory: 'DGD',
+      expenseCategory: 'PACKAGING',
+      hsnSacCode: '4819',
       airwayBillNo: '',
       description: '',
       taxableAmount: '',
       gstRate: 18,
+      cgstAmount: 0,
+      sgstAmount: 0,
+      igstAmount: 0,
+      totalGst: 0,
+      tdsSection: 'NONE',
+      tdsRate: 0,
+      tdsAmount: 0,
       grandTotal: '',
+      netPayable: '',
+      itcEligibility: 'ELIGIBLE',
       billFileBase64: null,
       billFileName: '',
+      vendorBankName: '',
+      vendorBankAccount: '',
+      vendorBankIfsc: '',
+      vendorBankBranch: '',
+      referenceName: '',
+      contactNumber: '',
+      shippedToName: '',
+      shippedToAddress: '',
       status: 'ISSUED',
       paymentMode: 'NEFT_RTGS',
+      bankName: '',
       transactionId: '',
       paidDate: '',
       remarks: '',
     });
     setSelectedVendorTemplateId('');
     setExtractSuccess('');
+    setLastExtractedData(null);
     setTemplateAutoFillToast('');
     setVendorSaveSuccessToast('');
     setSaveVendorToTemplatesChecked(false);
@@ -406,18 +636,27 @@ export default function PurchaseBillsPage() {
     const v = savedVendors.find((item) => item.id === vendorId);
     if (v) {
       setFormData((prev) => {
-        const updatedTaxable = prev.taxableAmount;
         const updatedGstRate = v.defaultGstRate !== undefined ? v.defaultGstRate : prev.gstRate;
-        const newGrandTotal = updatedTaxable ? handleCalculateTotal(updatedTaxable, updatedGstRate) : prev.grandTotal;
+        const vendorState = getIndianStateFromGstin(v.gstin) || prev.placeOfSupply;
+        const taxType = (v.gstin?.startsWith('27') || !v.gstin) ? 'INTRA_STATE' : 'INTER_STATE';
+
+        const calculations = calculateGstBreakdown(prev.taxableAmount, updatedGstRate, taxType, prev.tdsSection);
+
         return {
           ...prev,
           vendorName: v.name || prev.vendorName,
           vendorGstin: v.gstin || prev.vendorGstin,
           vendorAddress: v.address || prev.vendorAddress,
+          placeOfSupply: vendorState,
+          taxType,
           expenseCategory: v.category || prev.expenseCategory,
           gstRate: updatedGstRate,
           description: v.defaultDescription || prev.description,
-          grandTotal: newGrandTotal,
+          vendorBankName: v.bankName || prev.vendorBankName,
+          vendorBankAccount: v.accountNumber || prev.vendorBankAccount,
+          vendorBankIfsc: v.ifscCode || prev.vendorBankIfsc,
+          vendorBankBranch: v.branchName || prev.vendorBankBranch,
+          ...calculations,
         };
       });
       setTemplateAutoFillToast(`Loaded details from saved template: ${v.name}`);
@@ -434,10 +673,15 @@ export default function PurchaseBillsPage() {
     const newVendor = saveVendor({
       name: formData.vendorName.trim(),
       gstin: formData.vendorGstin.trim(),
+      pan: formData.vendorPan.trim(),
       address: formData.vendorAddress.trim(),
-      category: formData.expenseCategory || 'DGD',
+      category: formData.expenseCategory || 'PACKAGING',
       defaultGstRate: formData.gstRate !== undefined ? formData.gstRate : 18,
       defaultDescription: formData.description.trim(),
+      bankName: formData.vendorBankName.trim(),
+      accountNumber: formData.vendorBankAccount.trim(),
+      ifscCode: formData.vendorBankIfsc.trim(),
+      branchName: formData.vendorBankBranch.trim(),
     });
     const updatedList = getSavedVendors();
     setSavedVendors(updatedList);
@@ -446,31 +690,92 @@ export default function PurchaseBillsPage() {
     setTimeout(() => setVendorSaveSuccessToast(''), 4000);
   };
 
-  const triggerAutoExtraction = async (base64Data, fileName) => {
+  // Smart, Non-destructive Auto-Extraction with accurate invoice date & category update
+  const triggerAutoExtraction = async (base64Data, fileName, forceOverwrite = false) => {
     setIsExtracting(true);
     setExtractSuccess('');
     try {
       const extracted = await parseInvoiceDocument(base64Data, fileName);
       if (extracted) {
-        setFormData((prev) => ({
-          ...prev,
-          vendorName: extracted.vendorName || prev.vendorName,
-          vendorGstin: extracted.vendorGstin || prev.vendorGstin,
-          vendorAddress: extracted.vendorAddress || prev.vendorAddress,
-          billNumber: extracted.billNumber || prev.billNumber,
-          billDate: extracted.billDate || prev.billDate,
-          dueDate: extracted.dueDate || prev.dueDate,
-          taxableAmount: extracted.taxableAmount || prev.taxableAmount,
-          gstRate: extracted.gstRate !== undefined ? extracted.gstRate : prev.gstRate,
-          grandTotal: extracted.grandTotal || prev.grandTotal,
-          airwayBillNo: extracted.airwayBillNo || prev.airwayBillNo,
-          expenseCategory: extracted.expenseCategory || prev.expenseCategory,
-          description: extracted.description || prev.description,
-        }));
-        setExtractSuccess('Document auto-extracted successfully! Details populated in the fields below.');
+        setLastExtractedData(extracted);
+
+        setFormData((prev) => {
+          let filledCount = 0;
+          let preservedCount = 0;
+
+          const updated = { ...prev };
+
+          const assignField = (key, val, overwriteIfPlaceholder = false) => {
+            if (val === undefined || val === null || val === '') return;
+            const isPlaceholder = overwriteIfPlaceholder && (
+              (key === 'billDate' && prev[key] === TODAY_DATE_STR) ||
+              (key === 'expenseCategory' && prev[key] === 'DGD') ||
+              (key === 'hsnSacCode' && prev[key] === '9983')
+            );
+            if (forceOverwrite || !prev[key] || String(prev[key]).trim() === '' || isPlaceholder || (key === 'gstRate' && prev[key] === 18 && !prev.taxableAmount)) {
+              updated[key] = val;
+              filledCount++;
+            } else {
+              preservedCount++;
+            }
+          };
+
+          assignField('vendorName', extracted.vendorName);
+          assignField('vendorGstin', extracted.vendorGstin);
+          assignField('vendorPan', extracted.vendorPan);
+          assignField('vendorAddress', extracted.vendorAddress);
+          assignField('placeOfSupply', extracted.placeOfSupply);
+          assignField('billNumber', extracted.billNumber);
+          assignField('billDate', extracted.billDate, true);
+          assignField('dueDate', extracted.dueDate);
+          assignField('taxableAmount', extracted.taxableAmount);
+          assignField('airwayBillNo', extracted.airwayBillNo);
+          assignField('description', extracted.description);
+          assignField('hsnSacCode', extracted.hsnSacCode, true);
+          assignField('expenseCategory', extracted.expenseCategory, true);
+
+          // Bank details & Reference
+          assignField('vendorBankName', extracted.bankName);
+          assignField('vendorBankAccount', extracted.bankAccountNumber);
+          assignField('vendorBankIfsc', extracted.bankIfscCode);
+          assignField('vendorBankBranch', extracted.bankBranch);
+          assignField('referenceName', extracted.referenceName);
+          assignField('contactNumber', extracted.contactNumber);
+          assignField('shippedToName', extracted.shippedToName);
+          assignField('shippedToAddress', extracted.shippedToAddress);
+
+          // Auto detect tax type based on vendor GSTIN or extracted POS
+          const currentGstin = updated.vendorGstin || extracted.vendorGstin || '';
+          if (currentGstin) {
+            const vendorState = getIndianStateFromGstin(currentGstin);
+            if (vendorState) updated.placeOfSupply = vendorState;
+            updated.taxType = currentGstin.startsWith('27') ? 'INTRA_STATE' : 'INTER_STATE';
+          }
+
+          const targetRate = extracted.gstRate !== undefined ? extracted.gstRate : updated.gstRate;
+          updated.gstRate = targetRate;
+
+          const calculations = calculateGstBreakdown(updated.taxableAmount, targetRate, updated.taxType, updated.tdsSection);
+          Object.assign(updated, calculations);
+
+          if (extracted.grandTotal && parseFloat(extracted.grandTotal) > 0) {
+            updated.grandTotal = extracted.grandTotal;
+          }
+
+          if (forceOverwrite) {
+            setExtractSuccess(`Scanned data applied! Overwrote all fields with invoice details.`);
+          } else if (preservedCount > 0) {
+            setExtractSuccess(`Auto-extracted invoice details! Populated ${filledCount} fields and preserved ${preservedCount} manual entries.`);
+          } else {
+            setExtractSuccess(`Document auto-extracted successfully! Populated ${filledCount} fields.`);
+          }
+
+          return updated;
+        });
       }
     } catch (err) {
-      console.warn('Auto-extraction fallback:', err);
+      console.warn('Auto-extraction error:', err);
+      alert('Could not auto-extract details: ' + (err.message || 'Please fill fields manually.'));
     } finally {
       setIsExtracting(false);
     }
@@ -484,15 +789,14 @@ export default function PurchaseBillsPage() {
       return;
     }
     const reader = new FileReader();
-    reader.onload = async (ev) => {
+    reader.onload = (ev) => {
       const base64 = ev.target.result;
       setFormData((prev) => ({
         ...prev,
         billFileBase64: base64,
         billFileName: file.name,
       }));
-      // Automatically trigger smart OCR / text extraction on upload!
-      await triggerAutoExtraction(base64, file.name);
+      setExtractSuccess('');
     };
     reader.readAsDataURL(file);
   };
@@ -511,7 +815,8 @@ export default function PurchaseBillsPage() {
     setSaving(true);
     try {
       const grandTotalNum = parseFloat(formData.grandTotal) || parseFloat(formData.taxableAmount) || 0;
-      
+      const netPayableNum = parseFloat(formData.netPayable) || grandTotalNum;
+
       let logs = [];
       if (editingBill) {
         const existingLogs = editingBill.data?.activityLogs || [];
@@ -519,7 +824,7 @@ export default function PurchaseBillsPage() {
           existingLogs,
           'UPDATED',
           'Admin',
-          `Bill #${formData.billNumber} modified (Taxable: ₹${formatINR(formData.taxableAmount)}, Total: ₹${formatINR(grandTotalNum)})`
+          `Bill #${formData.billNumber} modified (Taxable: ₹${formatINR(formData.taxableAmount)}, Total: ₹${formatINR(grandTotalNum)}, Net: ₹${formatINR(netPayableNum)})`
         );
       } else {
         logs = addActivityLog(
@@ -533,37 +838,62 @@ export default function PurchaseBillsPage() {
             logs,
             'PAYMENT_RECORDED',
             'Admin',
-            `Payment recorded via ${formData.paymentMode} (Ref: ${formData.transactionId})`
+            `Payment settled via ${formData.paymentMode} (Ref: ${formData.transactionId})`
           );
         }
       }
 
       const payloadData = {
         invoiceKind: 'PURCHASE',
+        isPurchase: true,
+        voucherNumber: formData.voucherNumber.trim() || formData.billNumber.trim(),
         vendorName: formData.vendorName.trim(),
         vendorGstin: formData.vendorGstin.trim(),
+        vendorPan: formData.vendorPan.trim(),
         vendorAddress: formData.vendorAddress.trim(),
+        placeOfSupply: formData.placeOfSupply,
+        taxType: formData.taxType,
         billNumber: formData.billNumber.trim(),
         billDate: formData.billDate,
         dueDate: formData.dueDate,
         expenseCategory: formData.expenseCategory,
+        hsnSacCode: formData.hsnSacCode.trim(),
         airwayBillNo: formData.airwayBillNo.trim(),
         description: formData.description.trim(),
         taxableAmount: parseFloat(formData.taxableAmount) || 0,
         gstRate: parseFloat(formData.gstRate) || 0,
+        cgstAmount: parseFloat(formData.cgstAmount) || 0,
+        sgstAmount: parseFloat(formData.sgstAmount) || 0,
+        igstAmount: parseFloat(formData.igstAmount) || 0,
+        totalGst: parseFloat(formData.totalGst) || 0,
+        tdsSection: formData.tdsSection,
+        tdsRate: parseFloat(formData.tdsRate) || 0,
+        tdsAmount: parseFloat(formData.tdsAmount) || 0,
         grandTotal: grandTotalNum,
+        netPayable: netPayableNum,
+        itcEligibility: formData.itcEligibility,
         billFileBase64: formData.billFileBase64,
         billFileName: formData.billFileName,
+        vendorBankName: formData.vendorBankName.trim(),
+        vendorBankAccount: formData.vendorBankAccount.trim(),
+        vendorBankIfsc: formData.vendorBankIfsc.trim(),
+        vendorBankBranch: formData.vendorBankBranch.trim(),
+        referenceName: formData.referenceName.trim(),
+        contactNumber: formData.contactNumber.trim(),
+        shippedToName: formData.shippedToName.trim(),
+        shippedToAddress: formData.shippedToAddress.trim(),
         paymentMode: formData.paymentMode,
-        transactionId: formData.transactionId,
+        bankName: formData.bankName.trim(),
+        transactionId: formData.transactionId.trim(),
         paidDate: formData.paidDate,
         remarks: formData.remarks,
         activityLogs: logs,
         paymentInfo: formData.transactionId ? {
           paymentMode: formData.paymentMode,
-          transactionId: formData.transactionId,
+          bankName: formData.bankName.trim(),
+          transactionId: formData.transactionId.trim(),
           paymentDate: formData.paidDate || formData.billDate,
-          amountPaid: grandTotalNum,
+          amountPaid: netPayableNum || grandTotalNum,
           remarks: formData.remarks,
         } : null,
       };
@@ -575,10 +905,15 @@ export default function PurchaseBillsPage() {
         saveVendor({
           name: formData.vendorName.trim(),
           gstin: formData.vendorGstin.trim(),
+          pan: formData.vendorPan.trim(),
           address: formData.vendorAddress.trim(),
-          category: formData.expenseCategory || 'DGD',
+          category: formData.expenseCategory || 'PACKAGING',
           defaultGstRate: formData.gstRate !== undefined ? formData.gstRate : 18,
           defaultDescription: formData.description.trim(),
+          bankName: formData.vendorBankName.trim(),
+          accountNumber: formData.vendorBankAccount.trim(),
+          ifscCode: formData.vendorBankIfsc.trim(),
+          branchName: formData.vendorBankBranch.trim(),
         });
         loadVendors();
       }
@@ -586,7 +921,7 @@ export default function PurchaseBillsPage() {
       if (editingBill) {
         await updateDocument(editingBill.id, {
           title: `Purchase Bill ${formData.billNumber} (${formData.vendorName})`,
-          documentNumber: formData.billNumber,
+          documentNumber: formData.voucherNumber || formData.billNumber,
           status: docStatus,
           statusNote: `Purchase Bill updated (${formData.expenseCategory})`,
           data: payloadData,
@@ -596,7 +931,7 @@ export default function PurchaseBillsPage() {
           setViewDetailModal({
             ...viewDetailModal,
             status: docStatus,
-            documentNumber: formData.billNumber,
+            documentNumber: formData.voucherNumber || formData.billNumber,
             data: payloadData,
           });
         }
@@ -605,7 +940,7 @@ export default function PurchaseBillsPage() {
           documentType: 'TAX_INVOICE',
           category: 'OTHER',
           title: `Purchase Bill ${formData.billNumber} (${formData.vendorName})`,
-          documentNumber: formData.billNumber,
+          documentNumber: formData.voucherNumber || formData.billNumber,
           status: docStatus,
           data: payloadData,
         });
@@ -630,21 +965,23 @@ export default function PurchaseBillsPage() {
       existingLogs,
       'PAYMENT_RECORDED',
       'Admin',
-      `Payment settled via ${paymentInfo.paymentMode} (Txn Ref / UTR: ${paymentInfo.transactionId || 'N/A'}, Paid Date: ${paymentInfo.paymentDate || new Date().toISOString().split('T')[0]})`
+      `Payment settled via ${paymentInfo.paymentMode} (Txn Ref / UTR: ${paymentInfo.transactionId || 'N/A'}, Paid Date: ${paymentInfo.paymentDate || TODAY_DATE_STR})`
     );
 
     const updatedData = {
       ...currentData,
       transactionId: paymentInfo.transactionId,
+      bankName: paymentInfo.bankName || '',
       paymentMode: paymentInfo.paymentMode,
       paidDate: paymentInfo.paymentDate,
       remarks: paymentInfo.remarks,
       activityLogs: updatedLogs,
       paymentInfo: {
         paymentMode: paymentInfo.paymentMode,
+        bankName: paymentInfo.bankName || '',
         transactionId: paymentInfo.transactionId,
         paymentDate: paymentInfo.paymentDate,
-        amountPaid: currentData.grandTotal || 0,
+        amountPaid: currentData.netPayable || currentData.grandTotal || 0,
         remarks: paymentInfo.remarks,
       },
     };
@@ -686,11 +1023,11 @@ export default function PurchaseBillsPage() {
               <ShoppingBag size={18} />
             </div>
             <h1 className="text-2xl font-bold text-slate-100 tracking-tight">
-              Purchase & Vendor Bills (Payables)
+              Purchase Bills & Vendor Payables (GST)
             </h1>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Track inward vendor invoices, DGD charges, packaging supplies, freight costs, and record payment proofs.
+            Track inward vendor bills, DG boxes & packaging, DGD certification, airline freight costs, GST input tax credits (ITC), and settlement proofs.
           </p>
         </div>
 
@@ -700,7 +1037,7 @@ export default function PurchaseBillsPage() {
             onClick={handleOpenCreateModal}
             className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow-sm rounded"
           >
-            <Plus size={14} className="mr-1.5 inline" /> Add Purchase Bill
+            <Plus size={14} className="mr-1.5 inline" /> Record Purchase Bill
           </Button>
         </div>
       </div>
@@ -750,10 +1087,10 @@ export default function PurchaseBillsPage() {
 
         <div className="p-3.5 bg-slate-900/70 border border-slate-800 rounded-md shadow-sm space-y-1">
           <div className="text-[11px] text-indigo-400 font-medium flex items-center gap-1.5">
-            <Building size={13} className="text-indigo-400" /> Expense Categories
+            <Building size={13} className="text-indigo-400" /> Active Vendor Network
           </div>
           <div className="text-xl font-bold text-indigo-300 font-mono">{distinctVendors.length} Vendors</div>
-          <div className="text-[10px] text-slate-500">DGD, Packaging, Freight, Customs</div>
+          <div className="text-[10px] text-slate-500">{savedVendors.length} saved reusable templates</div>
         </div>
       </div>
 
@@ -765,7 +1102,7 @@ export default function PurchaseBillsPage() {
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             <input
               type="text"
-              placeholder="Search by Vendor, Bill #, Expense Category, AWB, UTR..."
+              placeholder="Search by Vendor, Bill #, Voucher #, GSTIN, PAN, Expense Category, AWB Ref, Coordinator..."
               value={search}
               onChange={handleSearchChange}
               className="w-full pl-9 pr-8 py-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
@@ -908,234 +1245,217 @@ export default function PurchaseBillsPage() {
                 </div>
               </div>
             </div>
-
-            {/* Apply / Reset Actions inside Drawer */}
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800/80">
-              <Button
-                variant="secondary"
-                size="sm"
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                type="button"
                 onClick={handleResetFilters}
-                className="text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 text-xs px-3 py-1.5 rounded"
+                className="px-3 py-1.5 text-xs text-slate-400 hover:text-white"
               >
-                <RotateCw size={12} className="mr-1 inline" /> Reset Filters
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
+                Clear Filters
+              </button>
+              <button
+                type="button"
                 onClick={handleApplyFilters}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow-sm px-4 py-1.5 rounded"
+                className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-semibold"
               >
-                <Search size={12} className="mr-1 inline" /> Apply Filters
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Active Filters Summary Pills */}
-        {isAnyFilterActive && (
-          <div className="pt-2 border-t border-slate-800 flex items-center justify-between flex-wrap gap-2 text-xs">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-slate-400 font-medium text-[11px]">Active Filters:</span>
-              {appliedFilters.statusFilter !== 'ALL' && (
-                <span className="px-2 py-0.5 bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 rounded text-[11px] font-mono">
-                  Status: {appliedFilters.statusFilter}
-                </span>
-              )}
-              {appliedFilters.vendorFilter !== 'ALL' && (
-                <span className="px-2 py-0.5 bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 rounded text-[11px] font-mono">
-                  Vendor: {appliedFilters.vendorFilter}
-                </span>
-              )}
-              {appliedFilters.categoryFilter !== 'ALL' && (
-                <span className="px-2 py-0.5 bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 rounded text-[11px] font-mono">
-                  Category: {appliedFilters.categoryFilter}
-                </span>
-              )}
-              {appliedFilters.search && (
-                <span className="px-2 py-0.5 bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 rounded text-[11px] font-mono">
-                  Search: "{appliedFilters.search}"
-                </span>
-              )}
-              {(appliedFilters.startDate || appliedFilters.endDate) && (
-                <span className="px-2 py-0.5 bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 rounded text-[11px] font-mono">
-                  Date: {appliedFilters.startDate || '...'} to {appliedFilters.endDate || '...'}
-                </span>
-              )}
-            </div>
-
-            <div className="text-[11px] text-slate-400 font-medium">
-              Showing <span className="text-white font-bold">{filteredBills.length}</span> of {purchaseBills.length} purchase bills
+                Apply Criteria
+              </button>
             </div>
           </div>
         )}
       </div>
 
-      {/* Purchase Bills Table */}
-      <div className="bg-slate-900/70 border border-slate-800 rounded-md overflow-hidden shadow-sm">
-        <div className="p-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-900/90">
-          <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-            <ShoppingBag size={16} className="text-indigo-400" />
-            <span>Purchase & Expense Bills ({filteredBills.length})</span>
-          </h2>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              className="text-xs text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-1"
-              onClick={() => fetchDocuments({ documentType: 'TAX_INVOICE', limit: 100, sortBy: 'createdAt', sortOrder: 'desc' })}
-            >
-              <RotateCw size={13} /> Refresh
-            </button>
-            <button
-              type="button"
-              className="text-xs text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1"
-              onClick={handleOpenCreateModal}
-            >
-              <Plus size={14} /> Add Bill
-            </button>
-          </div>
-        </div>
-
+      {/* Main Bills Table */}
+      <div className="bg-slate-900/70 border border-slate-800 rounded-md overflow-hidden shadow-xl">
         {isLoading ? (
-          <div className="p-12 text-center text-slate-400 text-xs">
-            <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-            Loading purchase bills...
+          <div className="p-8 space-y-3">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-12 bg-slate-800/50 rounded animate-pulse" />
+            ))}
           </div>
         ) : filteredBills.length === 0 ? (
           <div className="p-12 text-center space-y-3">
-            <ShoppingBag size={36} className="text-slate-600 mx-auto" />
-            <p className="text-sm font-medium text-slate-300">No Purchase / Expense Bills found</p>
-            <p className="text-xs text-slate-500">
-              {search ? 'Try adjusting your search criteria' : 'Click "+ Add Purchase Bill" to record your vendor bills for DGD, packaging, freight, etc.'}
+            <div className="w-12 h-12 rounded-full bg-slate-800 text-slate-400 mx-auto flex items-center justify-center">
+              <ShoppingBag size={24} />
+            </div>
+            <h3 className="text-sm font-semibold text-slate-200">No purchase bills found</h3>
+            <p className="text-xs text-slate-400 max-w-sm mx-auto">
+              {isAnyFilterActive
+                ? 'No vendor bills matched your current filter criteria.'
+                : 'Start recording inward vendor bills for packaging boxes, DGD charges, and freight costs.'}
             </p>
-            <Button variant="primary" size="sm" onClick={handleOpenCreateModal} className="rounded">
-              <Plus size={14} className="mr-1 inline" /> Record First Purchase Bill
-            </Button>
+            {isAnyFilterActive ? (
+              <Button variant="secondary" onClick={handleResetFilters} className="text-xs">
+                Reset Filters
+              </Button>
+            ) : (
+              <Button variant="primary" onClick={handleOpenCreateModal} className="text-xs">
+                <Plus size={14} className="mr-1.5 inline" /> Record First Purchase Bill
+              </Button>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left">
-              <thead className="bg-slate-950/80 text-slate-400 font-semibold border-b border-slate-800">
-                <tr>
-                  <th className="py-3 px-4">Vendor Bill #</th>
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-slate-800 bg-slate-950/80 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
+                  <th className="py-3 px-4">Voucher / Bill #</th>
+                  <th className="py-3 px-4">Vendor / Supplier</th>
+                  <th className="py-3 px-4">Category & SAC</th>
                   <th className="py-3 px-4">Bill Date</th>
-                  <th className="py-3 px-4 min-w-[170px]">Vendor / Supplier</th>
-                  <th className="py-3 px-4">Category</th>
-                  <th className="py-3 px-4">Linked AWB</th>
-                  <th className="py-3 px-4 text-right">Amount (₹)</th>
+                  <th className="py-3 px-4 text-right">Taxable (₹)</th>
+                  <th className="py-3 px-4 text-right">GST Breakdown</th>
+                  <th className="py-3 px-4 text-right">Grand Total (₹)</th>
                   <th className="py-3 px-4 text-center">Status</th>
-                  <th className="py-3 px-4 text-right min-w-[180px]">Actions</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/80">
+              <tbody className="divide-y divide-slate-800/60">
                 {paginatedBills.map((doc) => {
                   const data = doc.data || {};
-                  const grandTotal = data.grandTotal || 0;
-                  const billNum = data.billNumber || doc.documentNumber || 'Bill';
-                  const billDate = data.billDate || new Date(doc.createdAt).toLocaleDateString('en-GB');
-                  const catObj = EXPENSE_CATEGORIES.find((c) => c.id === data.expenseCategory) || EXPENSE_CATEGORIES[0];
-                  const isPaid = doc.status === 'COMPLETED' || doc.status === 'DELIVERED';
+                  const cat = EXPENSE_CATEGORIES.find((c) => c.id === data.expenseCategory) || EXPENSE_CATEGORIES[0];
+                  const isPaid = doc.status === 'COMPLETED' || doc.status === 'DELIVERED' || Boolean(data.transactionId);
+                  const isDraft = doc.status === 'DRAFT';
 
                   return (
-                    <tr key={doc.id} className="hover:bg-slate-800/30 transition-colors">
-                      <td className="py-3.5 px-4 font-bold text-slate-100 font-mono">
-                        <button
-                          type="button"
-                          className="hover:text-indigo-400 transition-colors text-left font-mono underline decoration-dotted underline-offset-4"
-                          onClick={() => handleOpenDetailModal(doc)}
-                        >
-                          {billNum}
-                        </button>
-                        {data.transactionId && (
-                          <div className="mt-1 flex items-center gap-1 text-[10px] font-normal text-emerald-400 font-mono">
-                            <CreditCard size={11} /> {data.paymentMode}: {data.transactionId}
+                    <tr key={doc.id} className="hover:bg-slate-800/40 transition-colors group">
+                      {/* Voucher & Bill Number */}
+                      <td className="py-3 px-4">
+                        <div className="font-mono font-bold text-indigo-400 flex items-center gap-1.5">
+                          <span>{data.billNumber || doc.documentNumber || '—'}</span>
+                          {data.billFileBase64 && (
+                            <span title="Original Invoice Attached" className="text-indigo-400">
+                              <Paperclip size={12} />
+                            </span>
+                          )}
+                        </div>
+                        {data.voucherNumber && data.voucherNumber !== data.billNumber && (
+                          <div className="text-[10px] text-slate-500 font-mono">Voucher: {data.voucherNumber}</div>
+                        )}
+                        {data.airwayBillNo && (
+                          <div className="text-[10px] text-slate-400 font-mono">AWB: {data.airwayBillNo}</div>
+                        )}
+                      </td>
+
+                      {/* Vendor */}
+                      <td className="py-3 px-4">
+                        <div className="font-medium text-slate-200 truncate max-w-[200px]" title={data.vendorName}>
+                          {data.vendorName || '—'}
+                        </div>
+                        {data.vendorGstin && (
+                          <div className="text-[10px] font-mono text-slate-400">GST: {data.vendorGstin}</div>
+                        )}
+                        {data.vendorBankName && (
+                          <div className="text-[9px] text-slate-500 flex items-center gap-1 mt-0.5">
+                            <Landmark size={10} className="text-slate-400" /> {data.vendorBankName}
                           </div>
                         )}
                       </td>
-                      <td className="py-3.5 px-4 text-slate-300 font-mono">
-                        {billDate}
+
+                      {/* Category */}
+                      <td className="py-3 px-4">
+                        <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold border ${cat.color}`}>
+                          {cat.label}
+                        </span>
+                        {data.hsnSacCode && (
+                          <div className="text-[9px] font-mono text-slate-500 mt-0.5">HSN/SAC: {data.hsnSacCode}</div>
+                        )}
+                      </td>
+
+                      {/* Bill Date */}
+                      <td className="py-3 px-4 text-slate-400">
+                        {data.billDate ? new Date(data.billDate).toLocaleDateString('en-IN') : '—'}
                         {data.dueDate && (
-                          <div className="text-[10px] text-slate-500">Due: {data.dueDate}</div>
+                          <div className="text-[10px] text-slate-500">
+                            Due: {new Date(data.dueDate).toLocaleDateString('en-IN')}
+                          </div>
                         )}
                       </td>
-                      <td className="py-3.5 px-4">
-                        <div className="font-semibold text-slate-200">{data.vendorName || 'Unspecified'}</div>
-                        {data.vendorGstin && (
-                          <div className="text-[10px] text-slate-400 font-mono">GSTIN: {data.vendorGstin}</div>
+
+                      {/* Taxable */}
+                      <td className="py-3 px-4 text-right font-mono text-slate-300">
+                        ₹{formatINR(data.taxableAmount)}
+                      </td>
+
+                      {/* GST Split */}
+                      <td className="py-3 px-4 text-right font-mono text-slate-400 text-[11px]">
+                        {data.taxType === 'INTER_STATE' ? (
+                          <div>IGST ({data.gstRate}%): ₹{formatINR(data.igstAmount || data.totalGst)}</div>
+                        ) : (
+                          <div>
+                            CGST+SGST ({data.gstRate}%): ₹{formatINR((data.cgstAmount || 0) + (data.sgstAmount || 0) || data.totalGst)}
+                          </div>
+                        )}
+                        {data.tdsAmount > 0 && (
+                          <div className="text-[10px] text-amber-400">TDS: -₹{formatINR(data.tdsAmount)}</div>
                         )}
                       </td>
-                      <td className="py-3.5 px-4">
-                        <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-medium border ${catObj.color}`}>
-                          {catObj.label.split(' ')[0]} {catObj.label.split(' ')[1] || ''}
-                        </span>
+
+                      {/* Grand Total */}
+                      <td className="py-3 px-4 text-right font-mono font-bold text-slate-100">
+                        ₹{formatINR(data.grandTotal || data.taxableAmount)}
+                        {data.netPayable && data.netPayable !== data.grandTotal && (
+                          <div className="text-[10px] text-emerald-400 font-normal">
+                            Net: ₹{formatINR(data.netPayable)}
+                          </div>
+                        )}
                       </td>
-                      <td className="py-3.5 px-4 text-slate-300 font-mono">
-                        {data.airwayBillNo || '-'}
+
+                      {/* Payment Status Badge */}
+                      <td className="py-3 px-4 text-center">
+                        {isPaid ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                            <CheckCircle2 size={11} /> Paid
+                          </span>
+                        ) : isDraft ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-500/15 text-slate-400 border border-slate-500/30">
+                            Draft
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                            <Clock size={11} /> Pending
+                          </span>
+                        )}
                       </td>
-                      <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-100">
-                        ₹{formatINR(grandTotal)}
-                      </td>
-                      <td className="py-3.5 px-4 text-center">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold uppercase ${
-                          isPaid ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                        }`}>
-                          {isPaid ? <CheckCircle2 size={11} /> : <Clock size={11} />}
-                          {isPaid ? 'PAID' : 'PENDING'}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          {/* View Details & Activity Logs */}
+
+                      {/* Actions */}
+                      <td className="py-3 px-4 text-right">
+                        <div className="inline-flex items-center gap-1.5">
                           <button
                             type="button"
-                            className="p-1.5 text-slate-400 hover:text-indigo-400 hover:bg-slate-800 rounded transition-colors"
                             onClick={() => handleOpenDetailModal(doc)}
-                            title="View Bill Details & Activity Logs"
+                            className="p-1.5 text-slate-400 hover:text-indigo-400 rounded hover:bg-slate-800 transition-colors"
+                            title="View Voucher Details"
                           >
-                            <Eye size={15} />
+                            <Eye size={14} />
                           </button>
-
-                          {/* Attached Bill Viewer */}
-                          {data.billFileBase64 && (
-                            <button
-                              type="button"
-                              className="p-1.5 text-indigo-400 hover:text-white hover:bg-slate-800 rounded transition-colors"
-                              onClick={() => setViewFileModal(data.billFileBase64)}
-                              title="View Attached Vendor Bill Document"
-                            >
-                              <Paperclip size={15} />
-                            </button>
-                          )}
-
-                          {/* Record Payment */}
                           <button
                             type="button"
+                            onClick={() => handleOpenPaymentModal(doc)}
                             className={`p-1.5 rounded transition-colors ${
-                              isPaid ? 'text-emerald-400 hover:bg-slate-800' : 'text-amber-400 hover:text-white bg-amber-500/10 hover:bg-amber-500/20'
+                              isPaid
+                                ? 'text-emerald-400 hover:bg-emerald-500/10'
+                                : 'text-amber-400 hover:bg-amber-500/10'
                             }`}
-                            onClick={() => setRecordPaymentModal(doc)}
-                            title={isPaid ? "Update Vendor Payment Reference" : "Record Payment to Vendor"}
+                            title={isPaid ? 'View Payment Settlement' : 'Record Payment Settlement'}
                           >
-                            <CreditCard size={15} />
+                            <CreditCard size={14} />
                           </button>
-
-                          {/* Edit */}
                           <button
                             type="button"
-                            className="p-1.5 text-slate-400 hover:text-indigo-400 hover:bg-slate-800 rounded transition-colors"
                             onClick={() => handleOpenEditModal(doc)}
-                            title="Edit Bill Details"
+                            className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors"
+                            title="Edit Purchase Bill"
                           >
-                            <Pencil size={15} />
+                            <Pencil size={14} />
                           </button>
-
-                          {/* Delete */}
                           <button
                             type="button"
-                            className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition-colors"
                             onClick={() => handleDeleteBill(doc.id)}
-                            title="Delete Bill"
+                            className="p-1.5 text-slate-400 hover:text-rose-400 rounded hover:bg-rose-500/10 transition-colors"
+                            title="Delete"
                           >
-                            <Trash2 size={15} />
+                            <Trash2 size={14} />
                           </button>
                         </div>
                       </td>
@@ -1144,361 +1464,46 @@ export default function PurchaseBillsPage() {
                 })}
               </tbody>
             </table>
+          </div>
+        )}
 
-            {/* Pagination Controls */}
+        {/* Pagination Footer */}
+        {filteredBills.length > pageSize && (
+          <div className="p-3 border-t border-slate-800 flex items-center justify-between">
             <Pagination
               currentPage={currentPage}
-              totalItems={filteredBills.length}
-              pageSize={pageSize}
-              onPageChange={setCurrentPage}
-              onPageSizeChange={setPageSize}
+              totalPages={Math.ceil(filteredBills.length / pageSize)}
+              onPageChange={(page) => setCurrentPage(page)}
             />
+            <div className="text-[11px] text-slate-400 font-mono">
+              Showing {(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, filteredBills.length)} of{' '}
+              {filteredBills.length}
+            </div>
           </div>
         )}
       </div>
 
-      {/* Modal: View Purchase Bill Details (Read-Only) & Activity Logs */}
-      {viewDetailModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-sm animate-fade-in overflow-y-auto custom-modal-scroll" onClick={() => setViewDetailModal(null)}>
-          <div className="bg-slate-900 border border-slate-800 rounded-md max-w-3xl w-full p-5 sm:p-6 shadow-2xl space-y-5 my-auto max-h-[92vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-            {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3.5 shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
-                  <ShoppingBag size={20} />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className="text-base font-bold text-slate-100 tracking-tight font-mono">
-                      Purchase Bill #{viewDetailModal.data?.billNumber || viewDetailModal.documentNumber}
-                    </h2>
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
-                      (viewDetailModal.status === 'COMPLETED' || viewDetailModal.status === 'DELIVERED')
-                        ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                        : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
-                    }`}>
-                      {(viewDetailModal.status === 'COMPLETED' || viewDetailModal.status === 'DELIVERED') ? 'PAID' : 'PENDING PAYMENT'}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Vendor: <strong className="text-slate-200">{viewDetailModal.data?.vendorName || 'Unspecified'}</strong>
-                  </p>
-                </div>
-              </div>
-
-              {/* Action Buttons in Header */}
-              <div className="flex items-center gap-2">
-                {!(viewDetailModal.status === 'COMPLETED' || viewDetailModal.status === 'DELIVERED') && (
-                  <button
-                    type="button"
-                    onClick={() => handleOpenPaymentModal(viewDetailModal)}
-                    className="text-xs px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 rounded transition-all font-semibold flex items-center gap-1.5 shadow-sm"
-                  >
-                    <CreditCard size={13} />
-                    <span>Record Payment</span>
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleOpenEditModal(viewDetailModal);
-                    setViewDetailModal(null);
-                  }}
-                  title="Edit Purchase Bill"
-                  className="text-xs px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 rounded transition-all font-semibold flex items-center gap-1.5 shadow-sm"
-                >
-                  <Pencil size={13} />
-                  <span>Edit Bill</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewDetailModal(null)}
-                  className="text-slate-400 hover:text-white p-1.5 hover:bg-slate-800 rounded transition-colors"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-            </div>
-
-            {/* Read-Only Modal Body - Zero Input Fields */}
-            <div className="flex-1 overflow-y-auto space-y-4 pr-1.5 text-xs custom-modal-scroll">
-              {/* Key Metrics Highlight */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="p-3 bg-slate-950/70 border border-slate-800 rounded">
-                  <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Grand Total Amount</div>
-                  <div className="text-lg font-bold font-mono mt-0.5 text-emerald-400">
-                    ₹{formatINR(viewDetailModal.data?.grandTotal || 0)}
-                  </div>
-                </div>
-
-                <div className="p-3 bg-slate-950/70 border border-slate-800 rounded">
-                  <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Taxable Amount</div>
-                  <div className="text-base font-bold text-slate-100 font-mono mt-0.5">
-                    ₹{formatINR(viewDetailModal.data?.taxableAmount || 0)}
-                  </div>
-                </div>
-
-                <div className="p-3 bg-slate-950/70 border border-slate-800 rounded">
-                  <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">GST Rate</div>
-                  <div className="text-base font-bold text-slate-100 font-mono mt-0.5 text-indigo-400">
-                    {viewDetailModal.data?.gstRate !== undefined ? `${viewDetailModal.data?.gstRate}%` : '18%'}
-                  </div>
-                </div>
-
-                <div className="p-3 bg-slate-950/70 border border-slate-800 rounded">
-                  <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Expense Category</div>
-                  <div className="text-xs font-semibold text-slate-200 mt-1 truncate">
-                    {EXPENSE_CATEGORIES.find((c) => c.id === viewDetailModal.data?.expenseCategory)?.label?.split(' ')[0] || 'Expense'}
-                  </div>
-                </div>
-              </div>
-
-              {/* 2-Column Info Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Left Card: Vendor Details */}
-                <div className="p-4 bg-slate-950/70 border border-slate-800 rounded space-y-2.5">
-                  <div className="flex items-center gap-1.5 text-slate-300 font-semibold text-[11px] uppercase tracking-wider border-b border-slate-800/80 pb-1.5">
-                    <Building size={14} className="text-indigo-400" /> Vendor / Supplier Information
-                  </div>
-                  <div className="space-y-2 text-xs">
-                    <div>
-                      <span className="text-slate-400 block text-[10px]">Company / Vendor Name</span>
-                      <span className="text-slate-100 font-semibold">{viewDetailModal.data?.vendorName || '-'}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block text-[10px]">Vendor GSTIN</span>
-                      <span className="text-slate-200 font-mono">{viewDetailModal.data?.vendorGstin || 'Not specified'}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block text-[10px]">Vendor Address</span>
-                      <span className="text-slate-300">{viewDetailModal.data?.vendorAddress || 'Not specified'}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right Card: Invoice & Shipment Details */}
-                <div className="p-4 bg-slate-950/70 border border-slate-800 rounded space-y-2.5">
-                  <div className="flex items-center gap-1.5 text-slate-300 font-semibold text-[11px] uppercase tracking-wider border-b border-slate-800/80 pb-1.5">
-                    <FileText size={14} className="text-indigo-400" /> Invoice & Shipment Details
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div>
-                      <span className="text-slate-400 block text-[10px]">Vendor Bill / Invoice #</span>
-                      <span className="text-slate-100 font-mono font-semibold">{viewDetailModal.data?.billNumber || viewDetailModal.documentNumber}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block text-[10px]">Bill Date</span>
-                      <span className="text-slate-200 font-mono">{viewDetailModal.data?.billDate || '-'}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block text-[10px]">Payment Due Date</span>
-                      <span className="text-slate-200 font-mono">{viewDetailModal.data?.dueDate || 'None specified'}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block text-[10px]">Linked AWB / Ref</span>
-                      <span className="text-slate-200 font-mono">{viewDetailModal.data?.airwayBillNo || '-'}</span>
-                    </div>
-                    <div className="col-span-2">
-                      <span className="text-slate-400 block text-[10px]">Service / Product Description</span>
-                      <span className="text-slate-300">{viewDetailModal.data?.description || 'N/A'}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Payment Settlement Card */}
-              <div className="p-4 bg-slate-950/70 border border-slate-800 rounded space-y-2.5">
-                <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
-                  <div className="flex items-center gap-1.5 text-slate-300 font-semibold text-[11px] uppercase tracking-wider">
-                    <CreditCard size={14} className="text-indigo-400" /> Payment & Settlement Information
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase ${
-                      (viewDetailModal.status === 'COMPLETED' || viewDetailModal.status === 'DELIVERED')
-                        ? 'bg-emerald-500/15 text-emerald-400'
-                        : 'bg-amber-500/15 text-amber-400'
-                    }`}>
-                      {(viewDetailModal.status === 'COMPLETED' || viewDetailModal.status === 'DELIVERED') ? 'Settled / Paid' : 'Unpaid (Pending)'}
-                    </span>
-                    {(viewDetailModal.status === 'COMPLETED' || viewDetailModal.status === 'DELIVERED') && (
-                      <button
-                        type="button"
-                        onClick={() => handleOpenPaymentModal(viewDetailModal)}
-                        className="text-[10px] text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1"
-                      >
-                        <Pencil size={11} /> Edit Payment
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {viewDetailModal.data?.transactionId || (viewDetailModal.status === 'COMPLETED' || viewDetailModal.status === 'DELIVERED') ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                    <div>
-                      <span className="text-slate-400 block text-[10px]">Payment Mode</span>
-                      <span className="text-slate-100 font-medium">{viewDetailModal.data?.paymentMode || 'Bank Transfer (NEFT/RTGS/IMPS)'}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block text-[10px]">UTR / Reference #</span>
-                      <span className="text-slate-100 font-mono font-semibold text-emerald-400">
-                        {viewDetailModal.data?.transactionId || 'Recorded'}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block text-[10px]">Payment Settlement Date</span>
-                      <span className="text-slate-200 font-mono">{viewDetailModal.data?.paidDate || viewDetailModal.data?.billDate || '-'}</span>
-                    </div>
-                    {viewDetailModal.data?.remarks && (
-                      <div className="col-span-full">
-                        <span className="text-slate-400 block text-[10px]">Payment Notes / Remarks</span>
-                        <span className="text-slate-300 italic">{viewDetailModal.data?.remarks}</span>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between p-2.5 bg-amber-500/10 border border-amber-500/20 rounded">
-                    <span className="text-amber-300 text-xs">This bill is currently unpaid. Record payment once settled.</span>
-                    <button
-                      type="button"
-                      onClick={() => handleOpenPaymentModal(viewDetailModal)}
-                      className="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded font-semibold text-xs transition-colors"
-                    >
-                      Record Payment Now
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Attached Bill Document Preview */}
-              {viewDetailModal.data?.billFileBase64 && (
-                <div className="p-4 bg-slate-950/70 border border-slate-800 rounded flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 truncate">
-                    <Paperclip size={16} className="text-indigo-400 shrink-0" />
-                    <div>
-                      <span className="text-slate-200 font-semibold block truncate max-w-[280px]">
-                        {viewDetailModal.data?.billFileName || 'Attached Invoice Document'}
-                      </span>
-                      <span className="text-[10px] text-slate-400">Original scanned / uploaded vendor bill</span>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setViewFileModal(viewDetailModal.data?.billFileBase64)}
-                    className="px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 rounded text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0"
-                  >
-                    <ExternalLink size={13} /> View Full Document
-                  </button>
-                </div>
-              )}
-
-              {/* Activity Logs & Audit History Section */}
-              <div className="p-4 bg-slate-950/70 border border-slate-800 rounded space-y-3">
-                <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-                  <div className="flex items-center gap-1.5 text-slate-200 font-semibold text-xs uppercase tracking-wider">
-                    <Activity size={14} className="text-indigo-400" />
-                    <span>Activity Logs & Audit History</span>
-                  </div>
-                  <span className="text-[10px] text-slate-400 font-mono">
-                    {((viewDetailModal.data?.activityLogs || []).length || 1)} events recorded
-                  </span>
-                </div>
-
-                <div className="space-y-2 pt-1">
-                  {((viewDetailModal.data?.activityLogs || []).length > 0
-                    ? viewDetailModal.data.activityLogs
-                    : [
-                        {
-                          id: 'initial',
-                          timestamp: viewDetailModal.createdAt || new Date().toISOString(),
-                          action: 'CREATED',
-                          actor: 'Admin',
-                          details: `Purchase Bill #${viewDetailModal.data?.billNumber || viewDetailModal.documentNumber} recorded for ₹${formatINR(viewDetailModal.data?.grandTotal || 0)}`,
-                        },
-                      ]
-                  ).map((log, idx) => (
-                    <div key={log.id || idx} className="flex items-start gap-3 p-2.5 bg-slate-900 border border-slate-800/80 rounded text-xs">
-                      <div className={`w-6 h-6 rounded flex items-center justify-center shrink-0 mt-0.5 ${
-                        log.action === 'PAYMENT_RECORDED'
-                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                          : log.action === 'CREATED'
-                          ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                          : 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
-                      }`}>
-                        {log.action === 'PAYMENT_RECORDED' ? <CreditCard size={12} /> : log.action === 'CREATED' ? <Plus size={12} /> : <History size={12} />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2 flex-wrap">
-                          <span className="font-semibold text-slate-200 text-[11px]">
-                            {log.action === 'PAYMENT_RECORDED' ? 'Vendor Payment Recorded' : log.action === 'CREATED' ? 'Purchase Bill Created' : 'Bill Details Updated'}
-                          </span>
-                          <span className="text-[10px] text-slate-400 font-mono">
-                            {formatActivityDate(log.timestamp)}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-slate-300 mt-0.5 break-words">
-                          {log.details}
-                        </p>
-                        <div className="text-[10px] text-slate-500 mt-0.5">
-                          By <span className="text-slate-400 font-medium">{log.actor || 'Admin'}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="flex items-center justify-between gap-2 pt-3 shrink-0 border-t border-slate-800">
-              <button
-                type="button"
-                onClick={() => {
-                  handleDeleteBill(viewDetailModal.id);
-                  setViewDetailModal(null);
-                }}
-                className="text-xs px-3 py-2 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded transition-colors flex items-center gap-1 font-medium"
-              >
-                <Trash2 size={13} /> Delete Bill
-              </button>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="secondary"
-                  type="button"
-                  onClick={() => setViewDetailModal(null)}
-                  className="rounded text-xs px-4 py-2"
-                >
-                  Close
-                </Button>
-                <Button
-                  variant="primary"
-                  type="button"
-                  onClick={() => {
-                    handleOpenEditModal(viewDetailModal);
-                    setViewDetailModal(null);
-                  }}
-                  className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-4 py-2"
-                >
-                  <Pencil size={13} className="mr-1.5 inline" /> Edit Purchase Bill
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal: Create / Edit Purchase Bill - WITH SMART OCR / AUTO-EXTRACT */}
+      {/* =========================================================================
+          MODAL: RECORD / EDIT PURCHASE BILL (Indian GST Form with Smart Auto-Fill)
+          ========================================================================= */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in overflow-y-auto custom-modal-scroll">
-          <div className="bg-slate-900 border border-slate-800 rounded-md max-w-3xl w-full p-5 sm:p-6 shadow-2xl space-y-5 my-auto max-h-[92vh] flex flex-col">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in"
+          onClick={() => setModalOpen(false)}
+        >
+          <div
+            className="bg-slate-900 border border-slate-800 rounded-lg max-w-4xl w-full max-h-[92vh] flex flex-col p-5 shadow-2xl space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3.5 shrink-0">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3 shrink-0">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
-                  <ShoppingBag size={20} />
+                <div className="w-8 h-8 rounded bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-bold">
+                  <ShoppingBag size={17} />
                 </div>
                 <div>
                   <h2 className="text-base font-bold text-slate-100 tracking-tight flex items-center gap-2">
-                    <span>{editingBill ? 'Edit Purchase / Vendor Bill' : 'Record New Purchase Bill'}</span>
+                    <span>{editingBill ? 'Edit Purchase / Vendor Bill' : 'Record New Purchase Bill (Inward Invoice)'}</span>
                   </h2>
                   <p className="text-xs text-slate-400 mt-0.5">
                     Attach invoice PDF/scan to auto-extract details or fill fields manually.
@@ -1530,7 +1535,7 @@ export default function PurchaseBillsPage() {
               <div className="p-3 bg-indigo-600/15 border border-indigo-500/30 rounded text-xs text-indigo-300 flex items-center gap-2.5 animate-pulse shrink-0">
                 <Loader2 size={16} className="animate-spin text-indigo-400 shrink-0" />
                 <span>
-                  <strong>Smart Extractor:</strong> Reading and parsing invoice data from uploaded file (Vendor, GSTIN, Bill #, Amounts)...
+                  <strong>Smart Extractor:</strong> Reading invoice data from uploaded file (Vendor, GSTIN, Bill #, Amounts)...
                 </span>
               </div>
             )}
@@ -1541,58 +1546,106 @@ export default function PurchaseBillsPage() {
                   <Sparkles size={16} className="text-emerald-400 shrink-0" />
                   <span>{extractSuccess}</span>
                 </div>
-                <button
-                  type="button"
-                  className="text-emerald-400 hover:text-white font-bold text-xs"
-                  onClick={() => setExtractSuccess('')}
-                >
-                  ✕
-                </button>
+                <div className="flex items-center gap-2">
+                  {lastExtractedData && (
+                    <button
+                      type="button"
+                      onClick={() => triggerAutoExtraction(formData.billFileBase64, formData.billFileName, true)}
+                      className="text-[11px] underline text-indigo-300 hover:text-white"
+                    >
+                      Overwrite all with scanned data
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="text-emerald-400 hover:text-white font-bold text-xs"
+                    onClick={() => setExtractSuccess('')}
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
             )}
 
             {/* Modal Scrollable Form Body */}
             <form onSubmit={handleSaveBill} className="flex-1 overflow-y-auto space-y-4 pr-1.5 text-xs custom-modal-scroll">
-              {/* Primary Section: Document Attachment & Auto-Fill Trigger */}
+              {/* Section 1: Document Attachment & Manual Extraction */}
               <div className="p-4 bg-slate-950/70 border border-slate-800 rounded space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 text-slate-300 font-semibold text-[11px] uppercase tracking-wider">
-                    <Paperclip size={14} className="text-indigo-400" /> 1. Upload Vendor Bill / Invoice (Auto-Fill)
+                    <Paperclip size={14} className="text-indigo-400" /> 1. Upload Vendor Bill / Invoice
                   </div>
-                  <span className="text-[10px] text-indigo-400 font-semibold flex items-center gap-1">
-                    <Sparkles size={12} /> Auto-extracts Vendor, GSTIN & Amounts
+                  <span className="text-[10px] text-slate-400 font-medium">
+                    Upload document & click <strong className="text-indigo-400 font-semibold">"Extract Details"</strong> when ready
                   </span>
                 </div>
 
                 <div className="p-3 bg-slate-900 border border-dashed border-slate-800 rounded flex flex-col sm:flex-row items-center justify-between gap-3">
                   {formData.billFileBase64 ? (
-                    <div className="flex items-center justify-between w-full flex-wrap gap-2">
-                      <div className="flex items-center gap-2 truncate">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full gap-3">
+                      <div className="flex items-center gap-2 truncate min-w-0">
                         <Paperclip size={15} className="text-indigo-400 shrink-0" />
-                        <span className="text-slate-200 text-xs font-medium truncate max-w-[220px]">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (formData.billFileBase64) {
+                              const win = window.open();
+                              if (win) {
+                                win.document.write(
+                                  `<html><head><title>${formData.billFileName || 'Attached Document'}</title></head><body style="margin:0;background:#0f172a;"><iframe src="${formData.billFileBase64}" frameborder="0" style="border:0; width:100%; height:100vh;" allowfullscreen></iframe></body></html>`
+                                );
+                              } else {
+                                setViewFileModal(formData.billFileBase64);
+                              }
+                            }
+                          }}
+                          className="text-slate-200 hover:text-indigo-300 underline underline-offset-2 text-xs font-medium truncate max-w-[240px] text-left cursor-pointer transition-colors"
+                          title="Click to open / view in new tab"
+                        >
                           {formData.billFileName || 'Attached Document'}
-                        </span>
-                        <span className="px-2 py-0.5 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded text-[10px] font-semibold">
+                        </button>
+                        <span className="px-2 py-0.5 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded text-[10px] font-semibold shrink-0">
                           Attached
                         </span>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 shrink-0">
                         <button
                           type="button"
-                          onClick={() => triggerAutoExtraction(formData.billFileBase64, formData.billFileName)}
-                          disabled={isExtracting}
-                          className="px-2.5 py-1 bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 rounded text-xs font-semibold flex items-center gap-1 transition-all"
+                          onClick={() => {
+                            if (formData.billFileBase64) {
+                              const win = window.open();
+                              if (win) {
+                                win.document.write(
+                                  `<html><head><title>${formData.billFileName || 'Attached Document'}</title></head><body style="margin:0;background:#0f172a;"><iframe src="${formData.billFileBase64}" frameborder="0" style="border:0; width:100%; height:100vh;" allowfullscreen></iframe></body></html>`
+                                );
+                              } else {
+                                setViewFileModal(formData.billFileBase64);
+                              }
+                            }
+                          }}
+                          className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-indigo-300 hover:text-white border border-slate-700 rounded text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all"
+                          title="Open attached document in new tab"
                         >
-                          <Sparkles size={12} />
-                          <span>{isExtracting ? 'Scanning...' : 'Re-extract Details'}</span>
+                          <ExternalLink size={13} className="text-indigo-400" />
+                          <span>View (New Tab)</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => triggerAutoExtraction(formData.billFileBase64, formData.billFileName, false)}
+                          disabled={isExtracting}
+                          className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all"
+                        >
+                          <Sparkles size={13} className={isExtracting ? 'animate-spin' : ''} />
+                          <span>{isExtracting ? 'Scanning Document...' : 'Extract Details'}</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => {
                             setFormData({ ...formData, billFileBase64: null, billFileName: '' });
                             setExtractSuccess('');
+                            setLastExtractedData(null);
                           }}
-                          className="text-rose-400 hover:text-rose-300 text-xs font-semibold px-2.5 py-1 bg-rose-500/10 rounded"
+                          className="text-rose-400 hover:text-rose-300 text-xs font-semibold px-2.5 py-1.5 bg-rose-500/10 rounded hover:bg-rose-500/20 transition-colors"
                         >
                           Remove
                         </button>
@@ -1612,7 +1665,7 @@ export default function PurchaseBillsPage() {
                 </div>
               </div>
 
-              {/* Section 2: Vendor Information */}
+              {/* Section 2: Vendor / Supplier Information */}
               <div className="p-4 bg-slate-950/70 border border-slate-800 rounded space-y-3">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-1.5 text-slate-300 font-semibold text-[11px] uppercase tracking-wider">
@@ -1672,7 +1725,7 @@ export default function PurchaseBillsPage() {
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                   <div className="sm:col-span-2">
                     <label className="text-[11px] font-semibold text-slate-300 block mb-1">
                       Vendor / Company Name <span className="text-rose-400">*</span>
@@ -1684,7 +1737,7 @@ export default function PurchaseBillsPage() {
                         setFormData({ ...formData, vendorName: e.target.value });
                         if (selectedVendorTemplateId) setSelectedVendorTemplateId('');
                       }}
-                      placeholder="e.g. DGR Global Logistics / DG Box Supplier"
+                      placeholder="e.g. DGR PACKAGING COMPANY / Airline Cargo / CHA"
                       className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
                       required
                     />
@@ -1692,36 +1745,137 @@ export default function PurchaseBillsPage() {
 
                   <div>
                     <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                      Vendor GSTIN (Optional)
+                      Vendor GSTIN (15 Digits)
                     </label>
                     <input
                       type="text"
                       value={formData.vendorGstin}
-                      onChange={(e) => setFormData({ ...formData, vendorGstin: e.target.value })}
-                      placeholder="e.g. 27NSAPK0224B1Z7"
-                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono transition-colors"
+                      onChange={(e) => {
+                        const gstin = e.target.value.toUpperCase();
+                        const state = getIndianStateFromGstin(gstin);
+                        const taxType = gstin.startsWith('27') || !gstin ? 'INTRA_STATE' : 'INTER_STATE';
+                        const calculations = calculateGstBreakdown(formData.taxableAmount, formData.gstRate, taxType, formData.tdsSection);
+
+                        setFormData({
+                          ...formData,
+                          vendorGstin: gstin,
+                          placeOfSupply: state || formData.placeOfSupply,
+                          taxType,
+                          ...calculations,
+                        });
+                      }}
+                      placeholder="e.g. 27CBKPK7600K1ZE"
+                      maxLength={15}
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono transition-colors uppercase"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                      Vendor PAN
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.vendorPan}
+                      onChange={(e) => setFormData({ ...formData, vendorPan: e.target.value.toUpperCase() })}
+                      placeholder="e.g. CBKPK7600K"
+                      maxLength={10}
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono uppercase"
                     />
                   </div>
                 </div>
 
-                <div>
-                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                    Vendor Address (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.vendorAddress}
-                    onChange={(e) => setFormData({ ...formData, vendorAddress: e.target.value })}
-                    placeholder="e.g. Shop No. 2, Near Sahar Cargo Complex, Andheri (E), Mumbai"
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="sm:col-span-2">
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                      Vendor Address (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.vendorAddress}
+                      onChange={(e) => setFormData({ ...formData, vendorAddress: e.target.value })}
+                      placeholder="e.g. Shop No. 2, Near Sahar Cargo Complex, Andheri (E), Mumbai"
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                      Place of Supply (POS)
+                    </label>
+                    <select
+                      value={formData.placeOfSupply}
+                      onChange={(e) => {
+                        const pos = e.target.value;
+                        const taxType = pos.includes('(27)') ? 'INTRA_STATE' : 'INTER_STATE';
+                        const calculations = calculateGstBreakdown(formData.taxableAmount, formData.gstRate, taxType, formData.tdsSection);
+                        setFormData({ ...formData, placeOfSupply: pos, taxType, ...calculations });
+                      }}
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
+                    >
+                      {Object.entries(INDIAN_GST_STATES).map(([code, name]) => (
+                        <option key={code} value={name}>
+                          {name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Vendor Bank Account Details (Extracted for Easy RTGS/NEFT Payment) */}
+                <div className="p-3 bg-slate-900/90 border border-slate-800/90 rounded space-y-2">
+                  <div className="text-[11px] font-semibold text-indigo-300 flex items-center gap-1.5">
+                    <Landmark size={13} className="text-indigo-400" /> Vendor Bank Account Details (For RTGS / NEFT Settlements)
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+                    <div>
+                      <label className="text-[10px] text-slate-400 block mb-0.5">Bank Name</label>
+                      <input
+                        type="text"
+                        value={formData.vendorBankName}
+                        onChange={(e) => setFormData({ ...formData, vendorBankName: e.target.value })}
+                        placeholder="e.g. HDFC BANK LTD"
+                        className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-slate-400 block mb-0.5">A/c Number</label>
+                      <input
+                        type="text"
+                        value={formData.vendorBankAccount}
+                        onChange={(e) => setFormData({ ...formData, vendorBankAccount: e.target.value })}
+                        placeholder="e.g. 06687630000070"
+                        className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded text-xs text-slate-100 focus:outline-none focus:border-indigo-500 font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-slate-400 block mb-0.5">IFSC / RTGS Code</label>
+                      <input
+                        type="text"
+                        value={formData.vendorBankIfsc}
+                        onChange={(e) => setFormData({ ...formData, vendorBankIfsc: e.target.value.toUpperCase() })}
+                        placeholder="e.g. HDFC0003126"
+                        className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded text-xs text-slate-100 focus:outline-none focus:border-indigo-500 font-mono uppercase"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-slate-400 block mb-0.5">Branch</label>
+                      <input
+                        type="text"
+                        value={formData.vendorBankBranch}
+                        onChange={(e) => setFormData({ ...formData, vendorBankBranch: e.target.value })}
+                        placeholder="e.g. MAHAD-4"
+                        className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 {/* Quick Save as Template button when filling manually */}
                 {formData.vendorName.trim() && (
                   <div className="flex items-center justify-between pt-1 text-[11px]">
                     <span className="text-slate-400 text-[10px]">
-                      Filling manually? Save this vendor details to templates for 1-click autofill in future bills.
+                      Save vendor profile to directory for 1-click autofill in future bills.
                     </span>
                     <button
                       type="button"
@@ -1737,8 +1891,11 @@ export default function PurchaseBillsPage() {
 
               {/* Section 3: Bill Identification & Dates */}
               <div className="p-4 bg-slate-950/70 border border-slate-800 rounded space-y-3">
-                <div className="flex items-center gap-1.5 text-slate-300 font-semibold text-[11px] uppercase tracking-wider">
-                  <FileText size={14} className="text-indigo-400" /> 3. Invoice & Shipment Details
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-slate-300 font-semibold text-[11px] uppercase tracking-wider">
+                    <FileText size={14} className="text-indigo-400" /> 3. Invoice & Shipment Details
+                  </div>
+                  <span className="text-[10px] text-slate-400">Indian FY 2026-27 Format</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -1750,7 +1907,7 @@ export default function PurchaseBillsPage() {
                       type="text"
                       value={formData.billNumber}
                       onChange={(e) => setFormData({ ...formData, billNumber: e.target.value })}
-                      placeholder="e.g. INV-9842"
+                      placeholder="e.g. DGR/0495/26-27"
                       className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono transition-colors"
                       required
                     />
@@ -1758,19 +1915,15 @@ export default function PurchaseBillsPage() {
 
                   <div>
                     <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                      Expense Category <span className="text-rose-400">*</span>
+                      Internal Purchase Voucher #
                     </label>
-                    <select
-                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-                      value={formData.expenseCategory}
-                      onChange={(e) => setFormData({ ...formData, expenseCategory: e.target.value })}
-                    >
-                      {EXPENSE_CATEGORIES.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.label}
-                        </option>
-                      ))}
-                    </select>
+                    <input
+                      type="text"
+                      value={formData.voucherNumber}
+                      onChange={(e) => setFormData({ ...formData, voucherNumber: e.target.value })}
+                      placeholder="e.g. PB/26-27/0005"
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono"
+                    />
                   </div>
 
                   <div>
@@ -1802,6 +1955,44 @@ export default function PurchaseBillsPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                   <div>
                     <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                      Expense Category <span className="text-rose-400">*</span>
+                    </label>
+                    <select
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                      value={formData.expenseCategory}
+                      onChange={(e) => {
+                        const catId = e.target.value;
+                        const catObj = EXPENSE_CATEGORIES.find((c) => c.id === catId);
+                        setFormData({
+                          ...formData,
+                          expenseCategory: catId,
+                          hsnSacCode: catObj?.sac || formData.hsnSacCode,
+                        });
+                      }}
+                    >
+                      {EXPENSE_CATEGORIES.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                      HSN / SAC Code
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.hsnSacCode}
+                      onChange={(e) => setFormData({ ...formData, hsnSacCode: e.target.value })}
+                      placeholder="e.g. 39233090 / 4819 / 9965"
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 focus:outline-none focus:border-indigo-500 font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
                       Linked AWB / Shipment Ref
                     </label>
                     <input
@@ -1812,33 +2003,80 @@ export default function PurchaseBillsPage() {
                       className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono transition-colors"
                     />
                   </div>
+                </div>
 
-                  <div className="sm:col-span-2">
+                {/* Additional Reference & Delivery Location */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                  <div>
                     <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                      Service / Product Description
+                      Reference / Coordinator
                     </label>
                     <input
                       type="text"
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      placeholder="e.g. DGD certification, inspection and UN 4G packaging charges"
-                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+                      value={formData.referenceName}
+                      onChange={(e) => setFormData({ ...formData, referenceName: e.target.value })}
+                      placeholder="e.g. Mayur Kadam"
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                      Contact Number
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.contactNumber}
+                      onChange={(e) => setFormData({ ...formData, contactNumber: e.target.value })}
+                      placeholder="e.g. 9028345261"
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 focus:outline-none focus:border-indigo-500 font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                      Shipped-To Warehouse / Site
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.shippedToName}
+                      onChange={(e) => setFormData({ ...formData, shippedToName: e.target.value })}
+                      placeholder="e.g. Sai Warehouse & Transport, Bhiwandi"
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
                     />
                   </div>
                 </div>
+
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                    Service / Product Description
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="e.g. UN APPROVED Y 75 OPEN TOP DRUM & Transport Charges"
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+                  />
+                </div>
               </div>
 
-              {/* Section 4: Financials & GST Calculations */}
+              {/* Section 4: Indian GST Calculation & TDS Breakdown */}
               <div className="p-4 bg-slate-950/70 border border-slate-800 rounded space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-1.5 text-slate-300 font-semibold text-[11px] uppercase tracking-wider">
-                    <CreditCard size={14} className="text-indigo-400" /> 4. Amount & GST Calculations
+                    <CreditCard size={14} className="text-indigo-400" /> 4. GST Breakdown & Financials
                   </div>
-                  <span className="text-[10px] text-slate-400 font-mono">Currency: INR (₹)</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-slate-400 font-mono">Currency: INR (₹)</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-indigo-300 font-medium border border-slate-700">
+                      {formData.taxType === 'INTRA_STATE' ? 'Intra-State (CGST + SGST)' : 'Inter-State (IGST)'}
+                    </span>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
-                  <div>
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+                  <div className="sm:col-span-2">
                     <label className="text-[11px] font-semibold text-slate-300 block mb-1">
                       Taxable Amount (₹) <span className="text-rose-400">*</span>
                     </label>
@@ -1848,11 +2086,11 @@ export default function PurchaseBillsPage() {
                       value={formData.taxableAmount}
                       onChange={(e) => {
                         const val = e.target.value;
-                        const total = handleCalculateTotal(val, formData.gstRate);
-                        setFormData({ ...formData, taxableAmount: val, grandTotal: total });
+                        const calculations = calculateGstBreakdown(val, formData.gstRate, formData.taxType, formData.tdsSection);
+                        setFormData({ ...formData, ...calculations });
                       }}
                       placeholder="0.00"
-                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono transition-colors"
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono transition-colors font-bold"
                       required
                     />
                   </div>
@@ -1866,15 +2104,107 @@ export default function PurchaseBillsPage() {
                       value={formData.gstRate}
                       onChange={(e) => {
                         const rate = e.target.value;
-                        const total = handleCalculateTotal(formData.taxableAmount, rate);
-                        setFormData({ ...formData, gstRate: rate, grandTotal: total });
+                        const calculations = calculateGstBreakdown(formData.taxableAmount, rate, formData.taxType, formData.tdsSection);
+                        setFormData({ ...formData, ...calculations });
                       }}
                     >
                       <option value="0">0% (Nil / Exempt)</option>
-                      <option value="5">5% GST</option>
+                      <option value="5">5% (Goods / GTA)</option>
                       <option value="12">12% GST</option>
-                      <option value="18">18% GST (Standard Services)</option>
+                      <option value="18">18% (Standard Services)</option>
                       <option value="28">28% GST</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                      Tax Structure
+                    </label>
+                    <select
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                      value={formData.taxType}
+                      onChange={(e) => {
+                        const t = e.target.value;
+                        const calculations = calculateGstBreakdown(formData.taxableAmount, formData.gstRate, t, formData.tdsSection);
+                        setFormData({ ...formData, ...calculations });
+                      }}
+                    >
+                      <option value="INTRA_STATE">Intra-State (CGST + SGST)</option>
+                      <option value="INTER_STATE">Inter-State (IGST)</option>
+                      <option value="EXEMPT">Non-GST / Exempt</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* GST Split & Total Cards */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 bg-slate-900/90 rounded border border-slate-800 text-xs">
+                  <div>
+                    <span className="text-[10px] text-slate-400 block">
+                      {formData.taxType === 'INTRA_STATE' ? `CGST (${formData.gstRate / 2}%)` : 'CGST'}
+                    </span>
+                    <span className="font-mono font-semibold text-slate-200">
+                      ₹{formatINR(formData.cgstAmount)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 block">
+                      {formData.taxType === 'INTRA_STATE' ? `SGST (${formData.gstRate / 2}%)` : 'SGST'}
+                    </span>
+                    <span className="font-mono font-semibold text-slate-200">
+                      ₹{formatINR(formData.sgstAmount)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 block">
+                      {formData.taxType === 'INTER_STATE' ? `IGST (${formData.gstRate}%)` : 'IGST'}
+                    </span>
+                    <span className="font-mono font-semibold text-slate-200">
+                      ₹{formatINR(formData.igstAmount)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-indigo-300 font-medium block">Total GST</span>
+                    <span className="font-mono font-bold text-indigo-400">
+                      ₹{formatINR(formData.totalGst)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* TDS Deduction (Optional) & ITC Eligibility */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                      TDS Deduction (Income Tax)
+                    </label>
+                    <select
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                      value={formData.tdsSection}
+                      onChange={(e) => {
+                        const sec = e.target.value;
+                        const calculations = calculateGstBreakdown(formData.taxableAmount, formData.gstRate, formData.taxType, sec);
+                        setFormData({ ...formData, ...calculations });
+                      }}
+                    >
+                      {TDS_SECTIONS.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                      Input Tax Credit (ITC)
+                    </label>
+                    <select
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                      value={formData.itcEligibility}
+                      onChange={(e) => setFormData({ ...formData, itcEligibility: e.target.value })}
+                    >
+                      <option value="ELIGIBLE">Eligible for ITC (Standard)</option>
+                      <option value="INELIGIBLE">Ineligible / Blocked (Sec 17(5))</option>
+                      <option value="RCM">Reverse Charge Mechanism (RCM)</option>
                     </select>
                   </div>
 
@@ -1893,52 +2223,87 @@ export default function PurchaseBillsPage() {
                     />
                   </div>
                 </div>
+
+                {formData.tdsAmount > 0 && (
+                  <div className="p-2.5 bg-amber-500/10 border border-amber-500/25 rounded flex items-center justify-between text-xs text-amber-300">
+                    <span>
+                      TDS @ {formData.tdsRate}% (₹{formatINR(formData.tdsAmount)}) deducted from Grand Total.
+                    </span>
+                    <span className="font-bold font-mono">
+                      Net Vendor Payable: ₹{formatINR(formData.netPayable)}
+                    </span>
+                  </div>
+                )}
               </div>
 
-              {/* Section 5: Initial Payment Status */}
+              {/* Section 5: Settlement & Payment Details */}
               <div className="p-4 bg-slate-950/70 border border-slate-800 rounded space-y-3">
-                <div>
-                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                    Initial Payment Status
-                  </label>
-                  <select
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-                    value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                  >
-                    <option value="ISSUED">Pending Payment (Unpaid)</option>
-                    <option value="COMPLETED">Already Paid / Settled</option>
-                  </select>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-slate-300 font-semibold text-[11px] uppercase tracking-wider">
+                    <CheckCircle2 size={14} className="text-indigo-400" /> 5. Payment Status & Settlement Proof
+                  </div>
                 </div>
 
-                {/* If status is COMPLETED, show payment settlement inputs */}
-                {formData.status === 'COMPLETED' && (
-                  <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded space-y-2.5 animate-fade-in mt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                      Payment Status
+                    </label>
+                    <select
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                      value={formData.status}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                    >
+                      <option value="ISSUED">Pending Payment (Unpaid)</option>
+                      <option value="COMPLETED">Already Paid / Settled</option>
+                      <option value="DRAFT">Draft</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                      Payment Mode
+                    </label>
+                    <select
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                      value={formData.paymentMode}
+                      onChange={(e) => setFormData({ ...formData, paymentMode: e.target.value })}
+                    >
+                      <option value="NEFT_RTGS">Bank Transfer (NEFT / RTGS / IMPS)</option>
+                      <option value="UPI">UPI / GPay / PhonePe / QR</option>
+                      <option value="CHEQUE">Bank Cheque / DD</option>
+                      <option value="NETBANKING">Corporate Netbanking</option>
+                      <option value="CASH">Cash (Petty Cash)</option>
+                      <option value="CREDIT_CARD">Corporate Credit Card</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* If status is COMPLETED or user has entered transaction info */}
+                {(formData.status === 'COMPLETED' || formData.transactionId) && (
+                  <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded space-y-2.5 animate-fade-in">
                     <div className="text-[11px] font-bold text-emerald-400 flex items-center gap-1.5">
-                      <CheckCircle2 size={13} /> Settlement / Payment Reference:
+                      <CheckCircle2 size={13} /> Settlement / Bank Reference:
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                       <div>
-                        <label className="text-[10px] text-slate-400 block mb-0.5">Mode</label>
-                        <select
-                          className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-                          value={formData.paymentMode}
-                          onChange={(e) => setFormData({ ...formData, paymentMode: e.target.value })}
-                        >
-                          <option value="NEFT_RTGS">Bank Transfer (NEFT/RTGS/IMPS)</option>
-                          <option value="UPI">UPI / GPay / PhonePe</option>
-                          <option value="CHEQUE">Cheque</option>
-                          <option value="CASH">Cash</option>
-                        </select>
+                        <label className="text-[10px] text-slate-400 block mb-0.5">Bank / Source</label>
+                        <input
+                          type="text"
+                          value={formData.bankName || formData.vendorBankName}
+                          onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
+                          placeholder="e.g. HDFC Bank Ltd"
+                          className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
+                        />
                       </div>
 
                       <div>
-                        <label className="text-[10px] text-slate-400 block mb-0.5">UTR / Txn Ref #</label>
+                        <label className="text-[10px] text-slate-400 block mb-0.5">UTR / Txn Ref / Cheque #</label>
                         <input
                           type="text"
                           value={formData.transactionId}
                           onChange={(e) => setFormData({ ...formData, transactionId: e.target.value })}
-                          placeholder="e.g. UTR12345678"
+                          placeholder="e.g. UTR12345678 / CHQ-0098"
                           className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 focus:outline-none focus:border-indigo-500 font-mono"
                         />
                       </div>
@@ -2005,10 +2370,298 @@ export default function PurchaseBillsPage() {
         </div>
       )}
 
-      {/* Modal: View Attached File */}
+      {/* =========================================================================
+          MODAL: VIEW BILL VOUCHER DETAIL & GST BREAKDOWN
+          ========================================================================= */}
+      {viewDetailModal && (() => {
+        const data = viewDetailModal.data || {};
+        const cat = EXPENSE_CATEGORIES.find((c) => c.id === data.expenseCategory) || EXPENSE_CATEGORIES[0];
+        const isPaid = viewDetailModal.status === 'COMPLETED' || viewDetailModal.status === 'DELIVERED' || Boolean(data.transactionId);
+        const logs = data.activityLogs || [];
+
+        return (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in"
+            onClick={() => setViewDetailModal(null)}
+          >
+            <div
+              className="bg-slate-900 border border-slate-800 rounded-lg max-w-2xl w-full max-h-[90vh] flex flex-col p-5 shadow-2xl space-y-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-bold">
+                    <FileText size={18} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+                      <span>Vendor Bill #{data.billNumber || viewDetailModal.documentNumber}</span>
+                      {isPaid ? (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                          Paid
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                          Pending
+                        </span>
+                      )}
+                    </h3>
+                    <p className="text-[11px] text-slate-400">
+                      Voucher Ref: {data.voucherNumber || viewDetailModal.documentNumber} • Recorded on{' '}
+                      {new Date(data.billDate || viewDetailModal.createdAt).toLocaleDateString('en-IN')}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setViewDetailModal(null)}
+                  className="text-slate-400 hover:text-white p-1"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="flex-1 overflow-y-auto space-y-4 text-xs pr-1 custom-modal-scroll">
+                {/* Vendor Details Box */}
+                <div className="p-3.5 bg-slate-950/70 border border-slate-800 rounded space-y-2">
+                  <div className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <Building size={13} className="text-indigo-400" /> Vendor / Supplier Info
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-slate-200">
+                    <div>
+                      <span className="text-slate-500 block text-[10px]">Vendor Name</span>
+                      <span className="font-semibold text-slate-100">{data.vendorName || '—'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[10px]">Vendor GSTIN</span>
+                      <span className="font-mono text-slate-200">{data.vendorGstin || 'Unregistered'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[10px]">Vendor PAN</span>
+                      <span className="font-mono text-slate-200">{data.vendorPan || '—'}</span>
+                    </div>
+                    <div className="col-span-2 sm:col-span-3">
+                      <span className="text-slate-500 block text-[10px]">Address & Place of Supply</span>
+                      <span>{data.vendorAddress || '—'} • POS: {data.placeOfSupply || 'Maharashtra (27)'}</span>
+                    </div>
+                  </div>
+
+                  {/* Vendor Bank Details */}
+                  {(data.vendorBankName || data.vendorBankAccount) && (
+                    <div className="p-2.5 bg-slate-900 border border-slate-800 rounded mt-2 text-[11px]">
+                      <div className="text-indigo-300 font-semibold mb-1 flex items-center gap-1">
+                        <Landmark size={12} /> Vendor Bank Details (For RTGS / NEFT):
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-slate-300">
+                        <div>
+                          <span className="text-slate-500 block text-[9px]">Bank</span>
+                          <span>{data.vendorBankName || '—'}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block text-[9px]">A/c Number</span>
+                          <span className="font-mono">{data.vendorBankAccount || '—'}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block text-[9px]">IFSC Code</span>
+                          <span className="font-mono">{data.vendorBankIfsc || '—'}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block text-[9px]">Branch</span>
+                          <span>{data.vendorBankBranch || '—'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Expense Details Box */}
+                <div className="p-3.5 bg-slate-950/70 border border-slate-800 rounded space-y-2">
+                  <div className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <Tag size={13} className="text-indigo-400" /> Expense Classification & Reference
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    <div>
+                      <span className="text-slate-500 block text-[10px]">Category</span>
+                      <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold border ${cat.color}`}>
+                        {cat.label}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[10px]">HSN / SAC Code</span>
+                      <span className="font-mono text-slate-200">{data.hsnSacCode || '—'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[10px]">Linked Shipment / AWB</span>
+                      <span className="font-mono text-slate-200">{data.airwayBillNo || '—'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[10px]">Coordinator / Ref</span>
+                      <span className="text-slate-200">{data.referenceName || '—'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[10px]">Contact</span>
+                      <span className="font-mono text-slate-200">{data.contactNumber || '—'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[10px]">Shipped-To Site</span>
+                      <span className="text-slate-200">{data.shippedToName || '—'}</span>
+                    </div>
+                    <div className="col-span-2 sm:col-span-3">
+                      <span className="text-slate-500 block text-[10px]">Service Description</span>
+                      <span className="text-slate-300">{data.description || '—'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Financials & GST Summary Box */}
+                <div className="p-3.5 bg-slate-950/70 border border-slate-800 rounded space-y-2.5">
+                  <div className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <Calculator size={13} className="text-indigo-400" /> Tax & Amount Breakdown
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-slate-200">
+                    <div>
+                      <span className="text-slate-500 block text-[10px]">Taxable Amount</span>
+                      <span className="font-mono font-bold text-slate-100">₹{formatINR(data.taxableAmount)}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[10px]">
+                        {data.taxType === 'INTER_STATE' ? 'IGST' : 'CGST + SGST'} ({data.gstRate}%)
+                      </span>
+                      <span className="font-mono text-slate-200">₹{formatINR(data.totalGst)}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[10px]">Grand Total</span>
+                      <span className="font-mono font-bold text-indigo-400">₹{formatINR(data.grandTotal)}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[10px]">ITC Eligibility</span>
+                      <span className="font-semibold text-emerald-400">{data.itcEligibility || 'ELIGIBLE'}</span>
+                    </div>
+                  </div>
+                  {data.tdsAmount > 0 && (
+                    <div className="pt-1 border-t border-slate-800 text-[11px] flex items-center justify-between text-amber-300">
+                      <span>TDS Deducted ({data.tdsSection}): -₹{formatINR(data.tdsAmount)}</span>
+                      <span className="font-mono font-bold">Net Payable: ₹{formatINR(data.netPayable)}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Settlement Information */}
+                {isPaid && (
+                  <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded space-y-2">
+                    <div className="text-[11px] font-bold text-emerald-400 flex items-center gap-1.5">
+                      <CheckCircle2 size={13} /> Payment Settlement Proof
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                      <div>
+                        <span className="text-slate-500 block text-[10px]">Mode</span>
+                        <span className="text-slate-200 font-medium">{data.paymentMode || 'NEFT/RTGS'}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block text-[10px]">UTR / Txn Ref #</span>
+                        <span className="font-mono text-slate-200">{data.transactionId || '—'}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block text-[10px]">Settled Date</span>
+                        <span className="text-slate-200">
+                          {data.paidDate ? new Date(data.paidDate).toLocaleDateString('en-IN') : '—'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Attached File Preview link */}
+                {data.billFileBase64 && (
+                  <div className="p-3 bg-slate-950 border border-slate-800 rounded flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Paperclip size={15} className="text-indigo-400" />
+                      <span className="text-slate-200 font-medium truncate max-w-[280px]">
+                        {data.billFileName || 'Attached Invoice PDF/Scan'}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setViewFileModal(data.billFileBase64)}
+                      className="px-3 py-1 bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white rounded text-xs font-semibold flex items-center gap-1"
+                    >
+                      <Eye size={12} /> View File
+                    </button>
+                  </div>
+                )}
+
+                {/* Activity Logs */}
+                {logs.length > 0 && (
+                  <div className="p-3.5 bg-slate-950/50 border border-slate-800 rounded space-y-2">
+                    <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <History size={13} /> Activity Audit Trail
+                    </div>
+                    <div className="space-y-1.5">
+                      {logs.map((log) => (
+                        <div key={log.id} className="text-[11px] text-slate-400 flex items-start gap-2">
+                          <span className="text-[10px] text-slate-500 font-mono shrink-0">
+                            {formatActivityDate(log.timestamp)}
+                          </span>
+                          <span className="text-slate-300">{log.details}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-between pt-2 border-t border-slate-800 shrink-0">
+                <Button
+                  variant="secondary"
+                  onClick={() => setViewDetailModal(null)}
+                  className="rounded text-xs px-4"
+                >
+                  Close
+                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setViewDetailModal(null);
+                      handleOpenPaymentModal(viewDetailModal);
+                    }}
+                    className="rounded text-xs"
+                  >
+                    <CreditCard size={13} className="mr-1.5 inline text-amber-400" />
+                    {isPaid ? 'Update Payment' : 'Record Payment'}
+                  </Button>
+                  <Button
+                    variant="primary"
+                    onClick={() => {
+                      setViewDetailModal(null);
+                      handleOpenEditModal(viewDetailModal);
+                    }}
+                    className="rounded text-xs bg-indigo-600 hover:bg-indigo-500"
+                  >
+                    <Pencil size={13} className="mr-1.5 inline" /> Edit Bill
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* =========================================================================
+          MODAL: VIEW ATTACHED FILE
+          ========================================================================= */}
       {viewFileModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in" onClick={() => setViewFileModal(null)}>
-          <div className="bg-slate-900 border border-slate-800 rounded-md max-w-4xl w-full p-5 shadow-2xl space-y-3 max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in"
+          onClick={() => setViewFileModal(null)}
+        >
+          <div
+            className="bg-slate-900 border border-slate-800 rounded-md max-w-4xl w-full p-5 shadow-2xl space-y-3 max-h-[90vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between border-b border-slate-800 pb-2">
               <h3 className="text-sm font-semibold text-slate-100 flex items-center gap-1.5">
                 <Paperclip size={15} className="text-indigo-400" /> Attached Vendor Bill Document
@@ -2028,19 +2681,28 @@ export default function PurchaseBillsPage() {
         </div>
       )}
 
-      {/* Modal: Quick Record / Update Payment */}
+      {/* =========================================================================
+          MODAL: RECORD / UPDATE PAYMENT SETTLEMENT
+          ========================================================================= */}
       {recordPaymentModal && (() => {
         const isAlreadyPaid = recordPaymentModal.status === 'COMPLETED' || recordPaymentModal.status === 'DELIVERED' || Boolean(recordPaymentModal.data?.transactionId);
         const data = recordPaymentModal.data || {};
         const currentMode = data.paymentMode || 'NEFT_RTGS';
+        const currentBank = data.bankName || data.vendorBankName || '';
         const currentTxn = data.transactionId || data.paymentInfo?.transactionId || '';
-        const currentPaidDate = data.paidDate || data.paymentInfo?.paymentDate || data.billDate || new Date().toISOString().split('T')[0];
+        const currentPaidDate = data.paidDate || data.paymentInfo?.paymentDate || data.billDate || TODAY_DATE_STR;
         const currentRemarks = data.remarks || data.paymentInfo?.remarks || '';
-        const billTotal = data.grandTotal || 0;
+        const billTotal = data.netPayable || data.grandTotal || 0;
 
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in" onClick={() => setRecordPaymentModal(null)}>
-            <div className="bg-slate-900 border border-slate-800 rounded-md max-w-md w-full p-5 shadow-xl space-y-4" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in"
+            onClick={() => setRecordPaymentModal(null)}
+          >
+            <div
+              className="bg-slate-900 border border-slate-800 rounded-md max-w-md w-full p-5 shadow-xl space-y-4"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <div>
                   <div className="flex items-center gap-2">
@@ -2048,151 +2710,117 @@ export default function PurchaseBillsPage() {
                       <CreditCard size={17} className="text-indigo-400" />
                       <span>{isAlreadyPaid ? 'Vendor Payment Details' : 'Record Vendor Payment'}</span>
                     </h2>
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
-                      isAlreadyPaid ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
-                    }`}>
-                      {isAlreadyPaid ? 'PAID' : 'PENDING'}
-                    </span>
                   </div>
-                  <p className="text-xs text-slate-400 font-mono mt-0.5">
-                    Vendor Bill #{data.billNumber || recordPaymentModal.documentNumber} ({data.vendorName || 'Unspecified'})
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Bill #{data.billNumber || recordPaymentModal.documentNumber} • {data.vendorName}
                   </p>
                 </div>
-                <button onClick={() => setRecordPaymentModal(null)} className="text-slate-400 hover:text-white p-1">
+                <button
+                  type="button"
+                  onClick={() => setRecordPaymentModal(null)}
+                  className="text-slate-400 hover:text-white"
+                >
                   <X size={18} />
                 </button>
               </div>
 
-              {!isEditingPayment ? (
-                /* Read-Only Payment View - ZERO INPUT FIELDS */
-                <div className="space-y-3.5 text-xs">
-                  <div className="p-3.5 bg-slate-950 border border-slate-800 rounded space-y-3">
-                    <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-                      <span className="text-slate-400 text-[10px] uppercase font-semibold">Payment Status</span>
-                      <span className="px-2 py-0.5 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded text-[10px] font-bold uppercase flex items-center gap-1">
-                        <CheckCircle2 size={11} /> Settled / Paid
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <div>
-                        <span className="text-slate-400 block text-[10px]">Payment Mode</span>
-                        <span className="text-slate-100 font-semibold">{currentMode === 'NEFT_RTGS' ? 'Bank Transfer (NEFT/RTGS/IMPS)' : currentMode}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-400 block text-[10px]">Settled Amount</span>
-                        <span className="text-emerald-400 font-mono font-bold">₹{formatINR(billTotal)}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-400 block text-[10px]">Transaction UTR / Reference No.</span>
-                        <span className="text-emerald-400 font-mono font-semibold">{currentTxn || 'Recorded'}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-400 block text-[10px]">Settlement Date</span>
-                        <span className="text-slate-200 font-mono">{currentPaidDate}</span>
-                      </div>
-                      {currentRemarks && (
-                        <div className="col-span-2">
-                          <span className="text-slate-400 block text-[10px]">Notes / Remarks</span>
-                          <span className="text-slate-300 italic">{currentRemarks}</span>
-                        </div>
-                      )}
-                    </div>
+              <div className="p-3 bg-slate-950 rounded border border-slate-800 space-y-1">
+                <div className="text-[11px] text-slate-400">Total Payable Amount:</div>
+                <div className="text-xl font-bold font-mono text-indigo-400">₹{formatINR(billTotal)}</div>
+                {data.tdsAmount > 0 && (
+                  <div className="text-[10px] text-amber-400">After TDS of ₹{formatINR(data.tdsAmount)}</div>
+                )}
+                {data.vendorBankAccount && (
+                  <div className="text-[10px] text-slate-400 pt-1 border-t border-slate-800 mt-1 font-mono">
+                    Vendor Bank: {data.vendorBankName} • A/c: {data.vendorBankAccount} • IFSC: {data.vendorBankIfsc}
                   </div>
+                )}
+              </div>
 
-                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-800">
-                    <Button variant="secondary" type="button" onClick={() => setRecordPaymentModal(null)} className="rounded text-xs px-4 py-2">
-                      Close
-                    </Button>
-                    <Button
-                      variant="primary"
-                      type="button"
-                      onClick={() => setIsEditingPayment(true)}
-                      className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-4 py-2 shadow-sm"
-                    >
-                      <Pencil size={13} className="mr-1.5 inline" /> Edit Payment Details
-                    </Button>
-                  </div>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const form = e.target;
+                  handleQuickRecordPayment(recordPaymentModal.id, {
+                    paymentMode: form.paymentMode.value,
+                    bankName: form.bankName.value,
+                    transactionId: form.transactionId.value,
+                    paymentDate: form.paidDate.value,
+                    remarks: form.remarks.value,
+                  });
+                }}
+                className="space-y-3 text-xs"
+              >
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">Payment Mode</label>
+                  <select
+                    name="paymentMode"
+                    defaultValue={currentMode}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                  >
+                    <option value="NEFT_RTGS">Bank Transfer (NEFT / RTGS / IMPS)</option>
+                    <option value="UPI">UPI / GPay / PhonePe / QR</option>
+                    <option value="CHEQUE">Bank Cheque / DD</option>
+                    <option value="NETBANKING">Corporate Netbanking</option>
+                    <option value="CASH">Cash (Petty Cash)</option>
+                    <option value="CREDIT_CARD">Corporate Credit Card</option>
+                  </select>
                 </div>
-              ) : (
-                /* Editable Form - Active when user clicks Edit or recording new payment */
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const formEl = e.target;
-                    const paymentInfo = {
-                      paymentMode: formEl.mode.value,
-                      transactionId: formEl.txn.value,
-                      paymentDate: formEl.pdate.value,
-                      remarks: formEl.remarks.value,
-                    };
-                    handleQuickRecordPayment(recordPaymentModal.id, paymentInfo);
-                  }}
-                  className="space-y-3.5 text-xs"
-                >
-                  <div>
-                    <label className="text-[11px] font-semibold text-slate-400 block mb-1">Payment Mode</label>
-                    <select
-                      name="mode"
-                      defaultValue={currentMode}
-                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-                    >
-                      <option value="NEFT_RTGS">Bank Transfer (NEFT/RTGS/IMPS)</option>
-                      <option value="UPI">UPI / GPay / PhonePe</option>
-                      <option value="CHEQUE">Cheque</option>
-                      <option value="CASH">Cash</option>
-                    </select>
-                  </div>
 
-                  <div>
-                    <label className="text-[11px] font-semibold text-slate-400 block mb-1">Transaction UTR / Reference No. *</label>
-                    <input
-                      name="txn"
-                      placeholder="e.g. UTR12345678"
-                      defaultValue={currentTxn}
-                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
-                      required
-                    />
-                  </div>
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">Bank Name / Account</label>
+                  <input
+                    type="text"
+                    name="bankName"
+                    defaultValue={currentBank}
+                    placeholder="e.g. HDFC Bank Ltd (Current A/c)"
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
 
-                  <div>
-                    <label className="text-[11px] font-semibold text-slate-400 block mb-1">Payment Date *</label>
-                    <input
-                      type="date"
-                      name="pdate"
-                      defaultValue={currentPaidDate}
-                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
-                      required
-                    />
-                  </div>
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">UTR / Txn Ref / Cheque #</label>
+                  <input
+                    type="text"
+                    name="transactionId"
+                    defaultValue={currentTxn}
+                    placeholder="e.g. UTR12345678"
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-100 focus:outline-none focus:border-indigo-500 font-mono"
+                    required
+                  />
+                </div>
 
-                  <div>
-                    <label className="text-[11px] font-semibold text-slate-400 block mb-1">Notes / Remarks</label>
-                    <textarea
-                      name="remarks"
-                      className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-                      rows={2}
-                      placeholder="e.g. Settled full amount from HDFC current account"
-                      defaultValue={currentRemarks}
-                    />
-                  </div>
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">Payment Date</label>
+                  <input
+                    type="date"
+                    name="paidDate"
+                    defaultValue={currentPaidDate}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
+                    required
+                  />
+                </div>
 
-                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
-                    {isAlreadyPaid ? (
-                      <Button variant="secondary" type="button" onClick={() => setIsEditingPayment(false)} className="rounded text-xs">
-                        Cancel
-                      </Button>
-                    ) : (
-                      <Button variant="secondary" type="button" onClick={() => setRecordPaymentModal(null)} className="rounded text-xs">
-                        Cancel
-                      </Button>
-                    )}
-                    <Button variant="primary" type="submit" className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-sm">
-                      <Save size={13} className="mr-1 inline" />
-                      {isAlreadyPaid ? 'Save Payment Updates' : 'Mark as Paid'}
-                    </Button>
-                  </div>
-                </form>
-              )}
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-300 block mb-1">Payment Remarks</label>
+                  <input
+                    type="text"
+                    name="remarks"
+                    defaultValue={currentRemarks}
+                    placeholder="e.g. Paid via HDFC netbanking for DGD and box charges"
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+                  <Button variant="secondary" type="button" onClick={() => setRecordPaymentModal(null)} className="text-xs">
+                    Cancel
+                  </Button>
+                  <Button variant="primary" type="submit" className="text-xs bg-emerald-600 hover:bg-emerald-500">
+                    <CheckCircle2 size={13} className="mr-1.5 inline" /> Save Settlement Proof
+                  </Button>
+                </div>
+              </form>
             </div>
           </div>
         );

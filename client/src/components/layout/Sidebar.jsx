@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
+import { hasServiceAccess } from '../../utils/permissions';
 import {
   LayoutDashboard,
   Plus,
@@ -116,23 +117,12 @@ export default function Sidebar() {
     return location.pathname === itemPath && !location.search;
   };
 
-  // Service permission verification - Master Admin is strictly ADMIN only
-  const isServiceAllowed = (serviceKey, adminOnly = false) => {
-    if (adminOnly || serviceKey === 'MASTER_ADMIN') {
-      return user?.role === 'ADMIN';
-    }
-    if (!serviceKey || serviceKey === 'ANY') return true;
-    if (user?.role === 'ADMIN') return true;
-    const allowed = user?.allowedServices || [];
-    return allowed.includes(serviceKey);
-  };
-
   // Filter sections and items based on logged-in user's assigned services
   const visibleSections = NAV_SECTIONS.map((sec) => {
     if (sec.adminOnly && user?.role !== 'ADMIN') {
       return null;
     }
-    const visibleItems = sec.items.filter((item) => isServiceAllowed(item.serviceKey, item.adminOnly));
+    const visibleItems = sec.items.filter((item) => hasServiceAccess(user, item.serviceKey, item.adminOnly));
     return {
       ...sec,
       items: visibleItems,
@@ -141,6 +131,7 @@ export default function Sidebar() {
 
   return (
     <aside
+      style={{ userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none', msUserSelect: 'none' }}
       className={`
         h-screen sticky top-0 flex flex-col justify-between
         transition-all duration-200 ease-in-out z-40 select-none border-r

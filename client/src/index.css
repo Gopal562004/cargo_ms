@@ -270,5 +270,15 @@ html.light .custom-modal-scroll {
   scrollbar-color: #cbd5e1 #f1f5f9;
 }
 
-
-
+/* ========================================================
+   GLOBAL SELECTION UTILITIES & SIDEBAR NON-SELECTABLE TEXT
+   ======================================================== */
+aside,
+aside *,
+nav,
+.select-none {
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+}

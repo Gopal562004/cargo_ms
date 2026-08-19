@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Eye, Download, Plus, Trash2, Save, FileText } from 'lucide-react';
+import { ArrowLeft, Eye, Download, Plus, Trash2, Save, FileText, Lock, ShieldAlert } from 'lucide-react';
 import { useDocumentStore } from '../store/documentStore';
+import { useAuthStore } from '../store/authStore';
 import { getDocumentSchema } from '../schemas/registry';
 import { downloadDocumentPDF, previewDocumentPDF } from '../services/documentService';
+import { isDocumentTypeAllowed } from '../utils/permissions';
 import TaxInvoiceEditor from '../components/documents/TaxInvoiceEditor';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
@@ -13,6 +15,7 @@ export default function DocumentEditorPage() {
   const { type, id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuthStore();
   const { createDocument, updateDocument, fetchDocument, currentDocument } = useDocumentStore();
 
   const isEdit = !!id;
@@ -39,6 +42,31 @@ export default function DocumentEditorPage() {
       });
     }
   }, [id]);
+
+  // Check role & service authorization for this document type
+  if (documentType && !isDocumentTypeAllowed(user, documentType)) {
+    return (
+      <div className="max-w-xl mx-auto my-12 p-8 bg-slate-900/80 border border-red-500/30 rounded-xl text-center space-y-4 shadow-xl">
+        <div className="w-14 h-14 rounded-full bg-red-500/10 text-red-400 mx-auto flex items-center justify-center border border-red-500/20">
+          <ShieldAlert size={28} />
+        </div>
+        <h2 className="text-lg font-bold text-slate-100">Access Restricted</h2>
+        <p className="text-xs text-slate-300 leading-relaxed">
+          Your account (<span className="text-indigo-300 font-medium">{user?.role}</span> •{' '}
+          <span className="text-indigo-300 font-medium">{user?.department || 'General'}</span>) is not
+          permitted to create or edit <strong className="text-white">{documentType}</strong> documents.
+        </p>
+        <div className="pt-2 flex items-center justify-center gap-3">
+          <Button variant="secondary" onClick={() => navigate('/')} className="text-xs">
+            Return to Dashboard
+          </Button>
+          <Button variant="primary" onClick={() => navigate('/new')} className="text-xs">
+            Choose Permitted Document
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (documentType === 'TAX_INVOICE') {
     return (

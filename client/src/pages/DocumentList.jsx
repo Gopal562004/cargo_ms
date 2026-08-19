@@ -12,16 +12,18 @@ import {
   FileText,
 } from 'lucide-react';
 import { useDocumentStore } from '../store/documentStore';
+import { useAuthStore } from '../store/authStore';
 import { downloadDocumentPDF, previewDocumentPDF } from '../services/documentService';
+import { hasServiceAccess, isDocumentTypeAllowed } from '../utils/permissions';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 
-const CATEGORY_OPTIONS = [
-  { value: '', label: 'All Categories' },
-  { value: 'AIR_FREIGHT', label: 'Air Freight' },
-  { value: 'EDI', label: 'eAWB / Cargo-IMP' },
-  { value: 'SEA_FREIGHT', label: 'Sea Freight' },
-  { value: 'OTHER', label: 'Other' },
+const ALL_CATEGORY_OPTIONS = [
+  { value: '', label: 'All Categories', serviceKey: 'ANY' },
+  { value: 'AIR_FREIGHT', label: 'Air Freight', serviceKey: 'AIR_FREIGHT' },
+  { value: 'EDI', label: 'eAWB / Cargo-IMP', serviceKey: 'EDI_CARGO' },
+  { value: 'SEA_FREIGHT', label: 'Sea Freight', serviceKey: 'SEA_FREIGHT' },
+  { value: 'OTHER', label: 'Commercial / Other', serviceKey: ['SALES_BILLING', 'AIR_FREIGHT', 'SEA_FREIGHT'] },
 ];
 
 const STATUS_OPTIONS = [
@@ -37,10 +39,16 @@ const STATUS_OPTIONS = [
 
 export default function DocumentList() {
   const [searchParams] = useSearchParams();
+  const { user } = useAuthStore();
   const { documents, pagination, fetchDocuments, isLoading, deleteDocument } = useDocumentStore();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState(searchParams.get('category') || '');
   const [status, setStatus] = useState('');
+
+  // Filter category options based on user's permitted services
+  const categoryOptions = ALL_CATEGORY_OPTIONS.filter((opt) =>
+    hasServiceAccess(user, opt.serviceKey)
+  );
 
   useEffect(() => {
     const params = { search, page: 1 };
@@ -66,12 +74,15 @@ export default function DocumentList() {
     }
   };
 
+  // Filter document rows to only allowed types for non-admin users
+  const visibleDocuments = documents.filter((doc) => isDocumentTypeAllowed(user, doc.documentType));
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Documents</h1>
-          <p className="text-xs text-slate-400 mt-1">{pagination.total} total documents</p>
+          <p className="text-xs text-slate-400 mt-1">{visibleDocuments.length} accessible documents</p>
         </div>
         <Link to="/new">
           <Button variant="primary" className="rounded text-xs">
@@ -97,7 +108,7 @@ export default function DocumentList() {
           value={category} 
           onChange={(e) => setCategory(e.target.value)}
         >
-          {CATEGORY_OPTIONS.map((opt) => (
+          {categoryOptions.map((opt) => (
             <option key={opt.value} value={opt.value} className="bg-slate-900">{opt.label}</option>
           ))}
         </select>
@@ -118,9 +129,9 @@ export default function DocumentList() {
           <div className="p-4 space-y-2">
             {[...Array(8)].map((_, i) => <div key={i} className="h-10 bg-slate-800/50 rounded animate-pulse" />)}
           </div>
-        ) : documents.length === 0 ? (
+        ) : visibleDocuments.length === 0 ? (
           <div className="p-12 text-center text-sm text-slate-400">
-            No documents found
+            No documents found matching your access permissions
           </div>
         ) : (
           <table className="w-full text-left text-xs border-collapse">
@@ -136,7 +147,7 @@ export default function DocumentList() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
-              {documents.map((doc) => (
+              {visibleDocuments.map((doc) => (
                 <tr key={doc.id} className="hover:bg-slate-800/40 transition-colors">
                   <td className="py-3 px-4 font-mono font-medium">
                     <Link to={`/documents/${doc.id}`} className="text-indigo-400 hover:text-indigo-300">
