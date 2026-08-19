@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Plane, Mail, Lock, AlertCircle } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useAuthStore } from '../store/authStore';
@@ -79,10 +79,6 @@ export default function Login() {
             Sign In
           </Button>
         </form>
-
-        <div className="mt-8 pt-6 border-t border-slate-800/80 text-center text-xs text-slate-400">
-          <p>Don't have an account? <Link to="/register" className="text-indigo-400 hover:text-indigo-300 font-medium">Create one</Link></p>
-        </div>
       </div>
     </div>
   );
