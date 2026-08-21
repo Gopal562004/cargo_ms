@@ -43,8 +43,8 @@ export function ToastProvider({ children }) {
       {children}
       <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none">
         {toasts.map((t) => (
-          <div 
-            key={t.id} 
+          <div
+            key={t.id}
             className={`pointer-events-auto flex items-start gap-3 p-4 border rounded-xl shadow-xl backdrop-blur-md animate-fade-in-up ${TYPE_STYLES[t.type] || TYPE_STYLES.info}`}
           >
             <div className="flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold shrink-0 bg-white/10">
@@ -57,8 +57,8 @@ export function ToastProvider({ children }) {
               {t.title && <p className="text-sm font-semibold text-slate-100">{t.title}</p>}
               {t.message && <p className="text-xs text-slate-300 mt-0.5">{t.message}</p>}
             </div>
-            <button 
-              className="text-slate-400 hover:text-white text-xs p-1" 
+            <button
+              className="text-slate-400 hover:text-white text-xs p-1"
               onClick={() => removeToast(t.id)}
             >
               ✕

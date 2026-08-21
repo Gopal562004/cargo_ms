@@ -37,11 +37,10 @@ export default function Header() {
 
   return (
     <header
-      className={`h-14 border-b px-6 flex items-center justify-between sticky top-0 z-30 transition-colors ${
-        theme === 'light'
+      className={`h-14 border-b px-6 flex items-center justify-between sticky top-0 z-30 transition-colors ${theme === 'light'
           ? 'bg-white/95 border-slate-200 backdrop-blur-md text-slate-800'
           : 'bg-slate-900/60 border-slate-800/80 backdrop-blur-md text-slate-200'
-      }`}
+        }`}
     >
       <div className="flex items-center">
         <nav className="flex items-center gap-2 text-xs">
@@ -57,8 +56,8 @@ export default function Header() {
                   i === breadcrumbs.length - 1
                     ? `font-bold ${theme === 'light' ? 'text-slate-900' : 'text-slate-100'}`
                     : theme === 'light'
-                    ? 'text-slate-500'
-                    : 'text-slate-400'
+                      ? 'text-slate-500'
+                      : 'text-slate-400'
                 }
               >
                 {crumb}
@@ -72,26 +71,23 @@ export default function Header() {
         <div className="relative flex items-center">
           <Search
             size={14}
-            className={`absolute left-3 pointer-events-none ${
-              theme === 'light' ? 'text-slate-400' : 'text-slate-500'
-            }`}
+            className={`absolute left-3 pointer-events-none ${theme === 'light' ? 'text-slate-400' : 'text-slate-500'
+              }`}
           />
           <input
             type="text"
-            className={`pl-8 pr-12 py-1.5 rounded text-xs transition-colors w-64 focus:outline-none ${
-              theme === 'light'
+            className={`pl-8 pr-12 py-1.5 rounded text-xs transition-colors w-64 focus:outline-none ${theme === 'light'
                 ? 'bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:border-indigo-600'
                 : 'bg-slate-950 border border-slate-800 text-slate-200 placeholder-slate-500 focus:border-indigo-500'
-            }`}
+              }`}
             placeholder="Search documents..."
             aria-label="Search"
           />
           <kbd
-            className={`absolute right-2 px-1.5 py-0.5 text-[10px] rounded shadow-sm select-none border ${
-              theme === 'light'
+            className={`absolute right-2 px-1.5 py-0.5 text-[10px] rounded shadow-sm select-none border ${theme === 'light'
                 ? 'text-slate-500 bg-white border-slate-200'
                 : 'text-slate-400 bg-slate-900 border-slate-700'
-            }`}
+              }`}
           >
             ⌘K
           </kbd>
@@ -100,11 +96,10 @@ export default function Header() {
         {/* Theme Toggle Button */}
         <button
           onClick={toggleTheme}
-          className={`p-2 rounded border transition-colors text-xs flex items-center gap-1.5 ${
-            theme === 'light'
+          className={`p-2 rounded border transition-colors text-xs flex items-center gap-1.5 ${theme === 'light'
               ? 'text-slate-700 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border-slate-200'
               : 'text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 border-slate-800'
-          }`}
+            }`}
           title={`Switch to ${theme === 'dark' ? 'Light Mode' : 'Dark Mode'}`}
         >
           {theme === 'dark' ? (

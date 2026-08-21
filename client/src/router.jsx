@@ -3,6 +3,8 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import { hasServiceAccess } from './utils/permissions';
 import AppLayout from './components/layout/AppLayout';
+import LandingPage from './pages/LandingPage';
+import ProductTourPage from './pages/ProductTourPage';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -39,7 +41,7 @@ function ProtectedRoute({ children }) {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/landing" replace />;
   }
 
   return children;
@@ -74,7 +76,21 @@ function PublicRoute({ children }) {
 }
 
 export const router = createBrowserRouter([
-  // Public routes
+  // Public Marketing Landing Page & Product Tour
+  {
+    path: '/landing',
+    element: <LandingPage />,
+  },
+  {
+    path: '/product-tour',
+    element: <ProductTourPage />,
+  },
+  {
+    path: '/how-it-works',
+    element: <ProductTourPage />,
+  },
+
+  // Public Auth routes
   {
     path: '/login',
     element: (

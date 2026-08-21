@@ -1,0 +1,814 @@
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import {
+  Package,
+  Plane,
+  Ship,
+  Zap,
+  Receipt,
+  ShieldCheck,
+  ArrowRight,
+  Sun,
+  Moon,
+  CheckCircle2,
+  TrendingUp,
+  FileText,
+  Terminal,
+  Printer,
+  Users,
+  Check,
+  ShoppingBag,
+  Bookmark,
+  Calculator,
+  ArrowUpRight,
+  ChevronRight,
+  Layers,
+  Sparkles,
+  HelpCircle,
+  Trash2,
+  Edit3,
+  Copy,
+  Download,
+  Eye,
+  FileSpreadsheet,
+  Clock,
+  Search,
+  Filter,
+} from 'lucide-react';
+import { useThemeStore } from '../store/themeStore';
+import { useAuthStore } from '../store/authStore';
+
+const MODULES = [
+  { id: 'AIR_FREIGHT', name: 'Air Freight (MAWB / HAWB)', price: 1499, icon: Plane },
+  { id: 'SALES_BILLING', name: 'GST Tax Invoicing', price: 999, icon: Receipt },
+  { id: 'EDI_CARGO', name: 'eAWB / Cargo-IMP EDI', price: 1299, icon: Zap },
+  { id: 'PURCHASE_BILLS', name: 'Carrier Expense Ledger', price: 799, icon: ShoppingBag },
+  { id: 'SEA_FREIGHT', name: 'Ocean Bill of Lading', price: 899, icon: Ship },
+  { id: 'DGD_COMPLIANCE', name: 'Dangerous Goods (DGD)', price: 1199, icon: ShieldCheck },
+  { id: 'BILLING_TEMPLATES', name: 'Party & Tax Profiles', price: 499, icon: Bookmark },
+  { id: 'MASTER_ADMIN', name: 'Multi-User Roles', price: 699, icon: Users },
+];
+
+const FLIGHTS = [
+  { awb: '098-4820-1920', route: 'DEL → LHR', flight: 'AI-161', status: 'IN FLIGHT', eta: '18:45 UTC', wt: '540 kg' },
+  { awb: '125-9921-0041', route: 'BOM → FRA', flight: 'LH-757', status: 'CLEARED', eta: '21:10 UTC', wt: '1,280 kg' },
+  { awb: '176-3391-4902', route: 'BLR → DXB', flight: 'EK-565', status: 'EDI ACK', eta: '14:20 UTC', wt: '2,450 kg' },
+];
+
+const DOC_TEMPLATES = [
+  {
+    id: 'MAWB',
+    title: 'IATA Master Air Waybill (MAWB)',
+    code: 'IATA RES 600B',
+    badge: 'AIR FREIGHT',
+    color: 'border-indigo-500 text-indigo-400 bg-indigo-500/10',
+    icon: Plane,
+    desc: 'Standardized 8-copy color layout with automated Modulus-7 validation, volumetric ratio (1:6000), and SITA airline routing.',
+    fields: [
+      { label: 'AWB Prefix & Number', val: '098 - 4820 1920' },
+      { label: 'Airport of Departure', val: 'DEL (Indira Gandhi Intl, New Delhi)' },
+      { label: 'Airport of Destination', val: 'LHR (London Heathrow, UK)' },
+      { label: 'Carrier Flight / Date', val: 'AI 161 / 24-AUG-2026' },
+      { label: 'Gross / Chargeable Wt', val: '540.0 KG / 580.0 KG (Vol: 3.48 CBM)' },
+      { label: 'Rate / Class', val: 'USD 4.85 / kg (Min Charge Applied)' },
+    ],
+    status: 'ISSUED & READY',
+  },
+  {
+    id: 'TAX_INVOICE',
+    title: 'GST Freight Tax Invoice',
+    code: 'SAC 996511',
+    badge: 'BILLING & SETTLEMENT',
+    color: 'border-emerald-500 text-emerald-400 bg-emerald-500/10',
+    icon: Receipt,
+    desc: 'Automated place-of-supply GST invoice with split CGST/SGST/IGST, freight charges, FSC surcharge, and UPI instant payment QR.',
+    fields: [
+      { label: 'Invoice No & Date', val: 'INV-2026-0881 / 21-AUG-2026' },
+      { label: 'Billed To Client', val: 'Global Pharma Logistics Pvt Ltd' },
+      { label: 'Client GSTIN', val: '07AAAAA0000A1Z5 (Delhi)' },
+      { label: 'Linked Waybill', val: 'AWB 098-4820 1920 (DEL → LHR)' },
+      { label: 'Freight + Surcharges', val: '₹1,40,500.00 (Freight + FSC + X-Ray)' },
+      { label: 'GST Applied', val: '₹25,290.00 (18% IGST Inter-state)' },
+    ],
+    status: 'PAID IN FULL',
+  },
+  {
+    id: 'DGD',
+    title: 'Dangerous Goods Declaration',
+    code: 'IATA DGR SPEC',
+    badge: 'HAZMAT COMPLIANCE',
+    color: 'border-rose-500 text-rose-400 bg-rose-500/10',
+    icon: ShieldCheck,
+    desc: 'UN 3,500+ hazardous cargo classification with mandatory red-striped hazard borders, emergency response contact, and CAO packaging.',
+    fields: [
+      { label: 'UN Number & PSN', val: 'UN 1845 / CARBON DIOXIDE, SOLID (DRY ICE)' },
+      { label: 'Hazard Class / Div', val: 'Class 9 (Miscellaneous Dangerous Goods)' },
+      { label: 'Packing Group & Inst.', val: 'III / Packing Instruction 954' },
+      { label: 'Quantity & Overpack', val: '12 Packages x 10.0 KG Dry Ice (Net: 120 KG)' },
+      { label: 'Aircraft Limitation', val: 'PASSENGER AND CARGO AIRCRAFT' },
+      { label: '24hr Emergency Desk', val: '+91-11-2849-0000 (CHEMTREC CERT)' },
+    ],
+    status: 'COMPLIANT & VERIFIED',
+  },
+  {
+    id: 'BOL',
+    title: 'Ocean Multimodal Bill of Lading',
+    code: 'FMC / FIATA',
+    badge: 'OCEAN FREIGHT',
+    color: 'border-cyan-500 text-cyan-400 bg-cyan-500/10',
+    icon: Ship,
+    desc: 'Full container load (FCL) and groupage (LCL) bills with container ISO codes, high-security bottle seal numbers, and marine port routing.',
+    fields: [
+      { label: 'B/L Number', val: 'BL-SEA-2026-4401' },
+      { label: 'Port of Loading', val: 'JNPT (Nhava Sheva, Mumbai)' },
+      { label: 'Port of Discharge', val: 'Jebel Ali Port (Dubai, UAE)' },
+      { label: 'Vessel / Voyage', val: 'CMA CGM TITAN / 082W' },
+      { label: 'Container & Seal', val: 'MSKU 928401-2 (40HC) / Seal: IN-99201' },
+      { label: 'Freight Terms', val: 'FREIGHT PREPAID IN USD' },
+    ],
+    status: 'ON BOARD VESSEL',
+  },
+];
+
+export default function LandingPage() {
+  const { theme, toggleTheme } = useThemeStore();
+  const { isAuthenticated } = useAuthStore();
+  const [liveUtc, setLiveUtc] = useState('');
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [flightIdx, setFlightIdx] = useState(0);
+  const [activeTemplate, setActiveTemplate] = useState(DOC_TEMPLATES[0]);
+
+  // Modular Pricing State
+  const [selectedMods, setSelectedMods] = useState(['AIR_FREIGHT', 'SALES_BILLING']);
+  const [volume, setVolume] = useState(150);
+  const [seats, setSeats] = useState(2);
+  const [cycle, setCycle] = useState('monthly');
+
+  useEffect(() => {
+    const updateTime = () => setLiveUtc(new Date().toUTCString().replace('GMT', 'UTC'));
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const t = setInterval(() => setFlightIdx((prev) => (prev + 1) % FLIGHTS.length), 4000);
+    return () => clearInterval(t);
+  }, []);
+
+  const handleMouseMove = (e) => {
+    setMousePos({
+      x: (e.clientX / window.innerWidth - 0.5) * 12,
+      y: (e.clientY / window.innerHeight - 0.5) * 12,
+    });
+  };
+
+  const toggleMod = (id) => {
+    if (selectedMods.includes(id)) {
+      if (selectedMods.length > 1) setSelectedMods(selectedMods.filter((m) => m !== id));
+    } else {
+      setSelectedMods([...selectedMods, id]);
+    }
+  };
+
+  const calcPrice = () => {
+    const base = selectedMods.reduce((sum, id) => {
+      const m = MODULES.find((mod) => mod.id === id);
+      return sum + (m ? m.price : 0);
+    }, 0);
+    const volCost = Math.round((volume / 100) * 20);
+    const seatCost = (seats - 1) * 350;
+    const raw = base + volCost + seatCost;
+    const monthly = cycle === 'annual' ? Math.round(raw * 0.8) : raw;
+    return { monthly, annual: monthly * 12, savings: Math.round(raw * 12 - monthly * 12) };
+  };
+
+  const quote = calcPrice();
+  const currentFlight = FLIGHTS[flightIdx];
+
+  return (
+    <div
+      onMouseMove={handleMouseMove}
+      className={`min-h-screen relative font-sans antialiased selection:bg-indigo-600 selection:text-white transition-colors duration-150 ${
+        theme === 'light' ? 'bg-slate-100 text-slate-900' : 'bg-[#060a12] text-slate-100'
+      }`}
+    >
+      {/* Global Atmospheric Air Cargo Background with Parallax Depth */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <img
+          src="/images/cargo_freighter.jpg"
+          alt="Cargo Freighter Background"
+          className="w-full h-full object-cover object-center scale-105 filter blur-[3px] opacity-40 transition-transform duration-1000"
+        />
+        {/* Theme-Adaptive Contrast Overlay */}
+        <div
+          className={`absolute inset-0 transition-colors ${
+            theme === 'light'
+              ? 'bg-gradient-to-b from-slate-100/95 via-slate-100/90 to-slate-200/98'
+              : 'bg-gradient-to-b from-[#060a12]/95 via-[#060a12]/90 to-[#090d16]/98'
+          }`}
+        />
+        {/* Subtle Aviation Radar Grid */}
+        <div
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: `linear-gradient(to right, #6366f1 1px, transparent 1px), linear-gradient(to bottom, #6366f1 1px, transparent 1px)`,
+            backgroundSize: '40px 40px',
+          }}
+        />
+      </div>
+
+      {/* Top Status Bar (Z-10) */}
+      <div
+        className={`border-b text-[11px] font-mono py-2 px-6 flex items-center justify-between z-50 relative backdrop-blur-md transition-colors ${
+          theme === 'light' ? 'bg-white/80 border-slate-200 text-slate-600' : 'bg-[#070b13]/85 border-slate-800 text-slate-400'
+        }`}
+      >
+        <div className="flex items-center gap-3">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="font-semibold text-emerald-500 tracking-wider">IATA SPEC 600B READY</span>
+          <span className="hidden sm:inline text-slate-400">·</span>
+          <span className="hidden sm:inline font-mono">{liveUtc || 'UTC TIME'}</span>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <button
+            onClick={toggleTheme}
+            className={`px-2.5 py-1 rounded border text-[10px] font-mono font-bold flex items-center gap-1.5 cursor-pointer transition-colors backdrop-blur-md ${
+              theme === 'light'
+                ? 'bg-white/90 border-slate-200 text-slate-800 hover:bg-slate-100'
+                : 'bg-slate-900/90 border-slate-800 text-slate-200 hover:bg-slate-800'
+            }`}
+          >
+            {theme === 'dark' ? <Sun size={12} className="text-amber-400" /> : <Moon size={12} className="text-indigo-600" />}
+            <span>{theme === 'dark' ? 'LIGHT' : 'DARK'}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Main Nav Header (Z-40) */}
+      <header
+        className={`border-b sticky top-0 z-40 backdrop-blur-xl transition-colors ${
+          theme === 'light' ? 'bg-white/85 border-slate-200 shadow-xs' : 'bg-[#090d16]/85 border-slate-800'
+        }`}
+      >
+        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded bg-indigo-600 text-white flex items-center justify-center font-bold shadow-sm">
+              <Package size={18} />
+            </div>
+            <div className="flex flex-col">
+              <span className="font-semibold text-sm tracking-wider uppercase leading-tight">
+                Cargo<span className="text-indigo-600">Hub</span>
+              </span>
+              <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">
+                Logistics OS
+              </span>
+            </div>
+          </Link>
+
+          <nav className="hidden md:flex items-center gap-8 text-xs font-mono">
+            <a href="#overview" className="hover:text-indigo-500 transition-colors">OPERATIONS</a>
+            <a href="#templates" className="text-indigo-500 font-bold hover:text-indigo-400 transition-colors flex items-center gap-1">
+              TEMPLATES & DOCS →
+            </a>
+            <Link to="/product-tour" className="hover:text-indigo-500 transition-colors">HOW IT WORKS</Link>
+            <a href="#calculator" className="hover:text-indigo-500 transition-colors">PRICING</a>
+          </nav>
+
+          <div className="flex items-center gap-3 font-mono text-xs">
+            {isAuthenticated ? (
+              <Link
+                to="/"
+                className="px-4 py-2 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-colors shadow-md shadow-indigo-600/20"
+              >
+                OPEN APP →
+              </Link>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className={`px-3.5 py-2 rounded border backdrop-blur-md transition-colors ${
+                    theme === 'light'
+                      ? 'bg-white/80 border-slate-200 hover:bg-white'
+                      : 'bg-slate-900/80 border-slate-800 hover:bg-slate-900'
+                  }`}
+                >
+                  SIGN IN
+                </Link>
+                <Link
+                  to="/register"
+                  className="px-4 py-2 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-colors shadow-md shadow-indigo-600/20"
+                >
+                  REQUEST ACCESS
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Spacious Asymmetric Hero Section (Z-10) */}
+      <section id="overview" className="relative z-10 border-b border-slate-800/60 py-16 lg:py-24">
+        <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+          {/* Left: Concise, High-Impact Text (6 cols) */}
+          <div className="lg:col-span-6 space-y-7">
+            <div className="space-y-4">
+              <span className="text-[11px] font-mono uppercase tracking-widest text-indigo-500 font-bold">
+                AVIATION FREIGHT PLATFORM
+              </span>
+
+              <h1
+                className={`text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.08] ${
+                  theme === 'light' ? 'text-slate-900' : 'text-white'
+                }`}
+              >
+                Create, manage & track all freight docs.
+              </h1>
+
+              <p className="text-sm sm:text-base text-slate-400 font-normal leading-relaxed max-w-lg">
+                Effortlessly create, edit, duplicate, print, and track IATA Air Waybills, GST Invoices, and Dangerous Goods declarations on a single console.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 pt-1">
+              <Link
+                to="/register"
+                className="px-6 py-3 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-bold flex items-center gap-2 transition-colors shadow-lg shadow-indigo-600/25"
+              >
+                REQUEST DISPATCH ACCESS <ArrowRight size={14} />
+              </Link>
+              <a
+                href="#templates"
+                className={`px-5 py-3 rounded border font-mono text-xs font-bold backdrop-blur-md transition-colors flex items-center gap-2 ${
+                  theme === 'light'
+                    ? 'bg-white/90 border-slate-300 hover:bg-white text-slate-800'
+                    : 'bg-slate-900/80 border-slate-800 hover:bg-slate-900 text-slate-200'
+                }`}
+              >
+                EXPLORE TEMPLATES ↓
+              </a>
+            </div>
+
+            {/* Micro spec list */}
+            <div className="pt-2 flex items-center gap-6 text-xs font-mono text-slate-400">
+              <span className="flex items-center gap-1.5"><Check size={14} className="text-emerald-500" /> Instant Create</span>
+              <span className="flex items-center gap-1.5"><Check size={14} className="text-emerald-500" /> Live Edit & PDF</span>
+              <span className="flex items-center gap-1.5"><Check size={14} className="text-emerald-500" /> Track & Delete</span>
+            </div>
+          </div>
+
+          {/* Right: Promotional Image & Live Radar Card (6 cols) */}
+          <div
+            style={{
+              transform: `translate(${mousePos.x * 0.3}px, ${mousePos.y * 0.3}px)`,
+            }}
+            className="lg:col-span-6 space-y-4"
+          >
+            {/* Visual Freighter Image Container */}
+            <div className="relative rounded overflow-hidden border border-slate-800 shadow-2xl group">
+              <img
+                src="/images/cargo_freighter.jpg"
+                alt="Air Cargo Freighter on Tarmac"
+                className="w-full h-56 sm:h-64 object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#090d16] via-[#090d16]/30 to-transparent" />
+
+              {/* Floating Overlay Badge on Image */}
+              <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-xs font-mono">
+                <div className="px-2.5 py-1 rounded bg-black/75 backdrop-blur-md border border-white/10 text-white flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>DOCUMENT LIFECYCLE ENGINE: ACTIVE</span>
+                </div>
+                <span className="px-2 py-1 rounded bg-black/75 backdrop-blur-md border border-white/10 text-indigo-400 font-bold hidden sm:inline">
+                  {currentFlight.flight}
+                </span>
+              </div>
+            </div>
+
+            {/* Live Corridor Widget */}
+            <div
+              className={`p-4 rounded border backdrop-blur-xl space-y-3 font-mono text-xs ${
+                theme === 'light' ? 'bg-white/90 border-slate-200 shadow-xs' : 'bg-[#0c1220]/90 border-slate-800'
+              }`}
+            >
+              <div className="flex items-center justify-between text-slate-400 text-[11px]">
+                <span>ACTIVE FLIGHT CORRIDOR</span>
+                <span className="text-indigo-400 font-bold">{currentFlight.awb}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs font-bold">
+                <span>{currentFlight.route.split('→')[0]}</span>
+                <div className="flex-1 mx-3 flex items-center justify-center relative">
+                  <div className="h-px w-full bg-slate-800" />
+                  <Plane size={14} className="text-indigo-400 absolute" />
+                </div>
+                <span>{currentFlight.route.split('→')[1]}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 🌟 Interactive Document Lifecycle & Templates Showcase Section (Z-10) */}
+      <section id="templates" className="relative z-10 py-20 border-b border-slate-800/60">
+        <div className="max-w-6xl mx-auto px-6 space-y-12">
+          {/* Header */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div className="space-y-2">
+              <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-indigo-500">
+                DOCUMENT TEMPLATES & LIFECYCLE
+              </span>
+              <h2
+                className={`text-3xl sm:text-4xl font-extrabold tracking-tight ${
+                  theme === 'light' ? 'text-slate-900' : 'text-white'
+                }`}
+              >
+                Everything you create, edit, & track.
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-400 max-w-xl leading-relaxed">
+                Choose a document template below to inspect authentic layouts, auto-calculated fields, multi-copy PDF printing, and full management controls.
+              </p>
+            </div>
+
+            {/* 4 Lifecycle Action Badges */}
+            <div className="flex flex-wrap gap-2 text-[11px] font-mono">
+              <span className="px-3 py-1 rounded border border-indigo-500/30 bg-indigo-500/10 text-indigo-400 flex items-center gap-1.5">
+                <Sparkles size={12} /> 1-Click Create
+              </span>
+              <span className="px-3 py-1 rounded border border-cyan-500/30 bg-cyan-500/10 text-cyan-400 flex items-center gap-1.5">
+                <Edit3 size={12} /> Live Edit
+              </span>
+              <span className="px-3 py-1 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 flex items-center gap-1.5">
+                <Printer size={12} /> Laser / Thermal PDF
+              </span>
+              <span className="px-3 py-1 rounded border border-rose-500/30 bg-rose-500/10 text-rose-400 flex items-center gap-1.5">
+                <Trash2 size={12} /> Delete & Audit
+              </span>
+            </div>
+          </div>
+
+          {/* Template Tabs Selector */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono text-xs">
+            {DOC_TEMPLATES.map((tmpl) => {
+              const active = activeTemplate.id === tmpl.id;
+              const Icon = tmpl.icon;
+
+              return (
+                <button
+                  key={tmpl.id}
+                  onClick={() => setActiveTemplate(tmpl)}
+                  className={`p-4 rounded border text-left transition-all cursor-pointer flex flex-col justify-between gap-3 select-none ${
+                    active
+                      ? theme === 'light'
+                        ? 'bg-white border-indigo-600 text-indigo-600 shadow-md ring-1 ring-indigo-500/30'
+                        : 'bg-[#0f172a] border-indigo-500 text-indigo-400 shadow-xl ring-1 ring-indigo-500/30'
+                      : theme === 'light'
+                      ? 'bg-white/70 border-slate-200 text-slate-600 hover:bg-white'
+                      : 'bg-slate-900/50 border-slate-800 text-slate-400 hover:bg-slate-900/80'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <Icon size={20} className={active ? 'text-indigo-400' : 'text-slate-400'} />
+                    <span className="text-[10px] uppercase font-bold text-slate-400">{tmpl.code}</span>
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-xs leading-tight text-slate-200">{tmpl.title}</h3>
+                    <span className="text-[10px] text-slate-400 mt-1 block">{tmpl.badge}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Live Template Visual Preview Card */}
+          <div
+            className={`p-6 sm:p-8 rounded border backdrop-blur-xl transition-all space-y-6 ${
+              theme === 'light'
+                ? 'bg-white/95 border-slate-300 shadow-xl'
+                : 'bg-[#0a0f1d]/95 border-slate-800 shadow-2xl'
+            }`}
+          >
+            {/* Template Header & Actions Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800/40">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className={`px-2.5 py-0.5 rounded text-[10px] font-mono font-bold border ${activeTemplate.color}`}>
+                    {activeTemplate.badge}
+                  </span>
+                  <span className="text-xs font-mono text-slate-400">SPECIFICATION: {activeTemplate.code}</span>
+                </div>
+                <h3 className="text-2xl font-bold tracking-tight text-slate-100 mt-1">{activeTemplate.title}</h3>
+                <p className="text-xs sm:text-sm text-slate-400 max-w-xl">{activeTemplate.desc}</p>
+              </div>
+
+              {/* Action Toolbar */}
+              <div className="flex items-center gap-2 self-start sm:self-auto font-mono text-xs">
+                <Link
+                  to="/register"
+                  className="px-4 py-2 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-colors flex items-center gap-1.5 shadow-md shadow-indigo-600/20"
+                >
+                  <Sparkles size={13} /> CREATE THIS DOC →
+                </Link>
+              </div>
+            </div>
+
+            {/* Document Layout Sheet Preview */}
+            <div className="p-5 sm:p-6 rounded bg-slate-950/90 border border-slate-800 space-y-5 font-mono">
+              <div className="flex items-center justify-between text-xs border-b border-slate-800/80 pb-3">
+                <div className="flex items-center gap-2">
+                  <FileText size={15} className="text-indigo-400" />
+                  <span className="font-bold text-slate-200">AUTHENTIC DOCUMENT METRICS & COORDINATES</span>
+                </div>
+                <span className="px-2 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
+                  ● {activeTemplate.status}
+                </span>
+              </div>
+
+              {/* Data Fields Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+                {activeTemplate.fields.map((f, i) => (
+                  <div key={i} className="p-3 rounded bg-slate-900/70 border border-slate-800/80 space-y-1">
+                    <span className="text-[10px] text-slate-400 block uppercase">{f.label}</span>
+                    <strong className="text-slate-200 text-xs leading-tight block">{f.val}</strong>
+                  </div>
+                ))}
+              </div>
+
+              {/* Management Control Ribbon */}
+              <div className="pt-3 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-[11px] text-slate-400">
+                <div className="flex items-center gap-4">
+                  <span className="flex items-center gap-1 text-emerald-400"><Check size={13} /> Auto-Saved Revision</span>
+                  <span className="flex items-center gap-1 text-indigo-400"><Copy size={13} /> 1-Click Duplicate</span>
+                  <span className="flex items-center gap-1 text-amber-400"><Clock size={13} /> Real-Time Audit Log</span>
+                </div>
+                <span className="text-slate-400 font-mono">IATA 600B & GST 9965 COMPLIANT</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Promotional Wide Distribution Hub Banner Section (Z-10) */}
+      <section id="hub-view" className="relative z-10 py-16 border-b border-slate-800/60">
+        <div className="max-w-6xl mx-auto px-6 space-y-8">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div className="space-y-1">
+              <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-indigo-500">
+                GLOBAL LOGISTICS NETWORK
+              </span>
+              <h2
+                className={`text-2xl sm:text-3xl font-extrabold tracking-tight ${
+                  theme === 'light' ? 'text-slate-900' : 'text-white'
+                }`}
+              >
+                Engineered for High-Throughput Cargo Terminals
+              </h2>
+            </div>
+            <Link
+              to="/product-tour"
+              className="text-xs sm:text-sm font-mono text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-1"
+            >
+              EXPLORE ALL WORKFLOWS →
+            </Link>
+          </div>
+
+          {/* Panoramic Image Showcase */}
+          <div className="relative rounded overflow-hidden border border-slate-800 shadow-2xl">
+            <img
+              src="/images/cargo_hub.jpg"
+              alt="Automated Air Cargo Distribution Hub"
+              className="w-full h-64 sm:h-80 lg:h-96 object-cover object-center"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/45 to-transparent flex items-center p-8 sm:p-12">
+              <div className="max-w-md space-y-3 text-white">
+                <span className="px-2.5 py-1 rounded bg-indigo-600 text-[10px] font-mono font-bold uppercase">
+                  Automated Warehouse Sync
+                </span>
+                <h3 className="text-xl sm:text-2xl font-bold tracking-tight">
+                  Seamless pallet manifests & customs clearance.
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-300 font-normal leading-relaxed">
+                  Real-time synchronization between forwarders, ground handlers, and airline freight desks.
+                </p>
+                <div className="pt-2">
+                  <Link
+                    to="/product-tour"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded bg-white text-slate-900 font-mono text-xs font-bold hover:bg-slate-100 transition-colors"
+                  >
+                    SEE STEP-BY-STEP TOUR <ArrowRight size={13} />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Spacious Modular Pricing Calculator (Z-10) */}
+      <section id="calculator" className="relative z-10 py-20 lg:py-24 border-b border-slate-800/60">
+        <div className="max-w-6xl mx-auto px-6 space-y-10">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-indigo-500">
+                  MODULAR PRICING
+                </span>
+                <Link
+                  to="/product-tour"
+                  className="text-[11px] font-mono font-bold text-indigo-400 hover:underline flex items-center gap-1"
+                >
+                  (What does each module do? Click to inspect →)
+                </Link>
+              </div>
+              <h2
+                className={`text-3xl sm:text-4xl font-extrabold tracking-tight ${
+                  theme === 'light' ? 'text-slate-900' : 'text-white'
+                }`}
+              >
+                Choose only what you need.
+              </h2>
+            </div>
+
+            <div className="flex items-center gap-2 p-1 rounded border font-mono text-xs backdrop-blur-md">
+              <button
+                onClick={() => setCycle('monthly')}
+                className={`px-3 py-1.5 rounded transition-colors cursor-pointer ${
+                  cycle === 'monthly' ? 'bg-indigo-600 text-white font-bold' : 'text-slate-400'
+                }`}
+              >
+                Monthly
+              </button>
+              <button
+                onClick={() => setCycle('annual')}
+                className={`px-3 py-1.5 rounded transition-colors cursor-pointer flex items-center gap-1 ${
+                  cycle === 'annual' ? 'bg-indigo-600 text-white font-bold' : 'text-slate-400'
+                }`}
+              >
+                Annual <span className="text-[10px] text-emerald-400">-20%</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+            {/* Module Picker (7 cols) */}
+            <div className="lg:col-span-7 space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {MODULES.map((mod) => {
+                  const active = selectedMods.includes(mod.id);
+                  const Icon = mod.icon;
+
+                  return (
+                    <div
+                      key={mod.id}
+                      onClick={() => toggleMod(mod.id)}
+                      className={`p-4 rounded border backdrop-blur-md transition-all cursor-pointer select-none flex items-center justify-between ${
+                        active
+                          ? theme === 'light'
+                            ? 'bg-white/95 border-indigo-600 text-slate-900 shadow-xs'
+                            : 'bg-[#0f172a]/95 border-indigo-500 text-white shadow-xs'
+                          : theme === 'light'
+                          ? 'bg-white/70 border-slate-200 text-slate-600 hover:bg-white/90'
+                          : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:bg-slate-900/80'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Icon size={18} className={active ? 'text-indigo-500' : 'text-slate-400'} />
+                        <div>
+                          <p className="text-xs font-bold">{mod.name}</p>
+                          <span className="text-[10px] font-mono text-slate-400">+₹{mod.price}/mo</span>
+                        </div>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={active}
+                        onChange={() => {}}
+                        className="accent-indigo-600 cursor-pointer"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Sliders */}
+              <div
+                className={`p-6 rounded border backdrop-blur-md space-y-5 ${
+                  theme === 'light' ? 'bg-white/80 border-slate-200' : 'bg-slate-900/60 border-slate-800'
+                }`}
+              >
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-mono">
+                    <span className="text-slate-400">Monthly Volume:</span>
+                    <span className="font-bold text-indigo-400">{volume} Waybills</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="50"
+                    max="2000"
+                    step="50"
+                    value={volume}
+                    onChange={(e) => setVolume(Number(e.target.value))}
+                    className="w-full h-1.5 bg-slate-800 rounded appearance-none cursor-pointer accent-indigo-600"
+                  />
+                </div>
+
+                <div className="space-y-2 pt-3 border-t border-slate-800/40">
+                  <div className="flex justify-between text-xs font-mono">
+                    <span className="text-slate-400">Operator Seats:</span>
+                    <span className="font-bold text-cyan-400">{seats} Operators</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="1"
+                    max="10"
+                    step="1"
+                    value={seats}
+                    onChange={(e) => setSeats(Number(e.target.value))}
+                    className="w-full h-1.5 bg-slate-800 rounded appearance-none cursor-pointer accent-cyan-500"
+                  />
+                </div>
+              </div>
+
+              {/* Callout Link to Product Tour */}
+              <div className="p-4 rounded border border-indigo-500/20 bg-indigo-500/10 font-mono text-xs flex items-center justify-between">
+                <span className="text-slate-300">Need a detailed breakdown of how each module functions?</span>
+                <Link to="/product-tour" className="text-indigo-400 font-bold hover:underline shrink-0 ml-2">
+                  VIEW FULL TOUR →
+                </Link>
+              </div>
+            </div>
+
+            {/* Calculated Receipt (5 cols) */}
+            <div className="lg:col-span-5 sticky top-24">
+              <div
+                className={`p-6 rounded border backdrop-blur-xl font-mono space-y-6 ${
+                  theme === 'light' ? 'bg-white/95 border-slate-300 shadow-lg' : 'bg-[#0b101c]/95 border-slate-800 shadow-2xl'
+                }`}
+              >
+                <div className="flex justify-between border-b border-slate-800/60 pb-3">
+                  <span className="text-xs font-bold uppercase">Estimated Quote</span>
+                  <span className="text-[10px] text-emerald-400">{selectedMods.length} Modules</span>
+                </div>
+
+                <div className="p-4 rounded bg-slate-950/80 border border-slate-800">
+                  <span className="text-[10px] text-slate-400 uppercase">MONTHLY TOTAL</span>
+                  <div className="flex items-baseline gap-2 mt-1">
+                    <span className="text-3xl font-extrabold text-indigo-400 font-mono">
+                      ₹{quote.monthly.toLocaleString()}
+                    </span>
+                    <span className="text-xs text-slate-400">/ month</span>
+                  </div>
+                  {cycle === 'annual' && (
+                    <p className="text-[10px] text-emerald-400 mt-1">
+                      Annual total ₹{quote.annual.toLocaleString()} · Saved ₹{quote.savings.toLocaleString()}
+                    </p>
+                  )}
+                </div>
+
+                <Link
+                  to="/register"
+                  className="w-full py-3 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs text-center block transition-colors shadow-md shadow-indigo-600/20"
+                >
+                  REQUEST ACCESS WITH THIS CONFIG →
+                </Link>
+
+                <Link
+                  to="/product-tour"
+                  className="w-full py-2.5 rounded border border-slate-700 hover:border-slate-500 text-slate-300 text-center block text-xs transition-colors"
+                >
+                  SEE HOW EACH SERVICE WORKS →
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Clean Minimalist Footer (Z-10) */}
+      <footer
+        className={`relative z-10 py-12 px-6 max-w-6xl mx-auto font-mono text-xs ${
+          theme === 'light' ? 'text-slate-500' : 'text-slate-400'
+        }`}
+      >
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 rounded bg-indigo-600 text-white flex items-center justify-center font-bold text-[10px]">
+              <Package size={12} />
+            </div>
+            <span className="font-bold tracking-wider uppercase">CargoHub OS</span>
+          </div>
+
+          <div className="flex items-center gap-6">
+            <a href="#overview" className="hover:text-indigo-400">OPERATIONS</a>
+            <a href="#templates" className="hover:text-indigo-400">TEMPLATES</a>
+            <Link to="/product-tour" className="hover:text-indigo-400">HOW IT WORKS</Link>
+            <a href="#calculator" className="hover:text-indigo-400">PRICING</a>
+            <Link to="/login" className="hover:text-indigo-400">LOGIN</Link>
+            <Link to="/register" className="hover:text-indigo-400">REQUEST ACCESS</Link>
+          </div>
+
+          <p className="text-[11px] text-slate-400">© {new Date().getFullYear()} CARGOHUB OS</p>
+        </div>
+      </footer>
+    </div>
+  );
+}

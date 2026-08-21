@@ -103,18 +103,18 @@ export default function DocumentList() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <select 
-          className="w-full px-3 py-2 bg-slate-900/60 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors" 
-          value={category} 
+        <select
+          className="w-full px-3 py-2 bg-slate-900/60 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors"
+          value={category}
           onChange={(e) => setCategory(e.target.value)}
         >
           {categoryOptions.map((opt) => (
             <option key={opt.value} value={opt.value} className="bg-slate-900">{opt.label}</option>
           ))}
         </select>
-        <select 
-          className="w-full px-3 py-2 bg-slate-900/60 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors" 
-          value={status} 
+        <select
+          className="w-full px-3 py-2 bg-slate-900/60 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors"
+          value={status}
           onChange={(e) => setStatus(e.target.value)}
         >
           {STATUS_OPTIONS.map((opt) => (
