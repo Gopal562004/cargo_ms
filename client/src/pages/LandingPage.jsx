@@ -34,6 +34,8 @@ import {
   Clock,
   Search,
   Filter,
+  BarChart3,
+  QrCode,
 } from 'lucide-react';
 import { useThemeStore } from '../store/themeStore';
 import { useAuthStore } from '../store/authStore';
@@ -269,9 +271,8 @@ export default function LandingPage() {
 
           <nav className="hidden md:flex items-center gap-8 text-xs font-mono">
             <a href="#overview" className="hover:text-indigo-500 transition-colors">OPERATIONS</a>
-            <a href="#templates" className="text-indigo-500 font-bold hover:text-indigo-400 transition-colors flex items-center gap-1">
-              TEMPLATES & DOCS →
-            </a>
+            <a href="#templates" className="hover:text-indigo-500 transition-colors">TEMPLATES</a>
+            <a href="#dispatch-deck" className="hover:text-indigo-500 transition-colors">DISPATCH</a>
             <Link to="/product-tour" className="hover:text-indigo-500 transition-colors">HOW IT WORKS</Link>
             <a href="#calculator" className="hover:text-indigo-500 transition-colors">PRICING</a>
           </nav>
@@ -358,7 +359,7 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Right: Promotional Image & Live Radar Card (6 cols) */}
+          {/* Right: Promotional Freighter Image & Live Radar Card (6 cols) */}
           <div
             style={{
               transform: `translate(${mousePos.x * 0.3}px, ${mousePos.y * 0.3}px)`,
@@ -403,6 +404,71 @@ export default function LandingPage() {
                   <Plane size={14} className="text-indigo-400 absolute" />
                 </div>
                 <span>{currentFlight.route.split('→')[1]}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 🌟 Visual Photo Spotlight: Dispatch Control Center & Pallet Barcode Scanning */}
+      <section id="dispatch-deck" className="relative z-10 py-16 border-b border-slate-800/60">
+        <div className="max-w-6xl mx-auto px-6 space-y-10">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div className="space-y-1">
+              <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-indigo-500">
+                ENTERPRISE OPERATIONS
+              </span>
+              <h2
+                className={`text-2xl sm:text-3xl font-extrabold tracking-tight ${
+                  theme === 'light' ? 'text-slate-900' : 'text-white'
+                }`}
+              >
+                Built for High-Velocity Freight Teams
+              </h2>
+            </div>
+            <p className="text-xs sm:text-sm font-mono text-slate-400">
+              Live SITA / ARINC Telemetry · Handheld Barcode Ready
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Image Card 1: Dispatch Operations Control Center */}
+            <div className="relative rounded overflow-hidden border border-slate-800 shadow-xl group">
+              <img
+                src="/images/cargo_operations_room.jpg"
+                alt="Air Cargo Dispatch Operations Center"
+                className="w-full h-64 sm:h-72 object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#090d16] via-[#090d16]/40 to-transparent flex flex-col justify-end p-6">
+                <span className="px-2.5 py-0.5 rounded bg-indigo-600 text-white font-mono text-[10px] font-bold w-fit uppercase mb-2">
+                  DISPATCH ROOM
+                </span>
+                <h3 className="text-lg font-bold text-white leading-tight">
+                  Multi-Operator Flight Deck Telemetry
+                </h3>
+                <p className="text-xs text-slate-300 font-sans mt-1 leading-relaxed">
+                  Real-time status coordination between booking agents, weight inspectors, and airline freight desks.
+                </p>
+              </div>
+            </div>
+
+            {/* Image Card 2: Ground Pallet & ULD Barcode Inspection */}
+            <div className="relative rounded overflow-hidden border border-slate-800 shadow-xl group">
+              <img
+                src="/images/cargo_pallet_scanner.jpg"
+                alt="IATA ULD Pallet Scanning & Inspection"
+                className="w-full h-64 sm:h-72 object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#090d16] via-[#090d16]/40 to-transparent flex flex-col justify-end p-6">
+                <span className="px-2.5 py-0.5 rounded bg-emerald-600 text-white font-mono text-[10px] font-bold w-fit uppercase mb-2">
+                  TARMAC INSPECTION
+                </span>
+                <h3 className="text-lg font-bold text-white leading-tight">
+                  IATA ULD Barcode Verification
+                </h3>
+                <p className="text-xs text-slate-300 font-sans mt-1 leading-relaxed">
+                  Instant barcode matching from physical pallets and dangerous goods containers to digital waybill manifests.
+                </p>
               </div>
             </div>
           </div>
@@ -548,7 +614,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Promotional Wide Distribution Hub Banner Section (Z-10) */}
+      {/* Panoramic Distribution Hub Image Section (Z-10) */}
       <section id="hub-view" className="relative z-10 py-16 border-b border-slate-800/60">
         <div className="max-w-6xl mx-auto px-6 space-y-8">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
@@ -800,6 +866,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-6">
             <a href="#overview" className="hover:text-indigo-400">OPERATIONS</a>
             <a href="#templates" className="hover:text-indigo-400">TEMPLATES</a>
+            <a href="#dispatch-deck" className="hover:text-indigo-400">DISPATCH</a>
             <Link to="/product-tour" className="hover:text-indigo-400">HOW IT WORKS</Link>
             <a href="#calculator" className="hover:text-indigo-400">PRICING</a>
             <Link to="/login" className="hover:text-indigo-400">LOGIN</Link>
