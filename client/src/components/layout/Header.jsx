@@ -10,6 +10,7 @@ const BREADCRUMB_MAP = {
   '/documents': 'Documents',
   '/billing': 'Sales Invoices',
   '/billing/purchases': 'Purchase Bills',
+  '/billing/ledgers': 'Accounting Ledgers',
   '/billing/templates': 'Billing Templates',
   '/contacts': 'Contacts & Directory',
   '/templates': 'Document Templates',

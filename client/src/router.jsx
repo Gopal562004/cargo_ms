@@ -14,6 +14,7 @@ import DocumentEditorPage from './pages/DocumentEditorPage';
 import BillingPage from './pages/BillingPage';
 import PurchaseBillsPage from './pages/PurchaseBillsPage';
 import BillingTemplatesPage from './pages/BillingTemplatesPage';
+import LedgersPage from './pages/LedgersPage';
 import MasterUsersPage from './pages/MasterUsersPage';
 import SettingsPage from './pages/SettingsPage';
 import NotFound from './pages/NotFound';
@@ -177,6 +178,14 @@ export const router = createBrowserRouter([
         element: (
           <ServiceRoute serviceKey="BILLING_TEMPLATES">
             <BillingTemplatesPage />
+          </ServiceRoute>
+        ),
+      },
+      {
+        path: 'billing/ledgers',
+        element: (
+          <ServiceRoute serviceKey="SALES_BILLING">
+            <LedgersPage />
           </ServiceRoute>
         ),
       },

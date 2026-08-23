@@ -24,6 +24,7 @@ import {
   FileSpreadsheet,
   Layers,
   ArrowRight,
+  BookOpen,
 } from 'lucide-react';
 import { useDocumentStore } from '../store/documentStore';
 import { useFinancialYearStore, filterDocumentsByFY } from '../store/financialYearStore';
@@ -456,6 +457,14 @@ export default function BillingPage() {
             title="Configure Invoice Prefix, Financial Year & Serial Numbering"
           >
             <SlidersHorizontal size={14} className="mr-1.5 inline text-indigo-400" /> Series & Numbering
+          </Button>
+
+          <Button
+            variant="secondary"
+            onClick={() => navigate('/billing/ledgers')}
+            className="rounded text-xs"
+          >
+            <BookOpen size={14} className="mr-1.5 inline text-indigo-400" /> Accounting Ledgers
           </Button>
 
           <Button

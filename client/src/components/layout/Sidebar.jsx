@@ -32,6 +32,7 @@ import {
   ShieldCheck,
   KeyRound,
   Layers,
+  BookOpen,
 } from 'lucide-react';
 
 const NAV_SECTIONS = [
@@ -58,6 +59,7 @@ const NAV_SECTIONS = [
     items: [
       { path: '/billing', label: 'Sales Invoices (Revenue)', icon: Receipt, serviceKey: 'SALES_BILLING' },
       { path: '/billing/purchases', label: 'Purchase Bills (Expenses/DGD)', icon: ShoppingBag, serviceKey: 'PURCHASE_BILLS' },
+      { path: '/billing/ledgers', label: 'Accounting Ledgers (Tally)', icon: BookOpen, serviceKey: 'SALES_BILLING' },
       { path: '/billing/new', label: 'Create New Bill', icon: Printer, serviceKey: 'SALES_BILLING' },
       { path: '/billing/templates', label: 'Saved Templates & Parties', icon: Bookmark, serviceKey: 'BILLING_TEMPLATES' },
     ],
