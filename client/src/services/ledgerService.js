@@ -337,6 +337,7 @@ export function computeLedgerStatement(ledger, salesInvoices = [], purchaseBills
   }
 
   // Match Purchase Bills (Credits to Creditor, Debit to Expense/ITC)
+  // Match Purchase Bills (Credits to Creditor, Debit to Expense/ITC)
   if (Array.isArray(purchaseBills)) {
     for (const bill of purchaseBills) {
       const d = bill.data || {};
@@ -344,6 +345,7 @@ export function computeLedgerStatement(ledger, salesInvoices = [], purchaseBills
       const vendorGstin = (d.vendorGstin || '').trim().toUpperCase();
       const ledgerName = (ledger.name || '').trim().toLowerCase();
       const ledgerGstin = (ledger.gstin || '').trim().toUpperCase();
+      const expenseCategory = (d.expenseCategory || '').toLowerCase();
 
       const isCreditorMatch =
         (ledger.parentGroup === 'SUNDRY_CREDITORS' || ledger.parentGroup === 'CURRENT_LIABILITIES') &&
@@ -352,21 +354,35 @@ export function computeLedgerStatement(ledger, salesInvoices = [], purchaseBills
 
       const isExpenseMatch =
         (ledger.parentGroup === 'DIRECT_EXPENSES' || ledger.parentGroup === 'INDIRECT_EXPENSES') &&
-        (ledger.name.toLowerCase().includes((d.expenseCategory || '').toLowerCase()) ||
-          (d.description && ledger.name.toLowerCase().includes(d.description.toLowerCase())));
+        (ledger.alias === 'PKG_EXP' ||
+          ledgerName.includes('packaging') ||
+          (expenseCategory && ledgerName.includes(expenseCategory)) ||
+          (d.description && ledgerName.includes(d.description.toLowerCase())));
 
       const isInputTaxMatch =
         ledger.parentGroup === 'DUTIES_TAXES' &&
         ledger.taxType &&
-        ledger.name.toLowerCase().includes('input');
+        (ledgerName.includes('input') || ledger.openingDrCr === 'Dr');
 
       const billNo = d.billNumber || bill.documentNumber || 'BILL-001';
       const billDate = d.billDate || bill.createdAt?.split('T')[0] || '';
-      const grandTotal = parseFloat(d.grandTotal || d.totalAmount) || 0;
+      const grandTotal = parseFloat(d.grandTotal || d.totalAmount || bill.totalAmount) || 0;
       const taxable = parseFloat(d.taxableAmount || d.subTotal) || 0;
-      const cgst = parseFloat(d.cgstAmount) || 0;
-      const sgst = parseFloat(d.sgstAmount) || 0;
-      const igst = parseFloat(d.igstAmount) || 0;
+
+      // Extract / compute GST accurately
+      let cgst = parseFloat(d.cgstAmount) || 0;
+      let sgst = parseFloat(d.sgstAmount) || 0;
+      let igst = parseFloat(d.igstAmount) || 0;
+      const totalGst = parseFloat(d.totalGst) || (grandTotal > taxable ? grandTotal - taxable : 0);
+
+      if (!cgst && !sgst && !igst && totalGst > 0) {
+        if (d.taxType === 'INTER_STATE' || (d.vendorGstin && !d.vendorGstin.startsWith('27'))) {
+          igst = totalGst;
+        } else {
+          cgst = totalGst / 2;
+          sgst = totalGst / 2;
+        }
+      }
 
       if (isCreditorMatch) {
         // Creditor is CREDITED for full bill value
@@ -382,7 +398,7 @@ export function computeLedgerStatement(ledger, salesInvoices = [], purchaseBills
         });
 
         // If bill is marked PAID, record Payment Voucher (DEBIT to creditor)
-        if (d.status === 'COMPLETED' || d.status === 'PAID') {
+        if (d.status === 'COMPLETED' || d.status === 'PAID' || d.status === 'ISSUED') {
           vouchers.push({
             id: bill.id + '_pmt',
             date: d.paidDate || billDate,
@@ -391,7 +407,7 @@ export function computeLedgerStatement(ledger, salesInvoices = [], purchaseBills
             particulars: 'To Bank / Cash Payment',
             debit: grandTotal,
             credit: 0,
-            narration: `Payment released to ${d.vendorName} via ${d.paymentMode || 'NEFT/RTGS'}`,
+            narration: `Payment settled for ${d.vendorName || 'Vendor'} via ${d.paymentMode || 'NEFT/RTGS'}`,
           });
         }
       } else if (isExpenseMatch) {

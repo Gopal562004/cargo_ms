@@ -86,9 +86,57 @@ export default function LedgersPage() {
     return filterDocumentsByFY(rawPurchases, activeFY);
   }, [documents, activeFY]);
 
+  // Auto-discover parties from purchase bills & sales invoices
+  const allEffectiveLedgers = useMemo(() => {
+    const list = [...ledgers];
+    const existingNames = new Set(list.map((l) => (l.name || '').trim().toLowerCase()));
+
+    // Discover vendors from purchase bills
+    for (const b of purchaseBills) {
+      const vName = (b.data?.vendorName || '').trim();
+      if (vName && !existingNames.has(vName.toLowerCase())) {
+        existingNames.add(vName.toLowerCase());
+        list.push({
+          id: 'auto_vendor_' + vName.toLowerCase().replace(/[^a-z0-9]/g, '_'),
+          name: vName,
+          alias: (b.data?.vendorAlias || vName.split(' ')[0] || '').toUpperCase(),
+          parentGroup: 'SUNDRY_CREDITORS',
+          openingBalance: 0,
+          openingDrCr: 'Cr',
+          gstin: b.data?.vendorGstin || '',
+          state: b.data?.vendorState || 'Maharashtra (27)',
+          address: b.data?.vendorAddress || '',
+          isSystem: false,
+        });
+      }
+    }
+
+    // Discover buyers from sales invoices
+    for (const inv of salesInvoices) {
+      const bName = (inv.data?.buyerName || '').trim();
+      if (bName && !existingNames.has(bName.toLowerCase())) {
+        existingNames.add(bName.toLowerCase());
+        list.push({
+          id: 'auto_buyer_' + bName.toLowerCase().replace(/[^a-z0-9]/g, '_'),
+          name: bName,
+          alias: (inv.data?.buyerAlias || bName.split(' ')[0] || '').toUpperCase(),
+          parentGroup: 'SUNDRY_DEBTORS',
+          openingBalance: 0,
+          openingDrCr: 'Dr',
+          gstin: inv.data?.buyerGstin || '',
+          state: inv.data?.buyerState || 'Maharashtra (27)',
+          address: inv.data?.buyerAddress || '',
+          isSystem: false,
+        });
+      }
+    }
+
+    return list;
+  }, [ledgers, purchaseBills, salesInvoices]);
+
   // Compute live statements & closing balances for all ledgers
   const computedLedgers = useMemo(() => {
-    return ledgers.map((ledger) => {
+    return allEffectiveLedgers.map((ledger) => {
       const stmt = computeLedgerStatement(ledger, salesInvoices, purchaseBills);
       return {
         ...ledger,
@@ -99,7 +147,7 @@ export default function LedgersPage() {
         totalCredit: stmt.totalCredit,
       };
     });
-  }, [ledgers, salesInvoices, purchaseBills]);
+  }, [allEffectiveLedgers, salesInvoices, purchaseBills]);
 
   // Filter ledgers by selected Group Tab & Search
   const filteredLedgers = useMemo(() => {
