@@ -2,12 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { FileText, ExternalLink, Download, X } from 'lucide-react';
 import { fetchDocumentPDFBlobUrl, downloadDocumentPDF } from '../../services/documentService';
 import Button from './Button';
+import useBodyScrollLock from '../../hooks/useBodyScrollLock';
 
 /**
  * Reusable PDF Preview Modal Component
  * Renders live PDF preview in an embedded viewer with download and new tab options.
  */
 export default function PdfPreviewModal({ isOpen, onClose, documentId, title = 'PDF Document Preview' }) {
+  useBodyScrollLock(Boolean(isOpen && documentId));
+
   const [pdfUrl, setPdfUrl] = useState(null);
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -64,11 +67,11 @@ export default function PdfPreviewModal({ isOpen, onClose, documentId, title = '
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fade-in"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-5xl bg-slate-900/95 border border-slate-800 rounded-md shadow-2xl overflow-hidden flex flex-col max-h-[92vh] animate-scale-in"
+        className="w-full max-w-5xl bg-slate-900 border border-slate-800 rounded-md shadow-2xl overflow-hidden flex flex-col max-h-[92vh] animate-scale-in"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"

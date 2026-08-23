@@ -16,10 +16,10 @@ export default function DocumentEditorPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuthStore();
-  const { createDocument, updateDocument, fetchDocument, currentDocument } = useDocumentStore();
+  const { createDocument, updateDocument, fetchDocument, currentDocument, clearCurrent } = useDocumentStore();
 
   const isEdit = !!id;
-  const documentType = type || currentDocument?.documentType;
+  const documentType = type || (isEdit ? currentDocument?.documentType : null);
   const schema = getDocumentSchema(documentType);
 
   const templateInitialData = location.state?.templateData;
@@ -40,8 +40,13 @@ export default function DocumentEditorPage() {
         setPackages(doc.packages || []);
         setTitle(doc.title || '');
       });
+    } else {
+      clearCurrent();
+      setFormData(location.state?.templateData || {});
+      setPackages([]);
+      setTitle('');
     }
-  }, [id]);
+  }, [id, isEdit, location.state]);
 
   // Check role & service authorization for this document type
   if (documentType && !isDocumentTypeAllowed(user, documentType)) {
@@ -71,9 +76,10 @@ export default function DocumentEditorPage() {
   if (documentType === 'TAX_INVOICE') {
     return (
       <TaxInvoiceEditor
+        key={id || 'new-tax-invoice'}
         documentId={id}
-        initialData={formData && Object.keys(formData).length > 0 ? formData : templateInitialData}
-        currentDocument={currentDocument}
+        initialData={isEdit ? (formData && Object.keys(formData).length > 0 ? formData : null) : location.state?.templateData}
+        currentDocument={isEdit ? currentDocument : null}
       />
     );
   }

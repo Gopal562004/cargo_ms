@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import useBodyScrollLock from '../../hooks/useBodyScrollLock';
 
 /**
  * Glassmorphic modal with backdrop blur and animation styled using Tailwind CSS.
@@ -13,15 +14,7 @@ export default function Modal({
   className = '',
 }) {
   const modalRef = useRef(null);
-
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => { document.body.style.overflow = ''; };
-  }, [isOpen]);
+  useBodyScrollLock(Boolean(isOpen));
 
   useEffect(() => {
     function handleKeyDown(e) {
@@ -42,12 +35,12 @@ export default function Modal({
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fade-in"
       onClick={onClose}
     >
       <div
         ref={modalRef}
-        className={`w-full ${sizeClasses[size] || sizeClasses.md} bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-scale-in ${className}`}
+        className={`w-full ${sizeClasses[size] || sizeClasses.md} bg-slate-900 border border-slate-800 rounded-md shadow-2xl overflow-hidden animate-scale-in ${className}`}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"

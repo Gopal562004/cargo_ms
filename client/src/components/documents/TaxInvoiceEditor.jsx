@@ -12,7 +12,7 @@ import {
   Plus,
   Trash2,
   Folder,
-  Image,
+  Image as ImageIcon,
   Building,
   Truck,
   Receipt,
@@ -38,6 +38,7 @@ import {
   getSavedShippers,
   saveShipper,
   getSavedItemPresets,
+  profileToEditorState,
 } from '../../services/billingProfileService';
 import BillingTemplateManagerModal from './BillingTemplateManagerModal';
 import VisualTaxInvoiceSheet from './VisualTaxInvoiceSheet';
@@ -269,152 +270,11 @@ function formatINR(val) {
   return num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-// Complete Presets matching user files
-const INVOICE_TEMPLATES = {
-  pdfTemplate: {
-    label: 'INV DGR-0466 (PDF Standard)',
-    data: {
-      copyType: 'Original Copy',
-      docTitle: 'TAX INVOICE',
-      companyName: 'DGR PACKAGING COMPANY',
-      companyAddress: 'SHOP NO.2, OPP. BLUE DART, NEAR, SAHAR CARGO COMPLEX, ANDHERI (E)',
-      companyCityPin: 'MUMBAI - 400 099',
-      companyPan: 'CBKPK7600K',
-      companyGstin: '27CBKPK7600K1ZE',
-      companyTel: '022 - 26828108',
-      companyEmail: 'dgrpackaging@gmail.com',
-      invoiceNumber: 'DGR/0466/26-27',
-      invoiceDate: '27-06-2026',
-      placeOfSupply: 'Maharashtra (27)',
-      taxType: 'INTRA_STATE',
-      reverseCharge: 'N',
-      transport: '',
-      ewayBillNo: '',
-      airwayBillNo: '',
-      poNumberAndDate: '',
-      noOfPackages: '',
-      grossWeight: '',
-      transportName: '',
-      paidToPaid: '',
-      referenceName: 'Mayur Kadam',
-      contactNumber: '9028345261',
-      buyerName: 'DGR GLOBAL LOGISTICS',
-      buyerAddress: 'GROUND FLOOR ROOM -003\nG M NAGAR NARANGI BAYPASS ROAD\nVIRAR EAST VASAI VIRAR PALGHAR -401305',
-      buyerState: 'Maharashtra (27)',
-      buyerGstin: '27NSAPK0224B1Z7',
-      consigneeName: 'DGR GLOBAL LOGISTICS',
-      consigneeAddress: 'GROUND FLOOR ROOM -003\nG M NAGAR NARANGI BAYPASS ROAD\nVIRAR EAST VASAI VIRAR PALGHAR -401305',
-      consigneeState: 'Maharashtra (27)',
-      consigneeGstin: '27NSAPK0224B1Z7',
-      bankName: 'HDFC BANK LTD',
-      accountNumber: '06687630000070',
-      ifscCode: 'HDFC0003126',
-      swiftCode: 'HDFCINBBXXX',
-      branchName: 'MAHAD-4',
-    },
-    items: [
-      { sn: 1, description: 'UN APPROVED BOX X3', subText: '', hsnCode: '48191010', qty: 1, unit: 'Pcs', price: 110, gstRate: 5, cgstRate: 2.5, sgstRate: 2.5, igstRate: 0 },
-      { sn: 2, description: 'UN APPROVED BOX X6', subText: '', hsnCode: '48191010', qty: 1, unit: 'Pcs', price: 160, gstRate: 5, cgstRate: 2.5, sgstRate: 2.5, igstRate: 0 },
-      { sn: 3, description: 'UN APPROVED BOX X22', subText: '', hsnCode: '48191010', qty: 3, unit: 'Pcs', price: 270, gstRate: 5, cgstRate: 2.5, sgstRate: 2.5, igstRate: 0 },
-    ],
-  },
-  takai: {
-    label: 'Takai Chemtech (DG Doc)',
-    data: {
-      copyType: 'Original Copy',
-      docTitle: 'TAX INVOICE',
-      companyName: 'DGR GLOBAL LOGISTICS',
-      companyAddress: 'GROUND FLOOR, ROOM-003, NX TOWER GM NAGAR, NARANGI BAYPASS ROAD, VIRAR EAST',
-      companyCityPin: '401305-PALGHAR, MAHARASHTRA, INDIA.',
-      companyPan: 'CBKPK7600K',
-      companyGstin: '27NSAPK0224B1Z7',
-      companyTel: '+91 9326392294',
-      companyEmail: 'dgr.export.logistics@gmail.com',
-      invoiceNumber: 'DGR/007/2026-27',
-      invoiceDate: '17/07/2026',
-      placeOfSupply: 'Maharashtra (27)',
-      taxType: 'INTRA_STATE',
-      reverseCharge: 'N',
-      transport: '',
-      ewayBillNo: '',
-      airwayBillNo: '176-6268 0251',
-      poNumberAndDate: 'INV NO-TCI/26-27/002',
-      noOfPackages: '02 (01 BOX DG, 01 NON DG)',
-      grossWeight: '',
-      transportName: '',
-      paidToPaid: '',
-      referenceName: 'TAKAI CHEMTECH INTERNATIONAL PVT LTD',
-      contactNumber: '+91 9326392294',
-      buyerName: 'TAKAI CHEMTECH INTERNATIONAL PVT LTD',
-      buyerAddress: 'A-218 Sagar Tech Plaza, Saki Naka Junction, Andheri Kurla Road, Andheri East Mumbai Maharashtra India 400072.',
-      buyerState: 'Maharashtra (27)',
-      buyerGstin: '27AAMCT0922D1Z1',
-      consigneeName: 'TAKAI CHEMTECH INTERNATIONAL PVT LTD',
-      consigneeAddress: 'A-218 Sagar Tech Plaza, Saki Naka Junction, Andheri Kurla Road, Andheri East Mumbai Maharashtra India 400072.',
-      consigneeState: 'Maharashtra (27)',
-      consigneeGstin: '27AAMCT0922D1Z1',
-      bankName: 'HDFC BANK LTD',
-      accountNumber: '5020 0112 5568 92',
-      ifscCode: 'HDFC0000994',
-      swiftCode: 'HDFCINBBXXX',
-      branchName: 'VIRAR EAST - STATION ROAD',
-    },
-    items: [
-      { sn: 1, description: 'DG Documentation Charges', subText: 'UN NUMBER: UN 3465/6.1/III', hsnCode: '996713', qty: 1, unit: 'Pcs', price: 1200, gstRate: 18, cgstRate: 9, sgstRate: 9, igstRate: 0 },
-      { sn: 2, description: 'Packing Charges', subText: '01 Box X3 & 01 Non haz box', hsnCode: '996713', qty: 1, unit: 'Pcs', price: 800, gstRate: 18, cgstRate: 9, sgstRate: 9, igstRate: 0 },
-    ],
-  },
-  efficient: {
-    label: 'Efficient Freight (Drums & Transport)',
-    data: {
-      copyType: 'Original Copy',
-      docTitle: 'TAX INVOICE',
-      companyName: 'DGR GLOBAL LOGISTICS',
-      companyAddress: 'GROUND FLOOR, ROOM-003, NX TOWER GM NAGAR, NARANGI BAYPASS ROAD, VIRAR EAST',
-      companyCityPin: '401305-PALGHAR, MAHARASHTRA, INDIA.',
-      companyPan: 'CBKPK7600K',
-      companyGstin: '27NSAPK0224B1Z7',
-      companyTel: '+91 91062 35771',
-      companyEmail: 'dgr.export.logistics@gmail.com',
-      invoiceNumber: 'DGR/013/2026-27',
-      invoiceDate: '06/08/2026',
-      placeOfSupply: 'Maharashtra (27)',
-      taxType: 'INTRA_STATE',
-      reverseCharge: 'N',
-      transport: 'BY ROAD',
-      ewayBillNo: '',
-      airwayBillNo: '',
-      poNumberAndDate: '',
-      noOfPackages: '50 DRUMS',
-      grossWeight: '',
-      transportName: 'Sai Warehouse & Transport',
-      paidToPaid: 'PAID',
-      referenceName: 'Mr SUNIL',
-      contactNumber: '9221876157',
-      buyerName: 'EFFICIENT FREIGHT FORWARDERS PVT LTD',
-      buyerAddress: '2nd Floor/ C-205, Damji Shamji Corporate Square, Ghatkopar Andheri Link Road, Ghatkopar East, Mumbai-400077, Maharashtra, INDIA.',
-      buyerState: 'Maharashtra (27)',
-      buyerGstin: '27AAECE7206P1Z9',
-      consigneeName: 'Sai Warehouse & Transport',
-      consigneeAddress: 'Gala no 2 Manish Estate, Chowdhary Compound, Behind Preeti Petrol Pump Near Ganesh Compound, PURNA BHIWANDI',
-      consigneeState: 'Maharashtra (27)',
-      consigneeGstin: '27AAECE7206P1Z9',
-      bankName: 'HDFC BANK LTD',
-      accountNumber: '5020 0112 5568 92',
-      ifscCode: 'HDFC0000994',
-      swiftCode: 'HDFCINBBXXX',
-      branchName: 'VIRAR EAST - STATION ROAD',
-    },
-    items: [
-      { sn: 1, description: 'UN APP MC Y 30 KG OPEN TOP PLASTIC DRUMS', subText: '', hsnCode: '39233090', qty: 50, unit: 'Drum', price: 600, gstRate: 18, cgstRate: 9, sgstRate: 9, igstRate: 0 },
-      { sn: 2, description: 'Transport Charges', subText: 'Delivery to Bhiwandi', hsnCode: '996791', qty: 1, unit: 'Trip', price: 2800, gstRate: 18, cgstRate: 9, sgstRate: 9, igstRate: 0 },
-    ],
-  },
-};
+
 
 export default function TaxInvoiceEditor({ documentId, initialData, currentDocument, onSaved, onCancel, isEmbedded }) {
   const navigate = useNavigate();
-  const { documents, createDocument, updateDocument } = useDocumentStore();
+  const { documents, createDocument, updateDocument, clearCurrent } = useDocumentStore();
 
   const isEdit = !!documentId;
   const [loading, setLoading] = useState(false);
@@ -441,43 +301,41 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
     setSavedItemPresets(getSavedItemPresets());
   };
 
-  // Form State
+  // Form State & Line Items State
   const [formData, setFormData] = useState(() => {
-    const d = initialData || currentDocument?.data || {};
-    const currentYear = new Date().getFullYear().toString().slice(-2);
-    const nextYear = (parseInt(currentYear, 10) + 1).toString();
-    const defaultInvNo = `DGR/0496/${currentYear}-${nextYear}`;
-
-    return {
-      ...INVOICE_TEMPLATES.pdfTemplate.data,
-      invoiceNumber: d.invoiceNumber || defaultInvNo,
-      taxType: d.taxType || (d.buyerGstin?.startsWith('27') || !d.buyerGstin ? 'INTRA_STATE' : 'INTER_STATE'),
-      ...d,
-    };
+    const defaultProfile = savedProfiles && savedProfiles.length > 0 ? savedProfiles[0] : null;
+    const d = documentId ? (initialData || currentDocument?.data || {}) : (initialData || {});
+    const { formData: initialForm } = profileToEditorState(defaultProfile, d);
+    return initialForm;
   });
 
-  // Line Items State
   const [items, setItems] = useState(() => {
-    const d = initialData || currentDocument?.data;
-    if (Array.isArray(d?.items) && d.items.length > 0) {
-      return d.items;
-    }
-    return INVOICE_TEMPLATES.pdfTemplate.items;
+    const defaultProfile = savedProfiles && savedProfiles.length > 0 ? savedProfiles[0] : null;
+    const d = documentId ? (initialData || currentDocument?.data || {}) : (initialData || {});
+    const { items: initialItems } = profileToEditorState(defaultProfile, d);
+    return initialItems;
   });
 
   useEffect(() => {
-    const loadedData = initialData || currentDocument?.data;
-    if (loadedData && Object.keys(loadedData).length > 0) {
-      setFormData((prev) => ({
-        ...INVOICE_TEMPLATES.pdfTemplate.data,
-        ...prev,
-        ...loadedData,
-      }));
-      if (Array.isArray(loadedData.items) && loadedData.items.length > 0) {
-        setItems(loadedData.items);
+    if (documentId) {
+      const loadedData = initialData || currentDocument?.data;
+      if (loadedData && Object.keys(loadedData).length > 0) {
+        const defaultProfile = savedProfiles && savedProfiles.length > 0 ? savedProfiles[0] : null;
+        const { formData: mergedForm, items: mergedItems } = profileToEditorState(defaultProfile, loadedData);
+        setFormData(mergedForm);
+        if (Array.isArray(loadedData.items) && loadedData.items.length > 0) {
+          setItems(loadedData.items);
+        } else if (mergedItems && mergedItems.length > 0) {
+          setItems(mergedItems);
+        }
       }
+    } else {
+      const defaultProfile = savedProfiles && savedProfiles.length > 0 ? savedProfiles[0] : null;
+      const { formData: defaultForm, items: defaultItems } = profileToEditorState(defaultProfile, initialData || {});
+      setFormData(defaultForm);
+      setItems(defaultItems);
     }
-  }, [initialData, currentDocument]);
+  }, [documentId, initialData, currentDocument, savedProfiles]);
 
   // Recalculate item tax rates based on taxType (INTRA_STATE vs INTER_STATE)
   const applyTaxTypeToItems = (taxType, currentItems) => {
@@ -1038,6 +896,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
           <Button
             variant="secondary"
             onClick={() => {
+              clearCurrent();
               if (onCancel) onCancel();
               else navigate('/billing');
             }}
@@ -1125,7 +984,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
               <button
                 key={tpl.id}
                 type="button"
-                className="px-2.5 py-1 text-xs bg-slate-800/90 hover:bg-indigo-600/30 hover:border-indigo-500 border border-slate-700 text-slate-200 rounded transition-all font-medium flex items-center gap-1"
+                className="px-2.5 py-1 text-xs bg-slate-800 hover:bg-indigo-600 hover:text-white border border-slate-700 text-slate-200 rounded transition-all font-medium flex items-center gap-1.5 cursor-pointer"
                 onClick={() => applyProfile(tpl)}
               >
                 <Zap size={11} className="text-amber-400" />
@@ -1135,7 +994,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
 
             <button
               type="button"
-              className="px-2.5 py-1 text-xs bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/40 rounded transition-all font-semibold flex items-center gap-1"
+              className="px-2.5 py-1 text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded transition-all font-semibold flex items-center gap-1 cursor-pointer shadow-sm"
               onClick={handleSaveCurrentAsPreset}
               title="Save current invoice details as a reusable template"
             >
@@ -1145,7 +1004,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
 
             <button
               type="button"
-              className="px-2.5 py-1 text-xs bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/40 rounded transition-all font-semibold flex items-center gap-1 ml-auto"
+              className="px-2.5 py-1 text-xs bg-indigo-600 hover:bg-indigo-500 text-white rounded transition-all font-semibold flex items-center gap-1 ml-auto cursor-pointer shadow-sm"
               onClick={() => setTemplateManagerOpen(true)}
             >
               <Settings size={12} />
@@ -1180,7 +1039,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-3">
               <div>
                 <h2 className="text-sm font-bold text-slate-200 flex items-center gap-2">
-                  <Image size={15} className="text-indigo-400" />
+                  <ImageIcon size={15} className="text-indigo-400" />
                   <span>Company Logo & Branding</span>
                 </h2>
                 <p className="text-xs text-slate-400 mt-0.5">

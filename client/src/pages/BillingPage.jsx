@@ -43,7 +43,12 @@ function formatINR(val) {
 
 export default function BillingPage() {
   const navigate = useNavigate();
-  const { documents, fetchDocuments, isLoading, updateDocument } = useDocumentStore();
+  const { documents, fetchDocuments, isLoading, updateDocument, clearCurrent } = useDocumentStore();
+
+  const handleCreateNew = () => {
+    clearCurrent();
+    navigate('/documents/new/TAX_INVOICE');
+  };
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -410,10 +415,6 @@ export default function BillingPage() {
         alert('Failed to delete invoice: ' + err.message);
       }
     }
-  };
-
-  const handleCreateNew = () => {
-    navigate('/documents/new/TAX_INVOICE');
   };
 
   return (
@@ -822,7 +823,7 @@ export default function BillingPage() {
       </div>
 
       {/* Latest Invoices List Table */}
-      <div className="bg-slate-900/70 border border-slate-800 rounded-md overflow-hidden shadow-sm">
+      <div className="bg-slate-900/70 border border-slate-800 rounded-md overflow-hidden">
         <div className="p-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-900/90">
           <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
             <FileText size={16} className="text-indigo-400" />
@@ -870,7 +871,7 @@ export default function BillingPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left">
-              <thead className="bg-slate-950/80 text-slate-400 font-semibold border-b border-slate-800">
+              <thead className="bg-slate-950/50 text-slate-400 font-semibold border-b border-slate-800">
                 <tr>
                   <th className="py-3 px-4">Invoice #</th>
                   <th className="py-3 px-4">Date</th>
@@ -955,7 +956,7 @@ export default function BillingPage() {
                           {/* 1-Click Direct Print */}
                           <button
                             type="button"
-                            className="px-2.5 py-1 text-xs font-semibold bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white rounded border border-emerald-500/30 transition-all flex items-center gap-1"
+                            className="px-2.5 py-1 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded shadow-sm transition-all flex items-center gap-1 cursor-pointer"
                             onClick={() => handlePrint(doc.id)}
                             disabled={printingId === doc.id}
                             title="Print this invoice immediately"

@@ -6,51 +6,45 @@ import {
   Receipt,
   Plus,
   Building,
-  Truck,
   Pencil,
   Trash2,
   Save,
   FileText,
   CheckCircle2,
-  Image,
-  Folder,
-  Sparkles,
   X,
   Search,
   Zap,
-  Copy,
-  CreditCard,
   ShoppingBag,
   Package,
+  CreditCard,
+  Truck,
+  MapPin,
+  Phone,
+  Mail,
+  Image as ImageIcon,
 } from 'lucide-react';
 import {
   getSavedBillingProfiles,
   saveBillingProfile,
   deleteBillingProfile,
   resetBillingProfilesToDefault,
-  getSavedBuyers,
-  saveBuyer,
-  deleteBuyer,
-  getSavedShippers,
-  saveShipper,
-  deleteShipper,
-  getSavedVendors,
-  saveVendor,
-  deleteVendor,
-  resetVendorsToDefault,
+  getSavedParties,
+  saveParty,
+  deleteParty,
+  resetPartiesToDefault,
   getSavedItemPresets,
   saveItemPreset,
   deleteItemPreset,
   resetItemPresetsToDefault,
+  getIndianStateFromGstin,
 } from '../services/billingProfileService';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
-import GstRateSelect from '../components/ui/GstRateSelect';
 
 export default function BillingTemplatesPage() {
   const navigate = useNavigate();
 
-  // Active Tab: 'TEMPLATES' | 'ITEMS' | 'BUYERS' | 'SHIPPERS' | 'VENDORS'
+  // Active Main Tab: 'TEMPLATES' | 'ITEMS' | 'PARTIES'
   const [activeTab, setActiveTab] = useState('TEMPLATES');
   const [search, setSearch] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -58,9 +52,7 @@ export default function BillingTemplatesPage() {
   // Data lists
   const [templates, setTemplates] = useState([]);
   const [itemPresets, setItemPresets] = useState([]);
-  const [buyers, setBuyers] = useState([]);
-  const [shippers, setShippers] = useState([]);
-  const [vendors, setVendors] = useState([]);
+  const [parties, setParties] = useState([]);
 
   // Modal / Form Edit states
   const [isEditingTemplate, setIsEditingTemplate] = useState(false);
@@ -69,14 +61,8 @@ export default function BillingTemplatesPage() {
   const [isEditingItemPreset, setIsEditingItemPreset] = useState(false);
   const [editingItemPreset, setEditingItemPreset] = useState(null);
 
-  const [isEditingBuyer, setIsEditingBuyer] = useState(false);
-  const [editingBuyer, setEditingBuyer] = useState(null);
-
-  const [isEditingShipper, setIsEditingShipper] = useState(false);
-  const [editingShipper, setEditingShipper] = useState(null);
-
-  const [isEditingVendor, setIsEditingVendor] = useState(false);
-  const [editingVendor, setEditingVendor] = useState(null);
+  const [isEditingParty, setIsEditingParty] = useState(false);
+  const [editingParty, setEditingParty] = useState(null);
 
   // Item Preset Form State
   const [itemPresetForm, setItemPresetForm] = useState({
@@ -91,16 +77,13 @@ export default function BillingTemplatesPage() {
     category: 'PACKAGING',
   });
 
-  // Vendor Form State
-  const [vendorForm, setVendorForm] = useState({
+  // Single Directory / Company Form State
+  const [partyForm, setPartyForm] = useState({
     id: null,
     name: '',
     address: '',
     state: 'Maharashtra (27)',
     gstin: '',
-    category: 'DGD',
-    defaultGstRate: 18,
-    defaultDescription: '',
     contactPerson: '',
     phone: '',
     email: '',
@@ -145,35 +128,10 @@ export default function BillingTemplatesPage() {
     ],
   });
 
-  // Buyer Form State
-  const [buyerForm, setBuyerForm] = useState({
-    id: null,
-    name: '',
-    address: '',
-    state: 'Maharashtra (27)',
-    gstin: '',
-    contactPerson: '',
-    phone: '',
-    email: '',
-  });
-
-  // Shipper Form State
-  const [shipperForm, setShipperForm] = useState({
-    id: null,
-    name: '',
-    address: '',
-    state: 'Maharashtra (27)',
-    gstin: '',
-    contactPerson: '',
-    phone: '',
-  });
-
   const loadAllData = () => {
     setTemplates(getSavedBillingProfiles());
     setItemPresets(getSavedItemPresets());
-    setBuyers(getSavedBuyers());
-    setShippers(getSavedShippers());
-    setVendors(getSavedVendors());
+    setParties(getSavedParties());
   };
 
   useEffect(() => {
@@ -246,58 +204,71 @@ export default function BillingTemplatesPage() {
   };
 
   // --------------------------------------------------------------------------
-  // VENDOR / SUPPLIER DIRECTORY HANDLERS
+  // UNIFIED COMPANY DIRECTORY HANDLERS (ONE DIRECTORY FOR ALL)
   // --------------------------------------------------------------------------
-  const handleStartCreateVendor = () => {
-    setEditingVendor(null);
-    setVendorForm({
+  const handleStartCreateParty = () => {
+    setEditingParty(null);
+    setPartyForm({
       id: null,
       name: '',
       address: '',
       state: 'Maharashtra (27)',
       gstin: '',
-      category: 'DGD',
-      defaultGstRate: 18,
-      defaultDescription: '',
       contactPerson: '',
       phone: '',
       email: '',
     });
-    setIsEditingVendor(true);
+    setIsEditingParty(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleStartEditVendor = (v) => {
-    setEditingVendor(v);
-    setVendorForm({ ...v });
-    setIsEditingVendor(true);
+  const handleStartEditParty = (party) => {
+    setEditingParty(party);
+    setPartyForm({
+      id: party.id,
+      name: party.name || '',
+      address: party.address || '',
+      state: party.state || 'Maharashtra (27)',
+      gstin: party.gstin || '',
+      contactPerson: party.contactPerson || '',
+      phone: party.phone || '',
+      email: party.email || '',
+    });
+    setIsEditingParty(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleSaveVendor = (e) => {
+  const handleSaveParty = (e) => {
     e.preventDefault();
-    if (!vendorForm.name) {
-      alert('Please enter Vendor / Supplier Company Name.');
+    if (!partyForm.name?.trim()) {
+      alert('Please enter Company / Party Name.');
       return;
     }
-
-    saveVendor(vendorForm);
+    saveParty(partyForm);
     loadAllData();
-    setIsEditingVendor(false);
-    setEditingVendor(null);
-    showNotification(`Vendor / Supplier "${vendorForm.name}" saved to directory!`);
+    setIsEditingParty(false);
+    setEditingParty(null);
+    showNotification(`Saved "${partyForm.name}" to directory!`);
   };
 
-  const handleDeleteVendor = (id) => {
-    if (window.confirm('Delete this vendor template from directory?')) {
-      deleteVendor(id);
+  const handleDeleteParty = (id) => {
+    if (window.confirm('Delete this company from directory?')) {
+      deleteParty(id);
       loadAllData();
-      showNotification('Vendor template removed from directory.');
+      showNotification('Company removed from directory.');
+    }
+  };
+
+  const handleResetParties = () => {
+    if (window.confirm('Reset directory back to default standard companies?')) {
+      resetPartiesToDefault();
+      loadAllData();
+      showNotification('Directory restored to defaults.');
     }
   };
 
   // --------------------------------------------------------------------------
-  // TEMPLATE HANDLERS
+  // FULL TEMPLATE HANDLERS
   // --------------------------------------------------------------------------
   const handleStartCreateTemplate = () => {
     setEditingTemplate(null);
@@ -335,24 +306,23 @@ export default function BillingTemplatesPage() {
       items: [
         { sn: 1, description: 'UN APPROVED BOX X3', subText: '', hsnCode: '48191010', qty: 1, unit: 'Pcs', price: 110, gstRate: 5, cgstRate: 2.5, sgstRate: 2.5, igstRate: 0 },
         { sn: 2, description: 'UN APPROVED BOX X6', subText: '', hsnCode: '48191010', qty: 1, unit: 'Pcs', price: 160, gstRate: 5, cgstRate: 2.5, sgstRate: 2.5, igstRate: 0 },
-        { sn: 3, description: 'UN APPROVED BOX X22', subText: '', hsnCode: '48191010', qty: 3, unit: 'Pcs', price: 270, gstRate: 5, cgstRate: 2.5, sgstRate: 2.5, igstRate: 0 },
       ],
     });
     setIsEditingTemplate(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleStartEditTemplate = (p) => {
-    setEditingTemplate(p);
-    const comp = p.companyDetails || {};
-    const buyer = p.buyer || {};
-    const cons = p.consignee || {};
+  const handleStartEditTemplate = (tpl) => {
+    setEditingTemplate(tpl);
+    const comp = tpl.companyDetails || {};
+    const buyer = tpl.buyer || {};
+    const cons = tpl.consignee || {};
 
     setTemplateForm({
-      name: p.name || '',
-      category: p.category || 'Full Invoice Template',
-      companyLogo: p.companyLogo || null,
-      companyName: comp.companyName || 'DGR PACKAGING COMPANY',
+      name: tpl.name || '',
+      category: tpl.category || 'Full Invoice Template',
+      companyLogo: tpl.companyLogo || null,
+      companyName: comp.companyName || '',
       companyAddress: comp.companyAddress || '',
       companyCityPin: comp.companyCityPin || '',
       companyPan: comp.companyPan || '',
@@ -372,84 +342,28 @@ export default function BillingTemplatesPage() {
       ifscCode: comp.ifscCode || '',
       swiftCode: comp.swiftCode || '',
       branchName: comp.branchName || '',
-      termsAndConditions: p.termsAndConditions || `1. Goods once sold will not be taken back.\n2. Interest @ 18% p.a. will be charged if the payment is not made within the stipulated time.\n3. Discrepancy if any, in billed item must be communicated within 7 days.\n4. Subject to 'Maharashtra' Jurisdiction only.`,
-      transport: p.transport || '',
-      airwayBillNo: p.airwayBillNo || '',
-      poNumberAndDate: p.poNumberAndDate || '',
-      noOfPackages: p.noOfPackages || '',
-      grossWeight: p.grossWeight || '',
-      contactNumber: p.contactNumber || '',
-      items: p.items && p.items.length > 0 ? p.items : [
-        { sn: 1, description: 'UN APPROVED BOX X3', subText: '', hsnCode: '48191010', qty: 1, unit: 'Pcs', price: 110, gstRate: 5, cgstRate: 2.5, sgstRate: 2.5, igstRate: 0 },
-      ],
+      termsAndConditions: tpl.termsAndConditions || '',
+      transport: tpl.transport || 'BY ROAD',
+      airwayBillNo: tpl.airwayBillNo || '',
+      poNumberAndDate: tpl.poNumberAndDate || '',
+      noOfPackages: tpl.noOfPackages || '',
+      grossWeight: tpl.grossWeight || '',
+      contactNumber: tpl.contactNumber || '',
+      items: Array.isArray(tpl.items) && tpl.items.length > 0 ? tpl.items : [],
     });
     setIsEditingTemplate(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleLogoUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setTemplateForm((prev) => ({ ...prev, companyLogo: ev.target.result }));
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleAddTemplateItem = () => {
-    setTemplateForm((prev) => ({
-      ...prev,
-      items: [
-        ...prev.items,
-        {
-          sn: prev.items.length + 1,
-          description: '',
-          subText: '',
-          hsnCode: '48191010',
-          qty: 1,
-          unit: 'Pcs',
-          price: 0,
-          gstRate: 5,
-          cgstRate: 2.5,
-          sgstRate: 2.5,
-          igstRate: 0,
-        },
-      ],
-    }));
-  };
-
-  const handleRemoveTemplateItem = (index) => {
-    setTemplateForm((prev) => ({
-      ...prev,
-      items: prev.items.filter((_, i) => i !== index),
-    }));
-  };
-
-  const handleTemplateItemChange = (index, field, value) => {
-    setTemplateForm((prev) => {
-      const nextItems = [...prev.items];
-      nextItems[index] = { ...nextItems[index], [field]: value };
-
-      if (field === 'gstRate') {
-        const rate = parseFloat(value) || 0;
-        nextItems[index].cgstRate = rate / 2;
-        nextItems[index].sgstRate = rate / 2;
-        nextItems[index].igstRate = 0;
-      }
-      return { ...prev, items: nextItems };
-    });
-  };
-
   const handleSaveTemplate = (e) => {
     e.preventDefault();
     if (!templateForm.name) {
-      alert('Please enter a Template / Preset Name.');
+      alert('Please enter a Template Name.');
       return;
     }
 
     const payload = {
-      id: editingTemplate ? editingTemplate.id : undefined,
+      id: editingTemplate?.id,
       name: templateForm.name,
       category: templateForm.category,
       companyLogo: templateForm.companyLogo,
@@ -497,10 +411,10 @@ export default function BillingTemplatesPage() {
   };
 
   const handleDeleteTemplate = (id) => {
-    if (window.confirm('Are you sure you want to delete this template?')) {
+    if (window.confirm('Delete this template permanently?')) {
       deleteBillingProfile(id);
       loadAllData();
-      showNotification('Template deleted successfully.');
+      showNotification('Template deleted.');
     }
   };
 
@@ -529,101 +443,8 @@ export default function BillingTemplatesPage() {
   };
 
   // --------------------------------------------------------------------------
-  // BUYER DIRECTORY HANDLERS
+  // FILTERED DATA
   // --------------------------------------------------------------------------
-  const handleStartCreateBuyer = () => {
-    setEditingBuyer(null);
-    setBuyerForm({
-      id: null,
-      name: '',
-      address: '',
-      state: 'Maharashtra (27)',
-      gstin: '',
-      contactPerson: '',
-      phone: '',
-      email: '',
-    });
-    setIsEditingBuyer(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleStartEditBuyer = (b) => {
-    setEditingBuyer(b);
-    setBuyerForm({ ...b });
-    setIsEditingBuyer(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleSaveBuyer = (e) => {
-    e.preventDefault();
-    if (!buyerForm.name) {
-      alert('Please enter Buyer / Customer Company Name.');
-      return;
-    }
-
-    saveBuyer(buyerForm);
-    loadAllData();
-    setIsEditingBuyer(false);
-    setEditingBuyer(null);
-    showNotification(`Customer "${buyerForm.name}" saved to directory!`);
-  };
-
-  const handleDeleteBuyer = (id) => {
-    if (window.confirm('Delete this customer from directory?')) {
-      deleteBuyer(id);
-      loadAllData();
-      showNotification('Customer removed from directory.');
-    }
-  };
-
-  // --------------------------------------------------------------------------
-  // SHIPPER / DESTINATION DIRECTORY HANDLERS
-  // --------------------------------------------------------------------------
-  const handleStartCreateShipper = () => {
-    setEditingShipper(null);
-    setShipperForm({
-      id: null,
-      name: '',
-      address: '',
-      state: 'Maharashtra (27)',
-      gstin: '',
-      contactPerson: '',
-      phone: '',
-    });
-    setIsEditingShipper(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleStartEditShipper = (s) => {
-    setEditingShipper(s);
-    setShipperForm({ ...s });
-    setIsEditingShipper(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleSaveShipper = (e) => {
-    e.preventDefault();
-    if (!shipperForm.name) {
-      alert('Please enter Shipper / Destination Name.');
-      return;
-    }
-
-    saveShipper(shipperForm);
-    loadAllData();
-    setIsEditingShipper(false);
-    setEditingShipper(null);
-    showNotification(`Destination "${shipperForm.name}" saved to directory!`);
-  };
-
-  const handleDeleteShipper = (id) => {
-    if (window.confirm('Delete this destination location from directory?')) {
-      deleteShipper(id);
-      loadAllData();
-      showNotification('Destination removed from directory.');
-    }
-  };
-
-  // Filtered lists
   const filteredTemplates = templates.filter((p) => {
     const q = search.toLowerCase().trim();
     if (!q) return true;
@@ -647,36 +468,16 @@ export default function BillingTemplatesPage() {
     );
   });
 
-  const filteredBuyers = buyers.filter((b) => {
+  const filteredParties = parties.filter((p) => {
     const q = search.toLowerCase().trim();
     if (!q) return true;
     return (
-      (b.name || '').toLowerCase().includes(q) ||
-      (b.gstin || '').toLowerCase().includes(q) ||
-      (b.address || '').toLowerCase().includes(q) ||
-      (b.contactPerson || '').toLowerCase().includes(q)
-    );
-  });
-
-  const filteredShippers = shippers.filter((s) => {
-    const q = search.toLowerCase().trim();
-    if (!q) return true;
-    return (
-      (s.name || '').toLowerCase().includes(q) ||
-      (s.address || '').toLowerCase().includes(q) ||
-      (s.gstin || '').toLowerCase().includes(q)
-    );
-  });
-
-  const filteredVendors = vendors.filter((v) => {
-    const q = search.toLowerCase().trim();
-    if (!q) return true;
-    return (
-      (v.name || '').toLowerCase().includes(q) ||
-      (v.address || '').toLowerCase().includes(q) ||
-      (v.gstin || '').toLowerCase().includes(q) ||
-      (v.category || '').toLowerCase().includes(q) ||
-      (v.defaultDescription || '').toLowerCase().includes(q)
+      (p.name || '').toLowerCase().includes(q) ||
+      (p.gstin || '').toLowerCase().includes(q) ||
+      (p.address || '').toLowerCase().includes(q) ||
+      (p.contactPerson || '').toLowerCase().includes(q) ||
+      (p.phone || '').toLowerCase().includes(q) ||
+      (p.email || '').toLowerCase().includes(q)
     );
   });
 
@@ -694,7 +495,7 @@ export default function BillingTemplatesPage() {
             </h1>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Manage full invoice templates, cargo & packaging item presets, customer buyer profiles, delivery destinations, and vendor profiles.
+            Manage full invoice templates, cargo & packaging item presets, and your company directory.
           </p>
         </div>
 
@@ -718,6 +519,17 @@ export default function BillingTemplatesPage() {
               className="rounded text-xs"
             >
               <RotateCcw size={13} className="mr-1.5 inline" /> Reset Items
+            </Button>
+          )}
+
+          {activeTab === 'PARTIES' && (
+            <Button
+              variant="secondary"
+              onClick={handleResetParties}
+              title="Reset directory to standard default companies"
+              className="rounded text-xs"
+            >
+              <RotateCcw size={13} className="mr-1.5 inline" /> Reset Directory
             </Button>
           )}
 
@@ -757,33 +569,13 @@ export default function BillingTemplatesPage() {
             </Button>
           )}
 
-          {activeTab === 'BUYERS' && (
+          {activeTab === 'PARTIES' && (
             <Button
               variant="primary"
-              onClick={handleStartCreateBuyer}
+              onClick={handleStartCreateParty}
               className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold"
             >
-              <Plus size={13} className="mr-1.5 inline" /> Add Customer
-            </Button>
-          )}
-
-          {activeTab === 'SHIPPERS' && (
-            <Button
-              variant="primary"
-              onClick={handleStartCreateShipper}
-              className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold"
-            >
-              <Plus size={13} className="mr-1.5 inline" /> Add Destination
-            </Button>
-          )}
-
-          {activeTab === 'VENDORS' && (
-            <Button
-              variant="primary"
-              onClick={handleStartCreateVendor}
-              className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold"
-            >
-              <Plus size={13} className="mr-1.5 inline" /> Add Vendor Template
+              <Plus size={13} className="mr-1.5 inline" /> Add Company
             </Button>
           )}
         </div>
@@ -819,9 +611,7 @@ export default function BillingTemplatesPage() {
             setActiveTab('TEMPLATES');
             setIsEditingTemplate(false);
             setIsEditingItemPreset(false);
-            setIsEditingBuyer(false);
-            setIsEditingShipper(false);
-            setIsEditingVendor(false);
+            setIsEditingParty(false);
           }}
         >
           <Zap size={14} className={activeTab === 'TEMPLATES' ? 'text-white' : 'text-amber-400'} />
@@ -839,9 +629,7 @@ export default function BillingTemplatesPage() {
             setActiveTab('ITEMS');
             setIsEditingTemplate(false);
             setIsEditingItemPreset(false);
-            setIsEditingBuyer(false);
-            setIsEditingShipper(false);
-            setIsEditingVendor(false);
+            setIsEditingParty(false);
           }}
         >
           <Package size={14} className={activeTab === 'ITEMS' ? 'text-white' : 'text-amber-400'} />
@@ -851,83 +639,55 @@ export default function BillingTemplatesPage() {
         <button
           type="button"
           className={`px-3.5 py-2 rounded text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
-            activeTab === 'BUYERS'
+            activeTab === 'PARTIES'
               ? 'bg-indigo-600 text-white shadow-sm'
               : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
           }`}
           onClick={() => {
-            setActiveTab('BUYERS');
+            setActiveTab('PARTIES');
             setIsEditingTemplate(false);
             setIsEditingItemPreset(false);
-            setIsEditingBuyer(false);
-            setIsEditingShipper(false);
-            setIsEditingVendor(false);
+            setIsEditingParty(false);
           }}
         >
-          <Building size={14} className={activeTab === 'BUYERS' ? 'text-white' : 'text-indigo-400'} />
-          <span>Customer Directory (Billed To) ({buyers.length})</span>
-        </button>
-
-        <button
-          type="button"
-          className={`px-3.5 py-2 rounded text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
-            activeTab === 'SHIPPERS'
-              ? 'bg-indigo-600 text-white shadow-sm'
-              : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-          }`}
-          onClick={() => {
-            setActiveTab('SHIPPERS');
-            setIsEditingTemplate(false);
-            setIsEditingItemPreset(false);
-            setIsEditingBuyer(false);
-            setIsEditingShipper(false);
-            setIsEditingVendor(false);
-          }}
-        >
-          <Truck size={14} className={activeTab === 'SHIPPERS' ? 'text-white' : 'text-emerald-400'} />
-          <span>Delivery Destinations (Shipped To) ({shippers.length})</span>
-        </button>
-
-        <button
-          type="button"
-          className={`px-3.5 py-2 rounded text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
-            activeTab === 'VENDORS'
-              ? 'bg-indigo-600 text-white shadow-sm'
-              : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-          }`}
-          onClick={() => {
-            setActiveTab('VENDORS');
-            setIsEditingTemplate(false);
-            setIsEditingItemPreset(false);
-            setIsEditingBuyer(false);
-            setIsEditingShipper(false);
-            setIsEditingVendor(false);
-          }}
-        >
-          <ShoppingBag size={14} className={activeTab === 'VENDORS' ? 'text-white' : 'text-purple-400'} />
-          <span>Vendor & Expense Profiles ({vendors.length})</span>
+          <Building size={14} className={activeTab === 'PARTIES' ? 'text-white' : 'text-indigo-400'} />
+          <span>Company & Directory ({parties.length})</span>
         </button>
       </div>
 
       {/* SEARCH BAR */}
-      <div className="bg-slate-900/70 border border-slate-800 rounded-md p-3.5 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="relative w-full sm:w-80">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-2.5 text-slate-500" size={14} />
           <input
             type="text"
-            placeholder={`Search ${activeTab.toLowerCase()}...`}
+            className="w-full pl-9 pr-3 py-2 bg-slate-900 border border-slate-800 rounded-md text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+            placeholder={
+              activeTab === 'TEMPLATES'
+                ? 'Search templates by title, buyer, company...'
+                : activeTab === 'ITEMS'
+                ? 'Search items by description, HSN code, category...'
+                : 'Search companies by name, GSTIN, address, contact...'
+            }
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
           />
+          {search && (
+            <button
+              type="button"
+              className="absolute right-2.5 top-2.5 text-slate-500 hover:text-slate-300 text-xs"
+              onClick={() => setSearch('')}
+            >
+              ✕
+            </button>
+          )}
         </div>
-        <div className="text-xs text-slate-400 font-mono">
+
+        <span className="text-xs text-slate-400 self-center sm:self-auto">
           {activeTab === 'TEMPLATES' && `Showing ${filteredTemplates.length} of ${templates.length} templates`}
           {activeTab === 'ITEMS' && `Showing ${filteredItemPresets.length} of ${itemPresets.length} item presets`}
-          {activeTab === 'BUYERS' && `Showing ${filteredBuyers.length} of ${buyers.length} customers`}
-          {activeTab === 'SHIPPERS' && `Showing ${filteredShippers.length} of ${shippers.length} destinations`}
-          {activeTab === 'VENDORS' && `Showing ${filteredVendors.length} of ${vendors.length} vendor templates`}
-        </div>
+          {activeTab === 'PARTIES' && `Showing ${filteredParties.length} of ${parties.length} companies`}
+        </span>
       </div>
 
       {/* ========================================================================= */}
@@ -935,332 +695,422 @@ export default function BillingTemplatesPage() {
       {/* ========================================================================= */}
       {activeTab === 'TEMPLATES' && (
         <div className="space-y-6">
-          {/* Template Edit Form */}
+          {/* Template Create / Edit Form Card */}
           {isEditingTemplate && (
-            <div className="p-5 bg-slate-900/95 border border-indigo-500/50 rounded-md shadow-xl space-y-5 animate-scale-in">
+            <div className="p-5 bg-slate-900 border border-indigo-500/50 rounded-md shadow-xl space-y-5 animate-scale-in">
               <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                 <h2 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-                  <FileText size={16} className="text-indigo-400" />
-                  <span>{editingTemplate ? `Edit Template: ${editingTemplate.name}` : 'Create New Billing Template'}</span>
+                  <Bookmark size={16} className="text-indigo-400" />
+                  <span>{editingTemplate ? `Edit Template: ${editingTemplate.name}` : 'Create New Invoice Template'}</span>
                 </h2>
                 <button
                   type="button"
-                  className="text-xs text-slate-400 hover:text-white px-2.5 py-1 bg-slate-800 rounded hover:bg-slate-700 transition-colors flex items-center gap-1"
+                  className="text-xs text-slate-400 hover:text-slate-100 px-2.5 py-1 bg-slate-800 rounded hover:bg-slate-700 border border-slate-700/60 transition-colors flex items-center gap-1 cursor-pointer"
                   onClick={() => setIsEditingTemplate(false)}
                 >
-                  <X size={13} /> Close
+                  <X size={13} /> Close Form
                 </button>
               </div>
 
               <form onSubmit={handleSaveTemplate} className="space-y-5">
-                {/* Logo & Preset Name */}
-                <div className="bg-slate-950/70 border border-slate-800 rounded p-4 space-y-3">
-                  <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                    <Image size={14} className="text-indigo-400" /> Template Logo & Branding
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                {/* Template Name & Logo Banner */}
+                <div className="p-4 bg-slate-950/70 border border-slate-800/80 rounded-md space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Input
-                      label="Template / Preset Name *"
-                      placeholder="e.g. Takai Chemtech Regular DG Order"
+                      label="Template Name / Preset Label *"
+                      placeholder="e.g. Standard DG Export / Celebi DGD Invoice"
                       value={templateForm.name}
                       onChange={(e) => setTemplateForm({ ...templateForm, name: e.target.value })}
                       required
                     />
+                    <Input
+                      label="Template Category"
+                      placeholder="e.g. Full Invoice Template"
+                      value={templateForm.category}
+                      onChange={(e) => setTemplateForm({ ...templateForm, category: e.target.value })}
+                    />
+                  </div>
 
-                    <div className="flex items-center gap-3">
-                      <div className="w-14 h-14 rounded border border-slate-700 bg-slate-900 flex items-center justify-center overflow-hidden shrink-0">
-                        {templateForm.companyLogo ? (
-                          <img src={templateForm.companyLogo} alt="Logo" className="w-full h-full object-contain" />
-                        ) : (
-                          <span className="font-bold text-xs text-slate-400">DGR</span>
-                        )}
+                  {/* Logo Upload Row */}
+                  <div className="flex items-center gap-3 pt-2 border-t border-slate-800/60">
+                    <label className="cursor-pointer px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-xs font-semibold border border-slate-700 transition-colors flex items-center gap-2">
+                      <ImageIcon size={13} className="text-indigo-400" />
+                      <span>{templateForm.companyLogo ? 'Change Template Logo' : 'Upload Template Logo'}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const reader = new FileReader();
+                          reader.onload = (ev) => {
+                            setTemplateForm((prev) => ({ ...prev, companyLogo: ev.target.result }));
+                          };
+                          reader.readAsDataURL(file);
+                        }}
+                      />
+                    </label>
+                    {templateForm.companyLogo && (
+                      <div className="flex items-center gap-2">
+                        <img src={templateForm.companyLogo} alt="Logo" className="h-6 w-auto max-w-[60px] object-contain border border-slate-700 rounded p-0.5 bg-white" />
+                        <button
+                          type="button"
+                          className="text-xs text-rose-400 hover:underline"
+                          onClick={() => setTemplateForm((prev) => ({ ...prev, companyLogo: null }))}
+                        >
+                          Remove Logo
+                        </button>
                       </div>
-                      <div className="space-y-1">
-                        <label className="cursor-pointer px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-semibold inline-block">
-                          Upload Custom Logo
-                          <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
-                        </label>
-                        {templateForm.companyLogo && (
-                          <div>
-                            <button
-                              type="button"
-                              onClick={() => setTemplateForm((p) => ({ ...p, companyLogo: null }))}
-                              className="text-[11px] text-rose-400 hover:underline font-semibold"
-                            >
-                              Reset Logo
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Company / Seller Info */}
-                <div className="bg-slate-950/70 border border-slate-800 rounded p-4 space-y-3">
-                  <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                    <Building size={14} className="text-indigo-400" /> Issuer / Seller Company Details
-                  </h3>
+                {/* Company Details Section */}
+                <div className="p-4 bg-slate-950/70 border border-slate-800/80 rounded-md space-y-3">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <h3 className="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
+                      <Building size={14} /> 1. Issuer / Your Company Details
+                    </h3>
+                    {parties.length > 0 && (
+                      <select
+                        className="text-xs bg-slate-900 border border-slate-700 text-indigo-300 rounded px-2 py-1 outline-none hover:border-indigo-500 focus:border-indigo-500 font-medium max-w-[220px] truncate"
+                        value=""
+                        onChange={(e) => {
+                          const found = parties.find((p) => p.id === e.target.value || p.name === e.target.value);
+                          if (found) {
+                            setTemplateForm((prev) => ({
+                              ...prev,
+                              companyName: found.name || '',
+                              companyAddress: found.address || '',
+                              companyGstin: found.gstin || '',
+                              companyTel: found.phone || prev.companyTel,
+                              companyEmail: found.email || prev.companyEmail,
+                            }));
+                          }
+                        }}
+                      >
+                        <option value="" disabled>-- Pick from Directory ({parties.length}) --</option>
+                        {parties.map((p) => (
+                          <option key={p.id} value={p.id || p.name}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="sm:col-span-2">
+                      <Input
+                        label="Company Name"
+                        value={templateForm.companyName}
+                        onChange={(e) => setTemplateForm({ ...templateForm, companyName: e.target.value })}
+                      />
+                    </div>
                     <Input
-                      label="Company Name *"
-                      value={templateForm.companyName}
-                      onChange={(e) => setTemplateForm({ ...templateForm, companyName: e.target.value })}
-                      required
-                    />
-                    <Input
-                      label="PAN Number"
-                      value={templateForm.companyPan}
-                      onChange={(e) => setTemplateForm({ ...templateForm, companyPan: e.target.value })}
-                    />
-                    <Input
-                      label="GSTIN *"
+                      label="Company GSTIN"
                       value={templateForm.companyGstin}
                       onChange={(e) => setTemplateForm({ ...templateForm, companyGstin: e.target.value })}
-                      required
                     />
                   </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <Input
-                      label="Address Line"
+                      label="Address"
                       value={templateForm.companyAddress}
                       onChange={(e) => setTemplateForm({ ...templateForm, companyAddress: e.target.value })}
                     />
                     <Input
-                      label="City - PIN"
+                      label="City, State & Pin Code"
                       value={templateForm.companyCityPin}
                       onChange={(e) => setTemplateForm({ ...templateForm, companyCityPin: e.target.value })}
                     />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <Input
-                      label="Phone / Email"
+                      label="PAN No"
+                      value={templateForm.companyPan}
+                      onChange={(e) => setTemplateForm({ ...templateForm, companyPan: e.target.value })}
+                    />
+                    <Input
+                      label="Telephone / Mobile"
                       value={templateForm.companyTel}
                       onChange={(e) => setTemplateForm({ ...templateForm, companyTel: e.target.value })}
+                    />
+                    <Input
+                      label="Email"
+                      value={templateForm.companyEmail}
+                      onChange={(e) => setTemplateForm({ ...templateForm, companyEmail: e.target.value })}
                     />
                   </div>
                 </div>
 
-                {/* Buyer and Consignee */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Buyer */}
-                  <div className="bg-slate-950/70 border border-slate-800 rounded p-4 space-y-3">
-                    <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                        <Building size={14} className="text-indigo-400" /> Default Buyer (Billed To)
-                      </h3>
-                      {buyers.length > 0 && (
-                        <select
-                          className="text-xs bg-slate-900 border border-slate-700 text-indigo-300 rounded px-2 py-1 outline-none hover:border-indigo-500 focus:border-indigo-500 font-medium max-w-[210px] truncate"
-                          value=""
-                          onChange={(e) => {
-                            const found = buyers.find((b) => b.id === e.target.value || b.name === e.target.value);
-                            if (found) {
-                              setTemplateForm((prev) => ({
-                                ...prev,
-                                buyerName: found.name || '',
-                                buyerAddress: found.address || '',
-                                buyerState: found.state || 'Maharashtra (27)',
-                                buyerGstin: found.gstin || '',
-                                contactNumber: found.phone || prev.contactNumber,
-                              }));
-                            }
-                          }}
-                        >
-                          <option value="" disabled>-- Pick from Customer Directory ({buyers.length}) --</option>
-                          {buyers.map((b, i) => (
-                            <option key={b.id || i} value={b.id || b.name}>
-                              {b.name}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-                    </div>
-                    <Input
-                      label="Buyer Name"
-                      placeholder="e.g. DGR GLOBAL LOGISTICS"
-                      value={templateForm.buyerName}
-                      onChange={(e) => setTemplateForm({ ...templateForm, buyerName: e.target.value })}
-                    />
-                    <div className="flex flex-col gap-1">
-                      <label className="text-xs text-slate-400 font-medium">Billing Address</label>
-                      <textarea
-                        rows={3}
-                        className="w-full p-2.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200"
-                        placeholder="Full billing address..."
-                        value={templateForm.buyerAddress}
-                        onChange={(e) => setTemplateForm({ ...templateForm, buyerAddress: e.target.value })}
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <Input
-                        label="State"
-                        value={templateForm.buyerState}
-                        onChange={(e) => setTemplateForm({ ...templateForm, buyerState: e.target.value })}
-                      />
-                      <Input
-                        label="GSTIN"
-                        placeholder="e.g. 27NSAPK0224B1Z7"
-                        value={templateForm.buyerGstin}
-                        onChange={(e) => setTemplateForm({ ...templateForm, buyerGstin: e.target.value })}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Consignee */}
-                  <div className="bg-slate-950/70 border border-slate-800 rounded p-4 space-y-3">
-                    <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                        <Truck size={14} className="text-indigo-400" /> Default Consignee (Shipped To)
-                      </h3>
-                      <div className="flex items-center gap-2">
-                        {shippers.length > 0 && (
+                {/* Buyer & Consignee Details */}
+                <div className="p-4 bg-slate-950/70 border border-slate-800/80 rounded-md space-y-3">
+                  <h3 className="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
+                    <Truck size={14} /> 2. Customer (Billed To) & Delivery (Shipped To)
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-3 p-3 bg-slate-900/50 rounded border border-slate-800">
+                      <div className="flex items-center justify-between gap-1 flex-wrap">
+                        <h4 className="text-xs font-bold text-slate-300">Billed To (Buyer)</h4>
+                        {parties.length > 0 && (
                           <select
-                            className="text-xs bg-slate-900 border border-slate-700 text-emerald-300 rounded px-2 py-1 outline-none hover:border-emerald-500 focus:border-emerald-500 font-medium max-w-[170px] truncate"
+                            className="text-[11px] bg-slate-900 border border-slate-700 text-indigo-300 rounded px-1.5 py-0.5 outline-none hover:border-indigo-500 font-medium max-w-[170px] truncate"
                             value=""
                             onChange={(e) => {
-                              const found = shippers.find((s) => s.id === e.target.value || s.name === e.target.value);
+                              const found = parties.find((p) => p.id === e.target.value || p.name === e.target.value);
                               if (found) {
                                 setTemplateForm((prev) => ({
                                   ...prev,
-                                  consigneeName: found.name || '',
-                                  consigneeAddress: found.address || '',
-                                  consigneeState: found.state || 'Maharashtra (27)',
-                                  consigneeGstin: found.gstin || '',
+                                  buyerName: found.name || '',
+                                  buyerAddress: found.address || '',
+                                  buyerState: found.state || 'Maharashtra (27)',
+                                  buyerGstin: found.gstin || '',
                                 }));
                               }
                             }}
                           >
-                            <option value="" disabled>-- Pick Destination ({shippers.length}) --</option>
-                            {shippers.map((s, i) => (
-                              <option key={s.id || i} value={s.id || s.name}>
-                                {s.name}
+                            <option value="" disabled>-- Pick Customer --</option>
+                            {parties.map((p) => (
+                              <option key={p.id} value={p.id || p.name}>
+                                {p.name}
                               </option>
                             ))}
                           </select>
                         )}
-                        <button
-                          type="button"
-                          className="text-xs text-indigo-400 hover:underline flex items-center gap-1 shrink-0"
-                          onClick={() =>
-                            setTemplateForm({
-                              ...templateForm,
-                              consigneeName: templateForm.buyerName,
-                              consigneeAddress: templateForm.buyerAddress,
-                              consigneeState: templateForm.buyerState,
-                              consigneeGstin: templateForm.buyerGstin,
-                            })
-                          }
-                        >
-                          <Copy size={11} /> Copy Buyer
-                        </button>
+                      </div>
+                      <Input
+                        label="Buyer Name"
+                        value={templateForm.buyerName}
+                        onChange={(e) => setTemplateForm({ ...templateForm, buyerName: e.target.value })}
+                      />
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs text-slate-400 font-medium">Buyer Address</label>
+                        <textarea
+                          rows={2}
+                          className="w-full p-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200"
+                          value={templateForm.buyerAddress}
+                          onChange={(e) => setTemplateForm({ ...templateForm, buyerAddress: e.target.value })}
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input
+                          label="Buyer GSTIN"
+                          value={templateForm.buyerGstin}
+                          onChange={(e) => setTemplateForm({ ...templateForm, buyerGstin: e.target.value })}
+                        />
+                        <Input
+                          label="Buyer State"
+                          value={templateForm.buyerState}
+                          onChange={(e) => setTemplateForm({ ...templateForm, buyerState: e.target.value })}
+                        />
                       </div>
                     </div>
-                    <Input
-                      label="Destination Name"
-                      placeholder="e.g. DGR GLOBAL LOGISTICS"
-                      value={templateForm.consigneeName}
-                      onChange={(e) => setTemplateForm({ ...templateForm, consigneeName: e.target.value })}
-                    />
-                    <div className="flex flex-col gap-1">
-                      <label className="text-xs text-slate-400 font-medium">Delivery Address</label>
-                      <textarea
-                        rows={3}
-                        className="w-full p-2.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200"
-                        value={templateForm.consigneeAddress}
-                        onChange={(e) => setTemplateForm({ ...templateForm, consigneeAddress: e.target.value })}
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
+
+                    <div className="space-y-3 p-3 bg-slate-900/50 rounded border border-slate-800">
+                      <div className="flex items-center justify-between gap-1 flex-wrap">
+                        <h4 className="text-xs font-bold text-slate-300">Shipped To (Consignee)</h4>
+                        <div className="flex items-center gap-1.5">
+                          {parties.length > 0 && (
+                            <select
+                              className="text-[11px] bg-slate-900 border border-slate-700 text-emerald-300 rounded px-1.5 py-0.5 outline-none hover:border-emerald-500 font-medium max-w-[130px] truncate"
+                              value=""
+                              onChange={(e) => {
+                                const found = parties.find((p) => p.id === e.target.value || p.name === e.target.value);
+                                if (found) {
+                                  setTemplateForm((prev) => ({
+                                    ...prev,
+                                    consigneeName: found.name || '',
+                                    consigneeAddress: found.address || '',
+                                    consigneeState: found.state || 'Maharashtra (27)',
+                                    consigneeGstin: found.gstin || '',
+                                  }));
+                                }
+                              }}
+                            >
+                              <option value="" disabled>-- Pick Destination --</option>
+                              {parties.map((p) => (
+                                <option key={p.id} value={p.id || p.name}>
+                                  {p.name}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                          <button
+                            type="button"
+                            className="text-[11px] text-indigo-400 hover:underline"
+                            onClick={() =>
+                              setTemplateForm((prev) => ({
+                                ...prev,
+                                consigneeName: prev.buyerName,
+                                consigneeAddress: prev.buyerAddress,
+                                consigneeState: prev.buyerState,
+                                consigneeGstin: prev.buyerGstin,
+                              }))
+                            }
+                          >
+                            Copy Buyer
+                          </button>
+                        </div>
+                      </div>
                       <Input
-                        label="State"
-                        value={templateForm.consigneeState}
-                        onChange={(e) => setTemplateForm({ ...templateForm, consigneeState: e.target.value })}
+                        label="Consignee Name"
+                        value={templateForm.consigneeName}
+                        onChange={(e) => setTemplateForm({ ...templateForm, consigneeName: e.target.value })}
                       />
-                      <Input
-                        label="GSTIN"
-                        value={templateForm.consigneeGstin}
-                        onChange={(e) => setTemplateForm({ ...templateForm, consigneeGstin: e.target.value })}
-                      />
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs text-slate-400 font-medium">Consignee Address</label>
+                        <textarea
+                          rows={2}
+                          className="w-full p-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200"
+                          value={templateForm.consigneeAddress}
+                          onChange={(e) => setTemplateForm({ ...templateForm, consigneeAddress: e.target.value })}
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input
+                          label="Consignee GSTIN"
+                          value={templateForm.consigneeGstin}
+                          onChange={(e) => setTemplateForm({ ...templateForm, consigneeGstin: e.target.value })}
+                        />
+                        <Input
+                          label="Consignee State"
+                          value={templateForm.consigneeState}
+                          onChange={(e) => setTemplateForm({ ...templateForm, consigneeState: e.target.value })}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Default Line Items */}
-                <div className="bg-slate-950/70 border border-slate-800 rounded p-4 space-y-3">
+                {/* Default Line Items Section */}
+                <div className="p-4 bg-slate-950/70 border border-slate-800/80 rounded-md space-y-3">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                      <FileText size={14} className="text-indigo-400" /> Default Goods & Services Line Items (Preset Items & UN Boxes)
+                    <h3 className="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
+                      <Package size={14} /> 3. Default Items & Packages ({templateForm.items.length})
                     </h3>
-                    <Button size="sm" variant="secondary" onClick={handleAddTemplateItem} className="rounded text-xs">
-                      <Plus size={13} className="mr-1 inline" /> Add Item
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      onClick={() =>
+                        setTemplateForm((prev) => ({
+                          ...prev,
+                          items: [
+                            ...prev.items,
+                            {
+                              sn: prev.items.length + 1,
+                              description: '',
+                              subText: '',
+                              hsnCode: '48191010',
+                              qty: 1,
+                              unit: 'Pcs',
+                              price: 0,
+                              gstRate: 5,
+                              cgstRate: 2.5,
+                              sgstRate: 2.5,
+                              igstRate: 0,
+                            },
+                          ],
+                        }))
+                      }
+                      className="rounded text-xs"
+                    >
+                      <Plus size={12} className="mr-1 inline" /> Add Line Item
                     </Button>
                   </div>
 
-                  <div className="space-y-3">
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
                     {templateForm.items.map((item, idx) => (
-                      <div key={idx} className="p-3 bg-slate-900 border border-slate-800 rounded space-y-2 text-xs">
+                      <div key={idx} className="p-3 bg-slate-900/80 border border-slate-800 rounded-md space-y-2">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="font-bold text-slate-400">#{idx + 1}</span>
+                          <span className="text-xs font-bold text-slate-400">Item #{idx + 1}</span>
                           <button
                             type="button"
-                            className="text-slate-400 hover:text-rose-400 transition-colors p-1"
-                            onClick={() => handleRemoveTemplateItem(idx)}
+                            className="p-1 text-slate-500 hover:text-rose-400 transition-colors"
+                            onClick={() =>
+                              setTemplateForm((prev) => ({
+                                ...prev,
+                                items: prev.items.filter((_, i) => i !== idx),
+                              }))
+                            }
                           >
-                            <X size={14} />
+                            <Trash2 size={13} />
                           </button>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <input
-                            type="text"
-                            placeholder="Description (e.g. UN APPROVED BOX X3)"
-                            className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded text-slate-100 placeholder-slate-500"
+                          <Input
+                            label="Description"
+                            placeholder="e.g. UN APPROVED BOX X3"
                             value={item.description}
-                            onChange={(e) => handleTemplateItemChange(idx, 'description', e.target.value)}
+                            onChange={(e) => {
+                              const next = [...templateForm.items];
+                              next[idx].description = e.target.value;
+                              setTemplateForm({ ...templateForm, items: next });
+                            }}
                           />
-                          <input
-                            type="text"
-                            placeholder="Sub-text / UN Spec (e.g. UN 3465/6.1/III)"
-                            className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded text-slate-100 placeholder-slate-500"
+                          <Input
+                            label="Sub-text / UN Spec"
+                            placeholder="e.g. UN 3465/6.1/III"
                             value={item.subText || ''}
-                            onChange={(e) => handleTemplateItemChange(idx, 'subText', e.target.value)}
+                            onChange={(e) => {
+                              const next = [...templateForm.items];
+                              next[idx].subText = e.target.value;
+                              setTemplateForm({ ...templateForm, items: next });
+                            }}
                           />
                         </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 items-center">
-                          <input
-                            type="text"
-                            placeholder="HSN/SAC (e.g. 48191010)"
-                            className="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded text-slate-100"
-                            value={item.hsnCode}
-                            onChange={(e) => handleTemplateItemChange(idx, 'hsnCode', e.target.value)}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          <Input
+                            label="HSN/SAC"
+                            value={item.hsnCode || '48191010'}
+                            onChange={(e) => {
+                              const next = [...templateForm.items];
+                              next[idx].hsnCode = e.target.value;
+                              setTemplateForm({ ...templateForm, items: next });
+                            }}
                           />
-                          <input
+                          <Input
+                            label="Qty"
                             type="number"
-                            placeholder="Qty"
-                            className="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded text-slate-100"
                             value={item.qty}
-                            onChange={(e) => handleTemplateItemChange(idx, 'qty', parseFloat(e.target.value) || 0)}
+                            onChange={(e) => {
+                              const next = [...templateForm.items];
+                              next[idx].qty = parseFloat(e.target.value) || 0;
+                              setTemplateForm({ ...templateForm, items: next });
+                            }}
                           />
-                          <input
-                            type="text"
-                            placeholder="Unit (Pcs, Box, Trip)"
-                            className="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded text-slate-100"
-                            value={item.unit || 'Pcs'}
-                            onChange={(e) => handleTemplateItemChange(idx, 'unit', e.target.value)}
-                          />
-                          <input
+                          <Input
+                            label="Unit Price (₹)"
                             type="number"
-                            placeholder="Price (₹)"
-                            className="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded text-slate-100"
                             value={item.price}
-                            onChange={(e) => handleTemplateItemChange(idx, 'price', parseFloat(e.target.value) || 0)}
+                            onChange={(e) => {
+                              const next = [...templateForm.items];
+                              next[idx].price = parseFloat(e.target.value) || 0;
+                              setTemplateForm({ ...templateForm, items: next });
+                            }}
                           />
-                          <div>
-                            <GstRateSelect
-                              className="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded text-slate-100 font-medium"
-                              value={item.gstRate}
-                              onChange={(val) => handleTemplateItemChange(idx, 'gstRate', val)}
-                              compact
-                            />
+                          <div className="flex flex-col gap-1">
+                            <label className="text-xs text-slate-400 font-medium">GST Rate %</label>
+                            <select
+                              className="w-full px-2 py-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                              value={item.gstRate ?? 5}
+                              onChange={(e) => {
+                                const rate = parseFloat(e.target.value) || 0;
+                                const next = [...templateForm.items];
+                                next[idx].gstRate = rate;
+                                next[idx].cgstRate = rate / 2;
+                                next[idx].sgstRate = rate / 2;
+                                next[idx].igstRate = 0;
+                                setTemplateForm({ ...templateForm, items: next });
+                              }}
+                            >
+                              <option value="0">0%</option>
+                              <option value="5">5%</option>
+                              <option value="12">12%</option>
+                              <option value="18">18%</option>
+                              <option value="28">28%</option>
+                            </select>
                           </div>
                         </div>
                       </div>
@@ -1269,11 +1119,11 @@ export default function BillingTemplatesPage() {
                 </div>
 
                 {/* Bank Account Details */}
-                <div className="bg-slate-950/70 border border-slate-800 rounded p-4 space-y-3">
-                  <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                    <CreditCard size={14} className="text-indigo-400" /> Bank Account Details
+                <div className="p-4 bg-slate-950/70 border border-slate-800/80 rounded-md space-y-3">
+                  <h3 className="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
+                    <CreditCard size={14} /> 4. Default Bank Account
                   </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <Input
                       label="Bank Name"
                       value={templateForm.bankName}
@@ -1284,37 +1134,24 @@ export default function BillingTemplatesPage() {
                       value={templateForm.accountNumber}
                       onChange={(e) => setTemplateForm({ ...templateForm, accountNumber: e.target.value })}
                     />
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <Input
-                      label="RTGS / NEFT / IFSC"
+                      label="IFSC Code"
                       value={templateForm.ifscCode}
                       onChange={(e) => setTemplateForm({ ...templateForm, ifscCode: e.target.value })}
                     />
-                    <Input
-                      label="Swift Code"
-                      value={templateForm.swiftCode}
-                      onChange={(e) => setTemplateForm({ ...templateForm, swiftCode: e.target.value })}
-                    />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <Input
                       label="Branch Name"
                       value={templateForm.branchName}
                       onChange={(e) => setTemplateForm({ ...templateForm, branchName: e.target.value })}
                     />
+                    <Input
+                      label="SWIFT Code"
+                      value={templateForm.swiftCode}
+                      onChange={(e) => setTemplateForm({ ...templateForm, swiftCode: e.target.value })}
+                    />
                   </div>
-                </div>
-
-                {/* Default Terms & Conditions */}
-                <div className="bg-slate-950/70 border border-slate-800 rounded p-4 space-y-2">
-                  <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                    <FileText size={14} className="text-indigo-400" /> Default Terms & Conditions
-                  </h3>
-                  <textarea
-                    rows={4}
-                    className="w-full p-2.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200 font-mono"
-                    value={templateForm.termsAndConditions}
-                    onChange={(e) => setTemplateForm({ ...templateForm, termsAndConditions: e.target.value })}
-                  />
                 </div>
 
                 <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800">
@@ -1322,68 +1159,86 @@ export default function BillingTemplatesPage() {
                     Cancel
                   </Button>
                   <Button type="submit" variant="primary" className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold">
-                    <Save size={13} className="mr-1.5 inline" /> Save Template Profile
+                    <Save size={13} className="mr-1.5 inline" /> Save Template
                   </Button>
                 </div>
               </form>
             </div>
           )}
 
-          {/* Templates Grid with Logo and Full Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredTemplates.map((p) => {
-              const buyer = p.buyer || {};
-              const cons = p.consignee || {};
-              const comp = p.companyDetails || {};
-              const itemsList = p.items || [];
-
-              return (
+          {/* Templates Grid */}
+          {filteredTemplates.length === 0 ? (
+            <div className="p-8 bg-slate-900/40 border border-dashed border-slate-800 rounded-lg text-center space-y-3 animate-fade-in">
+              <div className="w-12 h-12 rounded-full bg-slate-800/80 border border-slate-700 flex items-center justify-center mx-auto text-slate-400">
+                <Bookmark size={22} />
+              </div>
+              <h3 className="text-sm font-semibold text-slate-200">No Billing Templates Found</h3>
+              <p className="text-xs text-slate-400 max-w-md mx-auto">
+                {search ? `No templates match "${search}". Try clearing your search.` : 'You have no saved invoice templates. Click "New Template" or "Reset Defaults" to load starter presets.'}
+              </p>
+              <div className="flex items-center justify-center gap-2.5 pt-2">
+                <Button
+                  variant="primary"
+                  onClick={handleStartCreateTemplate}
+                  className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold"
+                >
+                  <Plus size={13} className="mr-1.5 inline" /> Create Template
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={handleResetDefaults}
+                  className="rounded text-xs"
+                >
+                  <RotateCcw size={13} className="mr-1.5 inline" /> Reset Defaults
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredTemplates.map((p) => (
                 <div
                   key={p.id}
                   className="p-4 bg-slate-900/70 border border-slate-800 hover:border-indigo-500/50 rounded-md space-y-3.5 shadow-sm transition-all flex flex-col justify-between"
                 >
-                  <div className="space-y-3">
-                    {/* Header with Logo */}
-                    <div className="flex items-start gap-3">
-                      <div className="w-11 h-11 rounded border border-slate-700 bg-slate-950 flex items-center justify-center overflow-hidden shrink-0">
-                        {p.companyLogo ? (
-                          <img src={p.companyLogo} alt="Logo" className="w-full h-full object-contain" />
-                        ) : (
-                          <span className="font-bold text-xs text-indigo-400 font-mono">DGR</span>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <Zap size={13} className="text-amber-400 shrink-0" />
-                          <h3 className="font-bold text-slate-100 text-xs truncate">{p.name}</h3>
+                  <div className="space-y-2.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded bg-indigo-600/20 text-indigo-400 flex items-center justify-center shrink-0">
+                          {p.companyLogo ? (
+                            <img src={p.companyLogo} alt="Logo" className="w-5 h-5 object-contain" />
+                          ) : (
+                            <FileText size={14} />
+                          )}
                         </div>
-                        <div className="text-[11px] text-slate-400 truncate mt-0.5">
-                          Issuer: <span className="text-slate-300 font-semibold">{comp.companyName || 'DGR PACKAGING COMPANY'}</span>
+                        <div>
+                          <h3 className="font-bold text-slate-100 text-xs leading-tight">{p.name}</h3>
+                          <span className="text-[10px] text-slate-400">{p.category || 'Full Template'}</span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Buyer & Destination Details */}
                     <div className="text-xs space-y-1 text-slate-300 pt-2 border-t border-slate-800/80">
                       <div>
+                        <span className="text-slate-500 font-medium">Issuer: </span>
+                        <span className="font-medium text-slate-200">{p.companyDetails?.companyName || '-'}</span>
+                      </div>
+                      <div>
                         <span className="text-slate-500 font-medium">Billed To: </span>
-                        <span className="font-semibold text-slate-200">{buyer.buyerName || 'Unspecified'}</span>
+                        <span className="font-medium text-indigo-300">{p.buyer?.buyerName || '-'}</span>
                       </div>
-                      <div className="text-[11px] text-slate-400 truncate">
-                        <span className="text-slate-500">GSTIN: </span>
-                        <span className="font-mono text-indigo-300 font-bold">{buyer.buyerGstin || '-'}</span>
+                      <div>
+                        <span className="text-slate-500 font-medium">GSTIN: </span>
+                        <span className="font-mono text-slate-400">{p.buyer?.buyerGstin || 'N/A'}</span>
                       </div>
-                      {cons.consigneeName && (
-                        <div className="text-[11px] text-slate-400 truncate">
-                          <span className="text-slate-500">Shipped To: </span>
-                          <span>{cons.consigneeName}</span>
-                        </div>
-                      )}
-                      {itemsList.length > 0 && (
-                        <div className="text-[11px] text-slate-400 pt-1 border-t border-slate-800/60">
+                      <div>
+                        <span className="text-slate-500 font-medium">Shipped To: </span>
+                        <span className="text-slate-300">{p.consignee?.consigneeName || '-'}</span>
+                      </div>
+                      {p.items && p.items.length > 0 && (
+                        <div className="text-[11px] text-slate-400 pt-1">
                           <span className="text-slate-500">Items: </span>
-                          <span className="text-slate-300 font-mono text-[10px]">
-                            {itemsList.map((it) => `${it.description || 'Item'} (${it.gstRate || 0}% GST)`).join(', ')}
+                          <span className="line-clamp-1">
+                            {p.items.map((it) => `${it.description} (${it.gstRate}% GST)`).join(', ')}
                           </span>
                         </div>
                       )}
@@ -1393,10 +1248,10 @@ export default function BillingTemplatesPage() {
                   <div className="flex items-center justify-between pt-2.5 border-t border-slate-800/80 gap-2">
                     <button
                       type="button"
-                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-semibold transition-colors flex-1 flex items-center justify-center gap-1.5 shadow-sm"
+                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-semibold transition-colors flex-1 flex items-center justify-center gap-1"
                       onClick={() => handleUseTemplate(p)}
                     >
-                      <Zap size={13} />
+                      <Plus size={13} />
                       <span>Create Bill</span>
                     </button>
 
@@ -1420,20 +1275,20 @@ export default function BillingTemplatesPage() {
                     </div>
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
       {/* ========================================================================= */}
-      {/* TAB: CARGO & LOGISTICS ITEM PRESETS */}
+      {/* TAB 2: CARGO & PACKAGING ITEM PRESETS */}
       {/* ========================================================================= */}
       {activeTab === 'ITEMS' && (
         <div className="space-y-6">
           {/* Item Preset Create / Edit Card */}
           {isEditingItemPreset && (
-            <div className="p-5 bg-slate-900/95 border border-indigo-500/50 rounded-md shadow-xl space-y-5 animate-scale-in">
+            <div className="p-5 bg-slate-900 border border-indigo-500/50 rounded-md shadow-xl space-y-5 animate-scale-in">
               <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                 <h2 className="text-sm font-bold text-slate-100 flex items-center gap-2">
                   <Package size={16} className="text-amber-400" />
@@ -1441,7 +1296,7 @@ export default function BillingTemplatesPage() {
                 </h2>
                 <button
                   type="button"
-                  className="text-xs text-slate-400 hover:text-white px-2.5 py-1 bg-slate-800 rounded hover:bg-slate-700 transition-colors flex items-center gap-1"
+                  className="text-xs text-slate-400 hover:text-slate-100 px-2.5 py-1 bg-slate-800 rounded hover:bg-slate-700 border border-slate-700/60 transition-colors flex items-center gap-1 cursor-pointer"
                   onClick={() => setIsEditingItemPreset(false)}
                 >
                   <X size={13} /> Close
@@ -1548,641 +1403,327 @@ export default function BillingTemplatesPage() {
           )}
 
           {/* Items Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredItemPresets.map((item) => (
-              <div
-                key={item.id}
-                className="p-4 bg-slate-900/70 border border-slate-800 hover:border-indigo-500/50 rounded-md space-y-3.5 shadow-sm transition-all flex flex-col justify-between"
-              >
-                <div className="space-y-2.5">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded bg-amber-600/20 text-amber-400 flex items-center justify-center shrink-0">
-                        <Package size={14} />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-slate-100 text-xs leading-tight">{item.description}</h3>
-                        <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/15 text-amber-300 rounded border border-amber-500/30 font-medium">
-                          {item.category || 'PACKAGING'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="text-xs space-y-1 text-slate-300 pt-2 border-t border-slate-800/80">
-                    {item.subText && (
-                      <div className="text-[11px] text-slate-400 italic">
-                        {item.subText}
-                      </div>
-                    )}
-                    <div className="flex justify-between">
-                      <span className="text-slate-500 font-medium">HSN / SAC: </span>
-                      <span className="font-mono text-indigo-300 font-bold">{item.hsnCode || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500 font-medium">Default Price: </span>
-                      <span className="font-mono font-bold text-slate-100">₹{(parseFloat(item.price) || 0).toFixed(2)} / {item.unit || 'Pcs'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500 font-medium">GST Slab: </span>
-                      <span className="font-mono font-semibold text-emerald-400">{item.gstRate || 0}% GST</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-2.5 border-t border-slate-800/80 gap-2">
-                  <button
-                    type="button"
-                    className="px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-500/40 text-indigo-200 hover:text-white rounded text-xs font-semibold transition-colors flex-1 flex items-center justify-center gap-1"
-                    onClick={() => {
-                      navigate('/documents/new/TAX_INVOICE');
-                    }}
-                  >
-                    <Plus size={13} />
-                    <span>Use in Invoice</span>
-                  </button>
-
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      className="p-1.5 text-slate-400 hover:text-indigo-300 hover:bg-slate-800 rounded transition-colors"
-                      onClick={() => handleStartEditItemPreset(item)}
-                      title="Edit Item Preset"
-                    >
-                      <Pencil size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition-colors"
-                      onClick={() => handleDeleteItemPreset(item.id)}
-                      title="Delete Item Preset"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
+          {filteredItemPresets.length === 0 ? (
+            <div className="p-8 bg-slate-900/40 border border-dashed border-slate-800 rounded-lg text-center space-y-3 animate-fade-in">
+              <div className="w-12 h-12 rounded-full bg-slate-800/80 border border-slate-700 flex items-center justify-center mx-auto text-slate-400">
+                <Package size={22} />
               </div>
-            ))}
-          </div>
+              <h3 className="text-sm font-semibold text-slate-200">No Item Presets Found</h3>
+              <p className="text-xs text-slate-400 max-w-md mx-auto">
+                {search ? `No item presets match "${search}". Try clearing your search.` : 'You have no saved packaging or service presets. Click "Add Item Preset" or "Reset Items" to restore standard logistics items.'}
+              </p>
+              <div className="flex items-center justify-center gap-2.5 pt-2">
+                <Button
+                  variant="primary"
+                  onClick={handleStartCreateItemPreset}
+                  className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold"
+                >
+                  <Plus size={13} className="mr-1.5 inline" /> Add Item Preset
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={handleResetItemPresets}
+                  className="rounded text-xs"
+                >
+                  <RotateCcw size={13} className="mr-1.5 inline" /> Reset Items
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
+              {filteredItemPresets.map((item) => (
+                <div
+                  key={item.id}
+                  className="p-3.5 bg-slate-900/70 border border-slate-800 hover:border-indigo-500/50 rounded-md space-y-2.5 shadow-sm transition-all flex flex-col justify-between"
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-start justify-between gap-1.5">
+                      <span className="text-[10px] px-1.5 py-0.5 bg-indigo-500/10 text-indigo-300 rounded font-mono font-bold border border-indigo-500/20">
+                        {item.hsnCode || 'SAC'}
+                      </span>
+                      <span className="text-[10px] px-1.5 py-0.5 bg-emerald-500/10 text-emerald-400 rounded font-bold border border-emerald-500/20">
+                        {item.gstRate}% GST
+                      </span>
+                    </div>
+                    <h4 className="text-xs font-bold text-slate-100 leading-tight line-clamp-2">
+                      {item.description}
+                    </h4>
+                    {item.subText && (
+                      <p className="text-[11px] text-slate-400 line-clamp-2">{item.subText}</p>
+                    )}
+                    <div className="pt-1 flex items-center justify-between text-xs text-slate-300 font-semibold border-t border-slate-800/80">
+                      <span>Rate:</span>
+                      <span className="font-mono text-emerald-300 font-bold">
+                        ₹{item.price?.toLocaleString('en-IN', { minimumFractionDigits: 2 })} / {item.unit || 'Pcs'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 gap-1.5">
+                    <button
+                      type="button"
+                      className="px-2 py-1 bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white rounded text-[11px] font-medium transition-colors flex-1 flex items-center justify-center gap-1"
+                      onClick={() => {
+                        navigate('/documents/new/TAX_INVOICE');
+                      }}
+                    >
+                      <Plus size={12} />
+                      <span>Use Item</span>
+                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        className="p-1 text-slate-400 hover:text-indigo-300 hover:bg-slate-800 rounded transition-colors"
+                        onClick={() => handleStartEditItemPreset(item)}
+                        title="Edit Item Preset"
+                      >
+                        <Pencil size={13} />
+                      </button>
+                      <button
+                        type="button"
+                        className="p-1 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition-colors"
+                        onClick={() => handleDeleteItemPreset(item.id)}
+                        title="Delete Item Preset"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 2: CUSTOMER / BUYER DIRECTORY */}
+      {/* TAB 3: UNIFIED COMPANY DIRECTORY (ONE SINGLE DIRECTORY WITHOUT CATEGORIES) */}
       {/* ========================================================================= */}
-      {activeTab === 'BUYERS' && (
-        <div className="space-y-6">
-          {/* Buyer Create / Edit Card */}
-          {isEditingBuyer && (
-            <div className="p-5 bg-slate-900/95 border border-indigo-500/50 rounded-md shadow-xl space-y-5 animate-scale-in">
+      {activeTab === 'PARTIES' && (
+        <div className="space-y-5">
+          {/* Company Create / Edit Card */}
+          {isEditingParty && (
+            <div className="p-5 bg-slate-900 border border-indigo-500/50 rounded-md shadow-xl space-y-5 animate-scale-in">
               <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                 <h2 className="text-sm font-bold text-slate-100 flex items-center gap-2">
                   <Building size={16} className="text-indigo-400" />
-                  <span>{editingBuyer ? `Edit Customer: ${editingBuyer.name}` : 'Add New Customer Profile'}</span>
+                  <span>{editingParty ? `Edit Company: ${editingParty.name}` : 'Add New Company'}</span>
                 </h2>
                 <button
                   type="button"
-                  className="text-xs text-slate-400 hover:text-white px-2.5 py-1 bg-slate-800 rounded hover:bg-slate-700 transition-colors flex items-center gap-1"
-                  onClick={() => setIsEditingBuyer(false)}
+                  className="text-xs text-slate-400 hover:text-slate-100 px-2.5 py-1 bg-slate-800 rounded hover:bg-slate-700 border border-slate-700/60 transition-colors flex items-center gap-1 cursor-pointer"
+                  onClick={() => setIsEditingParty(false)}
                 >
                   <X size={13} /> Close
                 </button>
               </div>
 
-              <form onSubmit={handleSaveBuyer} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Input
-                    label="Customer / Buyer Company Name *"
-                    placeholder="e.g. TAKAI CHEMTECH INTERNATIONAL PVT LTD"
-                    value={buyerForm.name}
-                    onChange={(e) => setBuyerForm({ ...buyerForm, name: e.target.value })}
-                    required
-                  />
-                  <Input
-                    label="GSTIN / UIN *"
-                    placeholder="e.g. 27AAMCT0922D1Z1"
-                    value={buyerForm.gstin}
-                    onChange={(e) => setBuyerForm({ ...buyerForm, gstin: e.target.value })}
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs text-slate-400 font-medium">Full Billing Address *</label>
-                  <textarea
-                    rows={3}
-                    className="w-full p-2.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200"
-                    placeholder="Company address for Tax Invoices"
-                    value={buyerForm.address}
-                    onChange={(e) => setBuyerForm({ ...buyerForm, address: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <Input
-                    label="State / Place of Supply"
-                    value={buyerForm.state}
-                    onChange={(e) => setBuyerForm({ ...buyerForm, state: e.target.value })}
-                  />
-                  <Input
-                    label="Contact Person / Ref"
-                    placeholder="e.g. Mr Sunil"
-                    value={buyerForm.contactPerson}
-                    onChange={(e) => setBuyerForm({ ...buyerForm, contactPerson: e.target.value })}
-                  />
-                  <Input
-                    label="Contact Phone"
-                    placeholder="e.g. +91 9326392294"
-                    value={buyerForm.phone}
-                    onChange={(e) => setBuyerForm({ ...buyerForm, phone: e.target.value })}
-                  />
-                </div>
-
-                <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800">
-                  <Button type="button" variant="secondary" onClick={() => setIsEditingBuyer(false)} className="rounded text-xs">
-                    Cancel
-                  </Button>
-                  <Button type="submit" variant="primary" className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold">
-                    <Save size={13} className="mr-1.5 inline" /> Save Customer to Directory
-                  </Button>
-                </div>
-              </form>
-            </div>
-          )}
-
-          {/* Customers Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredBuyers.map((b) => (
-              <div
-                key={b.id}
-                className="p-4 bg-slate-900/70 border border-slate-800 hover:border-indigo-500/50 rounded-md space-y-3.5 shadow-sm transition-all flex flex-col justify-between"
-              >
-                <div className="space-y-2.5">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded bg-indigo-600/20 text-indigo-400 flex items-center justify-center shrink-0">
-                        <Building size={14} />
-                      </div>
-                      <h3 className="font-bold text-slate-100 text-xs leading-tight">{b.name}</h3>
-                    </div>
-                  </div>
-
-                  <div className="text-xs space-y-1 text-slate-300 pt-2 border-t border-slate-800/80">
-                    <div>
-                      <span className="text-slate-500 font-medium">GSTIN: </span>
-                      <span className="font-mono text-indigo-300 font-bold">{b.gstin || 'N/A'}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 font-medium">State: </span>
-                      <span className="text-slate-300">{b.state || 'Maharashtra (27)'}</span>
-                    </div>
-                    <div className="text-[11px] text-slate-400 line-clamp-2">
-                      <span className="text-slate-500">Address: </span>
-                      <span>{b.address ? b.address.replace(/\n/g, ', ') : '-'}</span>
-                    </div>
-                    {b.contactPerson && (
-                      <div className="text-[11px] text-slate-400">
-                        <span className="text-slate-500">Contact: </span>
-                        <span>{b.contactPerson} {b.phone ? `(${b.phone})` : ''}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-2.5 border-t border-slate-800/80 gap-2">
-                  <button
-                    type="button"
-                    className="px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-500/40 text-indigo-200 hover:text-white rounded text-xs font-semibold transition-colors flex-1 flex items-center justify-center gap-1"
-                    onClick={() => {
-                      navigate('/documents/new/TAX_INVOICE', {
-                        state: {
-                          templateData: {
-                            buyerName: b.name,
-                            buyerAddress: b.address,
-                            buyerState: b.state,
-                            buyerGstin: b.gstin,
-                            referenceName: b.contactPerson || '',
-                            contactNumber: b.phone || '',
-                          },
-                        },
-                      });
-                    }}
-                  >
-                    <Plus size={13} />
-                    <span>Bill this Customer</span>
-                  </button>
-
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      className="p-1.5 text-slate-400 hover:text-indigo-300 hover:bg-slate-800 rounded transition-colors"
-                      onClick={() => handleStartEditBuyer(b)}
-                      title="Edit Customer"
-                    >
-                      <Pencil size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition-colors"
-                      onClick={() => handleDeleteBuyer(b.id)}
-                      title="Delete Customer"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* TAB 3: SHIPPERS & DESTINATIONS DIRECTORY */}
-      {/* ========================================================================= */}
-      {activeTab === 'SHIPPERS' && (
-        <div className="space-y-6">
-          {/* Destination Create / Edit Card */}
-          {isEditingShipper && (
-            <div className="p-5 bg-slate-900/95 border border-indigo-500/50 rounded-md shadow-xl space-y-5 animate-scale-in">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                <h2 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-                  <Truck size={16} className="text-indigo-400" />
-                  <span>{editingShipper ? `Edit Destination: ${editingShipper.name}` : 'Add New Delivery Destination'}</span>
-                </h2>
-                <button
-                  type="button"
-                  className="text-xs text-slate-400 hover:text-white px-2.5 py-1 bg-slate-800 rounded hover:bg-slate-700 transition-colors flex items-center gap-1"
-                  onClick={() => setIsEditingShipper(false)}
-                >
-                  <X size={13} /> Close
-                </button>
-              </div>
-
-              <form onSubmit={handleSaveShipper} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Input
-                    label="Destination / Warehouse Name *"
-                    placeholder="e.g. Sai Warehouse & Transport / Bhiwandi Site"
-                    value={shipperForm.name}
-                    onChange={(e) => setShipperForm({ ...shipperForm, name: e.target.value })}
-                    required
-                  />
-                  <Input
-                    label="GSTIN / UIN"
-                    placeholder="e.g. 27AAECE7206P1Z9"
-                    value={shipperForm.gstin}
-                    onChange={(e) => setShipperForm({ ...shipperForm, gstin: e.target.value })}
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs text-slate-400 font-medium">Delivery Destination Address *</label>
-                  <textarea
-                    rows={3}
-                    className="w-full p-2.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200"
-                    placeholder="Full physical delivery location address"
-                    value={shipperForm.address}
-                    onChange={(e) => setShipperForm({ ...shipperForm, address: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <Input
-                    label="State"
-                    value={shipperForm.state}
-                    onChange={(e) => setShipperForm({ ...shipperForm, state: e.target.value })}
-                  />
-                  <Input
-                    label="Site Contact Person"
-                    placeholder="e.g. Mr Ramesh"
-                    value={shipperForm.contactPerson}
-                    onChange={(e) => setShipperForm({ ...shipperForm, contactPerson: e.target.value })}
-                  />
-                  <Input
-                    label="Site Phone"
-                    placeholder="e.g. +91 9820011223"
-                    value={shipperForm.phone}
-                    onChange={(e) => setShipperForm({ ...shipperForm, phone: e.target.value })}
-                  />
-                </div>
-
-                <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800">
-                  <Button type="button" variant="secondary" onClick={() => setIsEditingShipper(false)} className="rounded text-xs">
-                    Cancel
-                  </Button>
-                  <Button type="submit" variant="primary" className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold">
-                    <Save size={13} className="mr-1.5 inline" /> Save Destination to Directory
-                  </Button>
-                </div>
-              </form>
-            </div>
-          )}
-
-          {/* Shippers Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredShippers.map((s) => (
-              <div
-                key={s.id}
-                className="p-4 bg-slate-900/70 border border-slate-800 hover:border-indigo-500/50 rounded-md space-y-3.5 shadow-sm transition-all flex flex-col justify-between"
-              >
-                <div className="space-y-2.5">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded bg-emerald-600/20 text-emerald-400 flex items-center justify-center shrink-0">
-                        <Truck size={14} />
-                      </div>
-                      <h3 className="font-bold text-slate-100 text-xs leading-tight">{s.name}</h3>
-                    </div>
-                  </div>
-
-                  <div className="text-xs space-y-1 text-slate-300 pt-2 border-t border-slate-800/80">
-                    <div>
-                      <span className="text-slate-500 font-medium">GSTIN: </span>
-                      <span className="font-mono text-indigo-300 font-bold">{s.gstin || 'N/A'}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 font-medium">State: </span>
-                      <span className="text-slate-300">{s.state || 'Maharashtra (27)'}</span>
-                    </div>
-                    <div className="text-[11px] text-slate-400 line-clamp-2">
-                      <span className="text-slate-500">Address: </span>
-                      <span>{s.address ? s.address.replace(/\n/g, ', ') : '-'}</span>
-                    </div>
-                    {s.contactPerson && (
-                      <div className="text-[11px] text-slate-400">
-                        <span className="text-slate-500">Contact: </span>
-                        <span>{s.contactPerson} {s.phone ? `(${s.phone})` : ''}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-2.5 border-t border-slate-800/80 gap-2">
-                  <button
-                    type="button"
-                    className="px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-500/40 text-emerald-200 hover:text-white rounded text-xs font-semibold transition-colors flex-1 flex items-center justify-center gap-1"
-                    onClick={() => {
-                      navigate('/documents/new/TAX_INVOICE', {
-                        state: {
-                          templateData: {
-                            consigneeName: s.name,
-                            consigneeAddress: s.address,
-                            consigneeState: s.state,
-                            consigneeGstin: s.gstin,
-                            transportName: s.name,
-                          },
-                        },
-                      });
-                    }}
-                  >
-                    <Plus size={13} />
-                    <span>Ship to this Location</span>
-                  </button>
-
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      className="p-1.5 text-slate-400 hover:text-indigo-300 hover:bg-slate-800 rounded transition-colors"
-                      onClick={() => handleStartEditShipper(s)}
-                      title="Edit Destination"
-                    >
-                      <Pencil size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition-colors"
-                      onClick={() => handleDeleteShipper(s.id)}
-                      title="Delete Destination"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* TAB 4: VENDOR & EXPENSE PROFILES DIRECTORY */}
-      {/* ========================================================================= */}
-      {activeTab === 'VENDORS' && (
-        <div className="space-y-6">
-          {/* Vendor Create / Edit Card */}
-          {isEditingVendor && (
-            <div className="p-5 bg-slate-900/95 border border-indigo-500/50 rounded-md shadow-xl space-y-5 animate-scale-in">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                <h2 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-                  <ShoppingBag size={16} className="text-indigo-400" />
-                  <span>{editingVendor ? `Edit Vendor Template: ${editingVendor.name}` : 'Add New Vendor Template'}</span>
-                </h2>
-                <button
-                  type="button"
-                  className="text-xs text-slate-400 hover:text-white px-2.5 py-1 bg-slate-800 rounded hover:bg-slate-700 transition-colors flex items-center gap-1"
-                  onClick={() => setIsEditingVendor(false)}
-                >
-                  <X size={13} /> Close
-                </button>
-              </div>
-
-              <form onSubmit={handleSaveVendor} className="space-y-4">
+              <form onSubmit={handleSaveParty} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="sm:col-span-2">
                     <Input
-                      label="Vendor / Company Name *"
-                      placeholder="e.g. DGR Packaging Company / Celebi Cargo Terminal"
-                      value={vendorForm.name}
-                      onChange={(e) => setVendorForm({ ...vendorForm, name: e.target.value })}
+                      label="Company Name *"
+                      placeholder="e.g. DGR GLOBAL LOGISTICS / TAKAI CHEMTECH / CELEBI"
+                      value={partyForm.name}
+                      onChange={(e) => setPartyForm({ ...partyForm, name: e.target.value })}
                       required
                     />
                   </div>
                   <Input
-                    label="Vendor GSTIN (Optional)"
-                    placeholder="e.g. 27CBKPK7600K1ZE"
-                    value={vendorForm.gstin}
-                    onChange={(e) => setVendorForm({ ...vendorForm, gstin: e.target.value })}
+                    label="GSTIN (Optional)"
+                    placeholder="e.g. 27NSAPK0224B1Z7"
+                    value={partyForm.gstin}
+                    onChange={(e) => {
+                      const val = e.target.value.toUpperCase();
+                      const detected = getIndianStateFromGstin(val);
+                      setPartyForm({
+                        ...partyForm,
+                        gstin: val,
+                        state: detected || partyForm.state,
+                      });
+                    }}
                   />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="text-xs text-slate-400 font-medium block mb-1">Expense Category</label>
-                    <select
-                      className="w-full p-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200"
-                      value={vendorForm.category}
-                      onChange={(e) => setVendorForm({ ...vendorForm, category: e.target.value })}
-                    >
-                      <option value="DGD">DGD Documentation Charges</option>
-                      <option value="PACKAGING">Packaging & UN Boxes</option>
-                      <option value="AIR_FREIGHT">Airline Freight Cost</option>
-                      <option value="SEA_FREIGHT">Ocean Freight Cost</option>
-                      <option value="CUSTOMS">Customs Clearance & Brokerage</option>
-                      <option value="TRANSPORT">Transport / Cartage / Courier</option>
-                      <option value="WAREHOUSE">Warehouse & Handling</option>
-                      <option value="OTHER">Other Vendor Expense</option>
-                    </select>
+                  <div className="sm:col-span-2 flex flex-col gap-1">
+                    <label className="text-xs text-slate-400 font-medium">Address</label>
+                    <textarea
+                      rows={2}
+                      className="w-full p-2.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200"
+                      placeholder="Full office or warehouse address..."
+                      value={partyForm.address}
+                      onChange={(e) => setPartyForm({ ...partyForm, address: e.target.value })}
+                    />
                   </div>
-
-                  <div>
-                    <label className="text-xs text-slate-400 font-medium block mb-1">Default GST Rate</label>
-                    <select
-                      className="w-full p-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200"
-                      value={vendorForm.defaultGstRate}
-                      onChange={(e) => setVendorForm({ ...vendorForm, defaultGstRate: parseFloat(e.target.value) })}
-                    >
-                      <option value="0">0% (Nil / Exempt)</option>
-                      <option value="5">5% GST</option>
-                      <option value="12">12% GST</option>
-                      <option value="18">18% GST (Standard Services)</option>
-                      <option value="28">28% GST</option>
-                    </select>
-                  </div>
-
                   <Input
                     label="State"
-                    value={vendorForm.state}
-                    onChange={(e) => setVendorForm({ ...vendorForm, state: e.target.value })}
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs text-slate-400 font-medium">Default Service / Product Description</label>
-                  <input
-                    type="text"
-                    className="w-full p-2.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200"
-                    placeholder="e.g. UN Approved 4G Fibreboard Boxes, DG Packaging & Labeling Materials"
-                    value={vendorForm.defaultDescription}
-                    onChange={(e) => setVendorForm({ ...vendorForm, defaultDescription: e.target.value })}
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs text-slate-400 font-medium">Vendor Office / Warehouse Address</label>
-                  <textarea
-                    rows={2}
-                    className="w-full p-2.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200"
-                    placeholder="Full physical address of supplier"
-                    value={vendorForm.address}
-                    onChange={(e) => setVendorForm({ ...vendorForm, address: e.target.value })}
+                    placeholder="e.g. Maharashtra (27)"
+                    value={partyForm.state}
+                    onChange={(e) => setPartyForm({ ...partyForm, state: e.target.value })}
                   />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <Input
                     label="Contact Person"
-                    placeholder="e.g. Mr Sunil"
-                    value={vendorForm.contactPerson}
-                    onChange={(e) => setVendorForm({ ...vendorForm, contactPerson: e.target.value })}
+                    placeholder="e.g. Mr Sunil / Rajesh"
+                    value={partyForm.contactPerson}
+                    onChange={(e) => setPartyForm({ ...partyForm, contactPerson: e.target.value })}
                   />
                   <Input
-                    label="Phone"
+                    label="Phone / Mobile"
                     placeholder="e.g. +91 9326392294"
-                    value={vendorForm.phone}
-                    onChange={(e) => setVendorForm({ ...vendorForm, phone: e.target.value })}
+                    value={partyForm.phone}
+                    onChange={(e) => setPartyForm({ ...partyForm, phone: e.target.value })}
                   />
                   <Input
                     label="Email"
-                    placeholder="e.g. vendor@logistics.com"
-                    value={vendorForm.email}
-                    onChange={(e) => setVendorForm({ ...vendorForm, email: e.target.value })}
+                    placeholder="e.g. accounts@logistics.com"
+                    value={partyForm.email}
+                    onChange={(e) => setPartyForm({ ...partyForm, email: e.target.value })}
                   />
                 </div>
 
                 <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800">
-                  <Button type="button" variant="secondary" onClick={() => setIsEditingVendor(false)} className="rounded text-xs">
+                  <Button type="button" variant="secondary" onClick={() => setIsEditingParty(false)} className="rounded text-xs">
                     Cancel
                   </Button>
                   <Button type="submit" variant="primary" className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold">
-                    <Save size={13} className="mr-1.5 inline" /> Save Vendor Template
+                    <Save size={13} className="mr-1.5 inline" /> Save Company
                   </Button>
                 </div>
               </form>
             </div>
           )}
 
-          {/* Vendors Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredVendors.map((v) => (
-              <div
-                key={v.id}
-                className="p-4 bg-slate-900/70 border border-slate-800 hover:border-indigo-500/50 rounded-md space-y-3.5 shadow-sm transition-all flex flex-col justify-between"
-              >
-                <div className="space-y-2.5">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded bg-purple-600/20 text-purple-400 flex items-center justify-center shrink-0">
-                        <ShoppingBag size={14} />
+          {/* Companies Grid */}
+          {filteredParties.length === 0 ? (
+            <div className="p-8 bg-slate-900/40 border border-dashed border-slate-800 rounded-lg text-center space-y-3 animate-fade-in">
+              <div className="w-12 h-12 rounded-full bg-slate-800/80 border border-slate-700 flex items-center justify-center mx-auto text-slate-400">
+                <Building size={22} />
+              </div>
+              <h3 className="text-sm font-semibold text-slate-200">No Companies Found</h3>
+              <p className="text-xs text-slate-400 max-w-md mx-auto">
+                {search
+                  ? `No directory entries match "${search}". Try clearing your search.`
+                  : 'You have no saved companies. Click "Add Company" or "Reset Directory" to restore defaults.'}
+              </p>
+              <div className="flex items-center justify-center gap-2.5 pt-2">
+                <Button
+                  variant="primary"
+                  onClick={handleStartCreateParty}
+                  className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold"
+                >
+                  <Plus size={13} className="mr-1.5 inline" /> Add Company
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={handleResetParties}
+                  className="rounded text-xs"
+                >
+                  <RotateCcw size={13} className="mr-1.5 inline" /> Reset Directory
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredParties.map((p) => (
+                <div
+                  key={p.id}
+                  className="p-4 bg-slate-900/70 border border-slate-800 hover:border-indigo-500/50 rounded-md space-y-3.5 shadow-sm transition-all flex flex-col justify-between"
+                >
+                  <div className="space-y-2.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded bg-indigo-600/20 text-indigo-400 flex items-center justify-center shrink-0">
+                          <Building size={14} />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-slate-100 text-xs leading-tight">{p.name}</h3>
+                          <span className="text-[10px] text-slate-400">{p.state || 'Maharashtra'}</span>
+                        </div>
                       </div>
+                    </div>
+
+                    <div className="text-xs space-y-1 text-slate-300 pt-2 border-t border-slate-800/80">
                       <div>
-                        <h3 className="font-bold text-slate-100 text-xs leading-tight">{v.name}</h3>
-                        <span className="text-[10px] px-1.5 py-0.5 bg-indigo-500/15 text-indigo-400 rounded border border-indigo-500/30 font-medium">
-                          {v.category || 'EXPENSE'}
+                        <span className="text-slate-500 font-medium">GSTIN: </span>
+                        <span className="font-mono text-indigo-400 font-bold bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                          {p.gstin || 'N/A'}
                         </span>
                       </div>
+                      <div className="text-[11px] text-slate-400 line-clamp-2">
+                        <span className="text-slate-500">Address: </span>
+                        <span>{p.address ? p.address.replace(/\n/g, ', ') : '-'}</span>
+                      </div>
+                      {(p.contactPerson || p.phone) && (
+                        <div className="text-[11px] text-slate-400">
+                          <span className="text-slate-500">Contact: </span>
+                          <span>{p.contactPerson} {p.phone ? `(${p.phone})` : ''}</span>
+                        </div>
+                      )}
+                      {p.email && (
+                        <div className="text-[11px] text-slate-400">
+                          <span className="text-slate-500">Email: </span>
+                          <span>{p.email}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  <div className="text-xs space-y-1 text-slate-300 pt-2 border-t border-slate-800/80">
-                    <div>
-                      <span className="text-slate-500 font-medium">GSTIN: </span>
-                      <span className="font-mono text-indigo-300 font-bold">{v.gstin || 'N/A'}</span>
-                    </div>
-                    {v.defaultDescription && (
-                      <div className="text-[11px] text-slate-400">
-                        <span className="text-slate-500">Service: </span>
-                        <span>{v.defaultDescription}</span>
-                      </div>
-                    )}
-                    <div className="text-[11px] text-slate-400 line-clamp-2">
-                      <span className="text-slate-500">Address: </span>
-                      <span>{v.address ? v.address.replace(/\n/g, ', ') : '-'}</span>
-                    </div>
-                    {(v.contactPerson || v.phone) && (
-                      <div className="text-[11px] text-slate-400">
-                        <span className="text-slate-500">Contact: </span>
-                        <span>{v.contactPerson} {v.phone ? `(${v.phone})` : ''}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-2.5 border-t border-slate-800/80 gap-2">
-                  <button
-                    type="button"
-                    className="px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-500/40 text-indigo-200 hover:text-white rounded text-xs font-semibold transition-colors flex-1 flex items-center justify-center gap-1"
-                    onClick={() => {
-                      navigate('/billing/purchases');
-                    }}
-                  >
-                    <Plus size={13} />
-                    <span>Record Bill</span>
-                  </button>
-
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center justify-between pt-2.5 border-t border-slate-800/80 gap-2">
                     <button
                       type="button"
-                      className="p-1.5 text-slate-400 hover:text-indigo-300 hover:bg-slate-800 rounded transition-colors"
-                      onClick={() => handleStartEditVendor(v)}
-                      title="Edit Vendor Template"
+                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-semibold transition-colors flex-1 flex items-center justify-center gap-1"
+                      onClick={() => {
+                        navigate('/documents/new/TAX_INVOICE', {
+                          state: {
+                            templateData: {
+                              buyerName: p.name,
+                              buyerAddress: p.address,
+                              buyerState: p.state,
+                              buyerGstin: p.gstin,
+                              consigneeName: p.name,
+                              consigneeAddress: p.address,
+                              consigneeState: p.state,
+                              consigneeGstin: p.gstin,
+                              placeOfSupply: p.state,
+                              referenceName: p.contactPerson,
+                              contactNumber: p.phone,
+                            },
+                          },
+                        });
+                      }}
+                      title="Create tax invoice for this company"
                     >
-                      <Pencil size={14} />
+                      <Plus size={13} />
+                      <span>Create Bill</span>
                     </button>
-                    <button
-                      type="button"
-                      className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition-colors"
-                      onClick={() => handleDeleteVendor(v.id)}
-                      title="Delete Vendor Template"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        className="p-1.5 text-slate-400 hover:text-indigo-300 hover:bg-slate-800 rounded transition-colors"
+                        onClick={() => handleStartEditParty(p)}
+                        title="Edit Company"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition-colors"
+                        onClick={() => handleDeleteParty(p.id)}
+                        title="Delete Company"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

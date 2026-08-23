@@ -45,6 +45,7 @@ import { deleteDocument, parseInvoiceDocument } from '../services/documentServic
 import { getSavedVendors, saveVendor } from '../services/billingProfileService';
 import Button from '../components/ui/Button';
 import Pagination from '../components/ui/Pagination';
+import useBodyScrollLock from '../hooks/useBodyScrollLock';
 
 export const INDIAN_GST_STATES = {
   '01': 'Jammu & Kashmir (01)',
@@ -206,6 +207,9 @@ export default function PurchaseBillsPage() {
   const [isEditingPayment, setIsEditingPayment] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [saving, setSaving] = useState(false);
+
+  // Lock background body scroll whenever any modal in this page is open
+  useBodyScrollLock(Boolean(modalOpen || viewDetailModal || viewFileModal || recordPaymentModal));
 
   // Auto-extraction states
   const [isExtracting, setIsExtracting] = useState(false);
@@ -1110,7 +1114,7 @@ export default function PurchaseBillsPage() {
 
       {/* Metrics Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <div className="p-3.5 bg-slate-900/70 border border-slate-800 rounded-md shadow-sm space-y-1">
+        <div className="p-3.5 bg-slate-900/70 border border-slate-800 rounded-md space-y-1">
           <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5">
             <ShoppingBag size={13} className="text-indigo-400" /> Total Purchase Expenses
           </div>
@@ -1118,7 +1122,7 @@ export default function PurchaseBillsPage() {
           <div className="text-[10px] text-slate-500">{totalCount} total bills recorded</div>
         </div>
 
-        <div className="p-3.5 bg-slate-900/70 border border-slate-800 rounded-md shadow-sm space-y-1">
+        <div className="p-3.5 bg-slate-900/70 border border-slate-800 rounded-md space-y-1">
           <div className="text-[11px] text-amber-400 font-medium flex items-center gap-1.5">
             <Clock size={13} className="text-amber-400" /> Pending to Pay Vendors
           </div>
@@ -1126,7 +1130,7 @@ export default function PurchaseBillsPage() {
           <div className="text-[10px] text-slate-500">{pendingBills.length} unpaid / pending bills</div>
         </div>
 
-        <div className="p-3.5 bg-slate-900/70 border border-slate-800 rounded-md shadow-sm space-y-1">
+        <div className="p-3.5 bg-slate-900/70 border border-slate-800 rounded-md space-y-1">
           <div className="text-[11px] text-emerald-400 font-medium flex items-center gap-1.5">
             <CheckCircle2 size={13} className="text-emerald-400" /> Settled / Paid to Vendors
           </div>
@@ -1134,7 +1138,7 @@ export default function PurchaseBillsPage() {
           <div className="text-[10px] text-slate-500">{paidBills.length} paid bills</div>
         </div>
 
-        <div className="p-3.5 bg-slate-900/70 border border-slate-800 rounded-md shadow-sm space-y-1">
+        <div className="p-3.5 bg-slate-900/70 border border-slate-800 rounded-md space-y-1">
           <div className="text-[11px] text-indigo-400 font-medium flex items-center gap-1.5">
             <Building size={13} className="text-indigo-400" /> Active Vendor Network
           </div>
@@ -1144,7 +1148,7 @@ export default function PurchaseBillsPage() {
       </div>
 
       {/* Long Search Bar & Controls */}
-      <div className="bg-slate-900/70 border border-slate-800 rounded-md p-3.5 space-y-3 shadow-sm">
+      <div className="bg-slate-900/70 border border-slate-800 rounded-md p-3.5 space-y-3">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
           {/* Long Search Bar */}
           <div className="relative flex-1">
@@ -1315,7 +1319,7 @@ export default function PurchaseBillsPage() {
       </div>
 
       {/* Main Bills Table */}
-      <div className="bg-slate-900/70 border border-slate-800 rounded-md overflow-hidden shadow-xl">
+      <div className="bg-slate-900/70 border border-slate-800 rounded-md overflow-hidden">
         {isLoading ? (
           <div className="p-8 space-y-3">
             {[...Array(6)].map((_, i) => (
@@ -1347,7 +1351,7 @@ export default function PurchaseBillsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="border-b border-slate-800 bg-slate-950/80 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
+                <tr className="border-b border-slate-800 bg-slate-950/50 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
                   <th className="py-3 px-4">Voucher / Bill #</th>
                   <th className="py-3 px-4">Vendor / Supplier</th>
                   <th className="py-3 px-4">Category & SAC</th>
@@ -1572,11 +1576,11 @@ export default function PurchaseBillsPage() {
           ========================================================================= */}
       {modalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fade-in"
           onClick={() => setModalOpen(false)}
         >
           <div
-            className="bg-slate-900 border border-slate-800 rounded-lg max-w-4xl w-full max-h-[92vh] flex flex-col p-5 shadow-2xl space-y-4"
+            className="bg-slate-900 border border-slate-800 rounded-md max-w-4xl w-full max-h-[92vh] flex flex-col p-5 shadow-2xl space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
@@ -1599,7 +1603,7 @@ export default function PurchaseBillsPage() {
                   type="button"
                   onClick={handleResetForm}
                   title="Reset / clear form fields"
-                  className="text-slate-400 hover:text-indigo-300 text-xs px-2.5 py-1.5 bg-slate-800/90 hover:bg-slate-800 rounded transition-colors flex items-center gap-1.5 font-medium border border-slate-700/60"
+                  className="text-xs px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-indigo-400 rounded transition-colors flex items-center gap-1.5 font-medium border border-slate-700/60 cursor-pointer"
                 >
                   <RotateCcw size={13} className="text-amber-400" />
                   <span>Reset Form</span>
@@ -1607,7 +1611,7 @@ export default function PurchaseBillsPage() {
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="text-slate-400 hover:text-white p-1.5 hover:bg-slate-800 rounded transition-colors"
+                  className="text-slate-400 hover:text-slate-100 p-1.5 hover:bg-slate-800 rounded transition-colors cursor-pointer"
                 >
                   <X size={18} />
                 </button>
@@ -2425,7 +2429,7 @@ export default function PurchaseBillsPage() {
                   variant="secondary"
                   type="button"
                   onClick={handleResetForm}
-                  className="rounded text-xs px-3.5 py-2 text-slate-300 hover:text-white"
+                  className="rounded text-xs px-3.5 py-2"
                 >
                   <RotateCcw size={13} className="mr-1.5 inline text-amber-400" /> Reset Form
                 </Button>
@@ -2465,11 +2469,11 @@ export default function PurchaseBillsPage() {
 
         return (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fade-in"
             onClick={() => setViewDetailModal(null)}
           >
             <div
-              className="bg-slate-900 border border-slate-800 rounded-lg max-w-2xl w-full max-h-[90vh] flex flex-col p-5 shadow-2xl space-y-4"
+              className="bg-slate-900 border border-slate-800 rounded-md max-w-2xl w-full max-h-[90vh] flex flex-col p-5 shadow-2xl space-y-4"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
@@ -2749,7 +2753,7 @@ export default function PurchaseBillsPage() {
           ========================================================================= */}
       {viewFileModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fade-in"
           onClick={() => setViewFileModal(null)}
         >
           <div
@@ -2790,7 +2794,7 @@ export default function PurchaseBillsPage() {
 
         return (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fade-in"
             onClick={() => setRecordPaymentModal(null)}
           >
             <div

@@ -1,9 +1,24 @@
+import { useAuthStore } from '../store/authStore';
+
 /**
  * Billing Profiles & Templates Service
  * Stores default and user-saved customer profiles, delivery destinations, and full invoice templates.
+ * All user-created templates and directories are strictly scoped and isolated per user account.
  */
 
-const STORAGE_KEY = 'cargohub_billing_profiles';
+function getUserScopedKey(baseKey) {
+  try {
+    const user = useAuthStore.getState().user;
+    const userKey = user?.id || user?.username || 'shared';
+    return `${baseKey}_${userKey}`;
+  } catch {
+    return `${baseKey}_default`;
+  }
+}
+
+const STORAGE_KEY_BASE = 'cargohub_billing_profiles';
+const PARTIES_STORAGE_KEY_BASE = 'cargohub_unified_parties_directory';
+const ITEM_PRESETS_STORAGE_KEY_BASE = 'cargo_billing_item_presets_directory';
 
 // Built-in starter profiles & templates (matching Excel & PDF reference files)
 export const DEFAULT_BILLING_PROFILES = [
@@ -235,21 +250,21 @@ export const DEFAULT_BILLING_PROFILES = [
  * Load all billing profiles
  */
 export function getSavedBillingProfiles() {
+  const key = getUserScopedKey(STORAGE_KEY_BASE);
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_BILLING_PROFILES));
+    const raw = localStorage.getItem(key);
+    if (raw === null) {
+      localStorage.setItem(key, JSON.stringify(DEFAULT_BILLING_PROFILES));
       return DEFAULT_BILLING_PROFILES;
     }
     const profiles = JSON.parse(raw);
-    if (!Array.isArray(profiles) || profiles.length === 0) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_BILLING_PROFILES));
-      return DEFAULT_BILLING_PROFILES;
+    if (!Array.isArray(profiles)) {
+      return [];
     }
     return profiles;
   } catch (err) {
     console.error('Error loading billing profiles:', err);
-    return DEFAULT_BILLING_PROFILES;
+    return [];
   }
 }
 
@@ -257,6 +272,7 @@ export function getSavedBillingProfiles() {
  * Save a new or updated billing profile / template
  */
 export function saveBillingProfile(profile) {
+  const key = getUserScopedKey(STORAGE_KEY_BASE);
   const all = getSavedBillingProfiles();
   const id = profile.id || `custom_${Date.now()}`;
   const newProfile = {
@@ -273,7 +289,7 @@ export function saveBillingProfile(profile) {
     updated = [...all, newProfile];
   }
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  localStorage.setItem(key, JSON.stringify(updated));
   return newProfile;
 }
 
@@ -281,9 +297,10 @@ export function saveBillingProfile(profile) {
  * Delete any billing profile / template
  */
 export function deleteBillingProfile(profileId) {
+  const key = getUserScopedKey(STORAGE_KEY_BASE);
   const all = getSavedBillingProfiles();
   const filtered = all.filter((p) => p.id !== profileId);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+  localStorage.setItem(key, JSON.stringify(filtered));
   return true;
 }
 
@@ -291,220 +308,187 @@ export function deleteBillingProfile(profileId) {
  * Reset templates back to default starters
  */
 export function resetBillingProfilesToDefault() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_BILLING_PROFILES));
+  const key = getUserScopedKey(STORAGE_KEY_BASE);
+  localStorage.setItem(key, JSON.stringify(DEFAULT_BILLING_PROFILES));
   return DEFAULT_BILLING_PROFILES;
 }
 
-const BUYERS_STORAGE_KEY = 'cargo_billing_buyers_directory';
-const SHIPPERS_STORAGE_KEY = 'cargo_billing_shippers_directory';
+/**
+ * Get the active/first template to use by default when creating a bill
+ */
+export function getDefaultInvoiceTemplate() {
+  const profiles = getSavedBillingProfiles();
+  if (Array.isArray(profiles) && profiles.length > 0) {
+    return profiles[0];
+  }
+  return null;
+}
 
-const DEFAULT_BUYERS = [
+/**
+ * Transforms a billing profile into flat editor formData and line items
+ */
+export function profileToEditorState(profile, overrideData = {}) {
+  const currentYear = new Date().getFullYear().toString().slice(-2);
+  const nextYear = (parseInt(currentYear, 10) + 1).toString();
+  const defaultInvNo = `DGR/0496/${currentYear}-${nextYear}`;
+
+  if (!profile) {
+    const taxType = (overrideData?.buyerGstin?.startsWith('27') || !overrideData?.buyerGstin) ? 'INTRA_STATE' : 'INTER_STATE';
+    return {
+      formData: {
+        copyType: 'Original Copy',
+        docTitle: 'TAX INVOICE',
+        companyLogo: null,
+        companyName: '',
+        companyAddress: '',
+        companyCityPin: '',
+        companyPan: '',
+        companyGstin: '',
+        companyTel: '',
+        companyEmail: '',
+        bankName: '',
+        accountNumber: '',
+        ifscCode: '',
+        swiftCode: '',
+        branchName: '',
+        buyerName: '',
+        buyerAddress: '',
+        buyerState: 'Maharashtra (27)',
+        buyerGstin: '',
+        consigneeName: '',
+        consigneeAddress: '',
+        consigneeState: 'Maharashtra (27)',
+        consigneeGstin: '',
+        invoiceNumber: defaultInvNo,
+        invoiceDate: new Date().toLocaleDateString('en-GB'),
+        placeOfSupply: 'Maharashtra (27)',
+        taxType,
+        reverseCharge: 'N',
+        transport: '',
+        ewayBillNo: '',
+        airwayBillNo: '',
+        poNumberAndDate: '',
+        noOfPackages: '',
+        grossWeight: '',
+        transportName: '',
+        paidToPaid: '',
+        referenceName: '',
+        contactNumber: '',
+        termsAndConditions: '',
+        ...overrideData,
+      },
+      items: Array.isArray(overrideData?.items) && overrideData.items.length > 0
+        ? overrideData.items
+        : [
+            { sn: 1, description: '', subText: '', hsnCode: '998319', qty: 1, unit: 'Pcs', price: 0, gstRate: 18, cgstRate: 9, sgstRate: 9, igstRate: 0 }
+          ]
+    };
+  }
+
+  const comp = profile.companyDetails || {};
+  const buyer = profile.buyer || {};
+  const cons = profile.consignee || {};
+  const buyerGstin = overrideData?.buyerGstin || buyer.buyerGstin || '';
+  const taxType = overrideData?.taxType || ((buyerGstin.startsWith('27') || !buyerGstin) ? 'INTRA_STATE' : 'INTER_STATE');
+
+  const baseFormData = {
+    copyType: profile.copyType || 'Original Copy',
+    docTitle: profile.docTitle || 'TAX INVOICE',
+    companyLogo: profile.companyLogo !== undefined ? profile.companyLogo : null,
+    companyName: comp.companyName || '',
+    companyAddress: comp.companyAddress || '',
+    companyCityPin: comp.companyCityPin || '',
+    companyPan: comp.companyPan || '',
+    companyGstin: comp.companyGstin || '',
+    companyTel: comp.companyTel || '',
+    companyEmail: comp.companyEmail || '',
+    bankName: comp.bankName || '',
+    accountNumber: comp.accountNumber || '',
+    ifscCode: comp.ifscCode || '',
+    swiftCode: comp.swiftCode || '',
+    branchName: comp.branchName || '',
+    buyerName: buyer.buyerName || '',
+    buyerAddress: buyer.buyerAddress || '',
+    buyerState: buyer.buyerState || 'Maharashtra (27)',
+    buyerGstin: buyer.buyerGstin || '',
+    consigneeName: cons.consigneeName || buyer.buyerName || '',
+    consigneeAddress: cons.consigneeAddress || buyer.buyerAddress || '',
+    consigneeState: cons.consigneeState || buyer.buyerState || 'Maharashtra (27)',
+    consigneeGstin: cons.consigneeGstin || buyer.buyerGstin || '',
+    invoiceNumber: profile.invoiceNumber || defaultInvNo,
+    invoiceDate: profile.invoiceDate || new Date().toLocaleDateString('en-GB'),
+    placeOfSupply: profile.placeOfSupply || buyer.buyerState || 'Maharashtra (27)',
+    taxType,
+    reverseCharge: profile.reverseCharge || 'N',
+    transport: profile.transport || '',
+    ewayBillNo: profile.ewayBillNo || '',
+    airwayBillNo: profile.airwayBillNo || '',
+    poNumberAndDate: profile.poNumberAndDate || '',
+    noOfPackages: profile.noOfPackages || '',
+    grossWeight: profile.grossWeight || '',
+    transportName: profile.transportName || '',
+    paidToPaid: profile.paidToPaid || '',
+    referenceName: profile.referenceName || '',
+    contactNumber: profile.contactNumber || '',
+    termsAndConditions: profile.termsAndConditions || '',
+  };
+
+  let finalItems;
+  if (Array.isArray(overrideData?.items) && overrideData.items.length > 0) {
+    finalItems = overrideData.items;
+  } else if (Array.isArray(profile.items) && profile.items.length > 0) {
+    finalItems = profile.items.map((it, idx) => {
+      const gstRate = parseFloat(it.gstRate) || 0;
+      return {
+        sn: idx + 1,
+        description: it.description || '',
+        subText: it.subText || '',
+        hsnCode: it.hsnCode || '',
+        qty: it.qty !== undefined ? it.qty : 1,
+        unit: it.unit || 'Pcs',
+        price: it.price !== undefined ? it.price : 0,
+        gstRate,
+        cgstRate: taxType === 'INTRA_STATE' ? gstRate / 2 : 0,
+        sgstRate: taxType === 'INTRA_STATE' ? gstRate / 2 : 0,
+        igstRate: taxType === 'INTRA_STATE' ? 0 : gstRate,
+      };
+    });
+  } else {
+    finalItems = [
+      { sn: 1, description: '', subText: '', hsnCode: '998319', qty: 1, unit: 'Pcs', price: 0, gstRate: 18, cgstRate: 9, sgstRate: 9, igstRate: 0 }
+    ];
+  }
+
+  return {
+    formData: {
+      ...baseFormData,
+      ...overrideData,
+    },
+    items: finalItems,
+  };
+}
+
+const PARTIES_STORAGE_KEY = 'cargo_billing_parties_directory';
+
+export const DEFAULT_PARTIES = [
   {
-    id: 'buyer_dgr_global',
+    id: 'party_dgr_global',
     name: 'DGR GLOBAL LOGISTICS',
-    address: 'GROUND FLOOR ROOM -003\nG M NAGAR NARANGI BAYPASS ROAD\nVIRAR EAST VASAI VIRAR PALGHAR -401305',
+    roles: ['CUSTOMER', 'DESTINATION', 'VENDOR'],
+    address: 'GROUND FLOOR ROOM -003, G M NAGAR NARANGI BAYPASS ROAD, VIRAR EAST, PALGHAR - 401305',
     state: 'Maharashtra (27)',
     gstin: '27NSAPK0224B1Z7',
-    contactPerson: 'Mr Sunil',
+    category: 'DGD',
+    defaultGstRate: 18,
+    defaultDescription: 'DGD Documentation Charges, DG Certification, Inspection & UN Packaging',
+    contactPerson: 'Sunil Gawas',
     phone: '+91 9326392294',
     email: 'dgr.export.logistics@gmail.com',
   },
   {
-    id: 'buyer_takai',
-    name: 'TAKAI CHEMTECH INTERNATIONAL PVT LTD',
-    address: 'A-218 Sagar Tech Plaza, Saki Naka Junction, Andheri Kurla Road, Andheri East Mumbai Maharashtra India 400072.',
-    state: 'Maharashtra (27)',
-    gstin: '27AAMCT0922D1Z1',
-    contactPerson: 'Accounts Dept',
-    phone: '+91 9820011223',
-    email: 'accounts@takaichem.com',
-  },
-  {
-    id: 'buyer_efficient',
-    name: 'EFFICIENT FREIGHT FORWARDERS PVT LTD',
-    address: '2nd Floor/ C-205, Damji Shamji Corporate Square, Ghatkopar Andheri Link Road, Ghatkopar East, Mumbai-400077, Maharashtra, INDIA.',
-    state: 'Maharashtra (27)',
-    gstin: '27AAECE7206P1Z9',
-    contactPerson: 'Mr Sunil',
-    phone: '9221876157',
-    email: 'ops@efficientfreight.com',
-  },
-  {
-    id: 'buyer_manifest',
-    name: 'MANIFEST EXPRESS LOGISTICS LLP',
-    address: '2ND FLOOR A WING, 218, Sagar Tech Plaza, Andheri Kurla Road, Sakinaka Junction, Mumbai, Mumbai Suburban, Maharashtra, 400072',
-    state: 'Maharashtra (27)',
-    gstin: '27ABYFM3165B1Z0',
-    contactPerson: 'AADISH IMPEX',
-    phone: '+91 9619507404',
-    email: 'manifest@express.in',
-  },
-];
-
-const DEFAULT_SHIPPERS = [
-  {
-    id: 'dest_dgr_global',
-    name: 'DGR GLOBAL LOGISTICS',
-    address: 'GROUND FLOOR ROOM -003\nG M NAGAR NARANGI BAYPASS ROAD\nVIRAR EAST VASAI VIRAR PALGHAR -401305',
-    state: 'Maharashtra (27)',
-    gstin: '27NSAPK0224B1Z7',
-    contactPerson: 'Warehouse Incharge',
-    phone: '+91 9326392294',
-  },
-  {
-    id: 'dest_sai_warehouse',
-    name: 'Sai Warehouse & Transport',
-    address: 'Gala no 2 Manish Estate, Chowdhary Compound, Behind Preeti Petrol Pump Near Ganesh Compound, PURNA BHIWANDI',
-    state: 'Maharashtra (27)',
-    gstin: '27AAECE7206P1Z9',
-    contactPerson: 'Mr Sai',
-    phone: '9221876157',
-  },
-  {
-    id: 'dest_unisource',
-    name: 'Unisource Chemicals Pvt Ltd',
-    address: 'L-15, Tarapur M.I.D.C, Kalvada Naka, Kolavade, Maharashtra 401506',
-    state: 'Maharashtra (27)',
-    gstin: '27AAECE7206P1Z9',
-    contactPerson: 'Ravi',
-    phone: '70211 57707',
-  },
-  {
-    id: 'dest_manifest',
-    name: 'MANIFEST EXPRESS LOGISTICS LLP',
-    address: '2ND FLOOR A WING, 218, Sagar Tech Plaza, Andheri Kurla Road, Sakinaka Junction, Mumbai, Mumbai Suburban, Maharashtra, 400072',
-    state: 'Maharashtra (27)',
-    gstin: '27ABYFM3165B1Z0',
-    contactPerson: 'Operations Desk',
-    phone: '+91 9619507404',
-  },
-];
-
-/**
- * Load all Customer / Buyer Profiles
- */
-export function getSavedBuyers() {
-  try {
-    const raw = localStorage.getItem(BUYERS_STORAGE_KEY);
-    if (!raw) {
-      localStorage.setItem(BUYERS_STORAGE_KEY, JSON.stringify(DEFAULT_BUYERS));
-      return DEFAULT_BUYERS;
-    }
-    const buyers = JSON.parse(raw);
-    if (!Array.isArray(buyers) || buyers.length === 0) {
-      localStorage.setItem(BUYERS_STORAGE_KEY, JSON.stringify(DEFAULT_BUYERS));
-      return DEFAULT_BUYERS;
-    }
-    return buyers;
-  } catch (err) {
-    console.error('Error loading buyers directory:', err);
-    return DEFAULT_BUYERS;
-  }
-}
-
-/**
- * Save / Update Customer / Buyer
- */
-export function saveBuyer(buyer) {
-  const all = getSavedBuyers();
-  const id = buyer.id || `buyer_${Date.now()}`;
-  const newBuyer = {
-    ...buyer,
-    id,
-    updatedAt: new Date().toISOString(),
-  };
-
-  const existingIndex = all.findIndex((b) => b.id === id || b.name?.trim().toUpperCase() === buyer.name?.trim().toUpperCase());
-  let updated;
-  if (existingIndex >= 0) {
-    updated = all.map((b, i) => (i === existingIndex ? { ...b, ...newBuyer, id: b.id } : b));
-  } else {
-    updated = [newBuyer, ...all];
-  }
-
-  localStorage.setItem(BUYERS_STORAGE_KEY, JSON.stringify(updated));
-  return newBuyer;
-}
-
-/**
- * Delete Customer / Buyer
- */
-export function deleteBuyer(buyerId) {
-  const all = getSavedBuyers();
-  const filtered = all.filter((b) => b.id !== buyerId);
-  localStorage.setItem(BUYERS_STORAGE_KEY, JSON.stringify(filtered));
-  return true;
-}
-
-/**
- * Load all Shipper / Delivery Destinations
- */
-export function getSavedShippers() {
-  try {
-    const raw = localStorage.getItem(SHIPPERS_STORAGE_KEY);
-    if (!raw) {
-      localStorage.setItem(SHIPPERS_STORAGE_KEY, JSON.stringify(DEFAULT_SHIPPERS));
-      return DEFAULT_SHIPPERS;
-    }
-    const shippers = JSON.parse(raw);
-    if (!Array.isArray(shippers) || shippers.length === 0) {
-      localStorage.setItem(SHIPPERS_STORAGE_KEY, JSON.stringify(DEFAULT_SHIPPERS));
-      return DEFAULT_SHIPPERS;
-    }
-    return shippers;
-  } catch (err) {
-    console.error('Error loading shippers directory:', err);
-    return DEFAULT_SHIPPERS;
-  }
-}
-
-/**
- * Save / Update Shipper / Delivery Destination
- */
-export function saveShipper(shipper) {
-  const all = getSavedShippers();
-  const id = shipper.id || `dest_${Date.now()}`;
-  const newShipper = {
-    ...shipper,
-    id,
-    updatedAt: new Date().toISOString(),
-  };
-
-  const existingIndex = all.findIndex((s) => s.id === id || s.name?.trim().toUpperCase() === shipper.name?.trim().toUpperCase());
-  let updated;
-  if (existingIndex >= 0) {
-    updated = all.map((s, i) => (i === existingIndex ? { ...s, ...newShipper, id: s.id } : s));
-  } else {
-    updated = [newShipper, ...all];
-  }
-
-  localStorage.setItem(SHIPPERS_STORAGE_KEY, JSON.stringify(updated));
-  return newShipper;
-}
-
-/**
- * Delete Shipper / Delivery Destination
- */
-export function deleteShipper(shipperId) {
-  const all = getSavedShippers();
-  const filtered = all.filter((s) => s.id !== shipperId);
-  localStorage.setItem(SHIPPERS_STORAGE_KEY, JSON.stringify(filtered));
-  return true;
-}
-
-/**
- * Get distinct list of all Buyer / Client Parties for search-and-select
- */
-export function getDistinctParties() {
-  return getSavedBuyers();
-}
-
-const VENDORS_STORAGE_KEY = 'cargo_billing_vendors_directory';
-
-export const DEFAULT_VENDORS = [
-  {
-    id: 'vendor_dgr_packaging',
+    id: 'party_dgr_packaging',
     name: 'DGR PACKAGING COMPANY',
+    roles: ['VENDOR'],
     address: 'SHOP NO.2, OPP. BLUE DART, NEAR SAHAR CARGO COMPLEX, ANDHERI (E), MUMBAI - 400 099',
     state: 'Maharashtra (27)',
     gstin: '27CBKPK7600K1ZE',
@@ -516,35 +500,10 @@ export const DEFAULT_VENDORS = [
     email: 'dgrpackaging@gmail.com',
   },
   {
-    id: 'vendor_dgr_global',
-    name: 'DGR GLOBAL LOGISTICS',
-    address: 'GROUND FLOOR ROOM -003, G M NAGAR NARANGI BYPASS ROAD, VIRAR EAST, PALGHAR - 401305',
-    state: 'Maharashtra (27)',
-    gstin: '27NSAPK0224B1Z7',
-    category: 'DGD',
-    defaultGstRate: 18,
-    defaultDescription: 'DGD Documentation Charges, DG Certification, Inspection & UN Packaging',
-    contactPerson: 'Sunil Gawas',
-    phone: '+91 9326392294',
-    email: 'dgr.export.logistics@gmail.com',
-  },
-  {
-    id: 'vendor_efficient',
-    name: 'EFFICIENT FREIGHT FORWARDERS PVT LTD',
-    address: '2nd Floor, Damji Shamji Corporate Square, Ghatkopar Andheri Link Road, Mumbai - 400077',
-    state: 'Maharashtra (27)',
-    gstin: '27AAECE7206P1Z9',
-    category: 'TRANSPORT',
-    defaultGstRate: 18,
-    defaultDescription: 'Airport Cartage, Local Transport & Cargo Handling Charges',
-    contactPerson: 'Mr Sunil',
-    phone: '9221876157',
-    email: 'ops@efficientfreight.com',
-  },
-  {
-    id: 'vendor_takai',
+    id: 'party_takai',
     name: 'TAKAI CHEMTECH INTERNATIONAL PVT LTD',
-    address: 'A-218 Sagar Tech Plaza, Saki Naka Junction, Andheri Kurla Road, Andheri East Mumbai 400072',
+    roles: ['CUSTOMER', 'DESTINATION', 'VENDOR'],
+    address: 'A-218 Sagar Tech Plaza, Saki Naka Junction, Andheri Kurla Road, Andheri East Mumbai Maharashtra India 400072.',
     state: 'Maharashtra (27)',
     gstin: '27AAMCT0922D1Z1',
     category: 'DGD',
@@ -555,8 +514,65 @@ export const DEFAULT_VENDORS = [
     email: 'accounts@takaichem.com',
   },
   {
-    id: 'vendor_celebi',
+    id: 'party_efficient',
+    name: 'EFFICIENT FREIGHT FORWARDERS PVT LTD',
+    roles: ['CUSTOMER', 'DESTINATION', 'VENDOR'],
+    address: '2nd Floor/ C-205, Damji Shamji Corporate Square, Ghatkopar Andheri Link Road, Ghatkopar East, Mumbai-400077, Maharashtra, INDIA.',
+    state: 'Maharashtra (27)',
+    gstin: '27AAECE7206P1Z9',
+    category: 'TRANSPORT',
+    defaultGstRate: 18,
+    defaultDescription: 'Airport Cartage, Local Transport & Cargo Handling Charges',
+    contactPerson: 'Mr Sunil',
+    phone: '9221876157',
+    email: 'ops@efficientfreight.com',
+  },
+  {
+    id: 'party_manifest',
+    name: 'MANIFEST EXPRESS LOGISTICS LLP',
+    roles: ['CUSTOMER', 'DESTINATION'],
+    address: '2ND FLOOR A WING, 218, Sagar Tech Plaza, Andheri Kurla Road, Sakinaka Junction, Mumbai, Mumbai Suburban, Maharashtra, 400072',
+    state: 'Maharashtra (27)',
+    gstin: '27ABYFM3165B1Z0',
+    category: 'TRANSPORT',
+    defaultGstRate: 18,
+    defaultDescription: 'Express Cargo & Logistics Forwarding',
+    contactPerson: 'AADISH IMPEX',
+    phone: '+91 9619507404',
+    email: 'manifest@express.in',
+  },
+  {
+    id: 'party_sai_warehouse',
+    name: 'Sai Warehouse & Transport',
+    roles: ['DESTINATION', 'VENDOR'],
+    address: 'Gala no 2 Manish Estate, Chowdhary Compound, Behind Preeti Petrol Pump Near Ganesh Compound, PURNA BHIWANDI',
+    state: 'Maharashtra (27)',
+    gstin: '27AAECE7206P1Z9',
+    category: 'WAREHOUSE',
+    defaultGstRate: 18,
+    defaultDescription: 'DG Storage, Palletization & Secure Strapping Charges',
+    contactPerson: 'Mr Sai',
+    phone: '9221876157',
+    email: 'sai.warehouse@logistics.in',
+  },
+  {
+    id: 'party_unisource',
+    name: 'Unisource Chemicals Pvt Ltd',
+    roles: ['DESTINATION'],
+    address: 'L-15, Tarapur M.I.D.C, Kalvada Naka, Kolavade, Maharashtra 401506',
+    state: 'Maharashtra (27)',
+    gstin: '27AAECE7206P1Z9',
+    category: 'OTHER',
+    defaultGstRate: 18,
+    defaultDescription: '',
+    contactPerson: 'Ravi',
+    phone: '70211 57707',
+    email: '',
+  },
+  {
+    id: 'party_celebi',
     name: 'CELEBI DELHI CARGO TERMINAL MANAGEMENT',
+    roles: ['VENDOR'],
     address: 'Cargo Terminal 2, IGI Airport, New Delhi - 110037',
     state: 'Delhi (07)',
     gstin: '07AABCC1234F1Z8',
@@ -568,21 +584,9 @@ export const DEFAULT_VENDORS = [
     email: 'cargo@celebidelhi.com',
   },
   {
-    id: 'vendor_sai_warehouse',
-    name: 'SAI WAREHOUSE & LOGISTICS',
-    address: 'Gala no 2 Manish Estate, Chowdhary Compound, Purna Bhiwandi, Maharashtra',
-    state: 'Maharashtra (27)',
-    gstin: '27AAECE7206P1Z9',
-    category: 'WAREHOUSE',
-    defaultGstRate: 18,
-    defaultDescription: 'DG Storage, Palletization & Secure Strapping Charges',
-    contactPerson: 'Mr Sai',
-    phone: '9221876157',
-    email: 'sai.warehouse@logistics.in',
-  },
-  {
-    id: 'vendor_customs_clear',
+    id: 'party_customs_clear',
     name: 'SAHAR CUSTOMS CLEARING & BROKERAGE',
+    roles: ['VENDOR'],
     address: 'Air Cargo Complex, Sahar, Andheri (E), Mumbai - 400 099',
     state: 'Maharashtra (27)',
     gstin: '27AAACR1234F1Z5',
@@ -596,69 +600,134 @@ export const DEFAULT_VENDORS = [
 ];
 
 /**
- * Load all Vendor Profiles / Templates
+ * Load all Parties (Customers, Destinations, Vendors) from unified directory
  */
-export function getSavedVendors() {
+export function getSavedParties() {
+  const key = getUserScopedKey(PARTIES_STORAGE_KEY_BASE);
   try {
-    const raw = localStorage.getItem(VENDORS_STORAGE_KEY);
-    if (!raw) {
-      localStorage.setItem(VENDORS_STORAGE_KEY, JSON.stringify(DEFAULT_VENDORS));
-      return DEFAULT_VENDORS;
+    const raw = localStorage.getItem(key);
+    if (raw === null) {
+      localStorage.setItem(key, JSON.stringify(DEFAULT_PARTIES));
+      return DEFAULT_PARTIES;
     }
-    const vendors = JSON.parse(raw);
-    if (!Array.isArray(vendors) || vendors.length === 0) {
-      localStorage.setItem(VENDORS_STORAGE_KEY, JSON.stringify(DEFAULT_VENDORS));
-      return DEFAULT_VENDORS;
+    const parties = JSON.parse(raw);
+    if (!Array.isArray(parties)) {
+      return [];
     }
-    return vendors;
+    return parties;
   } catch (err) {
-    console.error('Error loading vendors directory:', err);
-    return DEFAULT_VENDORS;
+    console.error('Error loading parties directory:', err);
+    return [];
   }
 }
 
 /**
- * Save / Update Vendor Template
+ * Save / Update Party in the unified directory
  */
-export function saveVendor(vendor) {
-  const all = getSavedVendors();
-  const id = vendor.id || `vendor_${Date.now()}`;
-  const newVendor = {
-    ...vendor,
+export function saveParty(party) {
+  const key = getUserScopedKey(PARTIES_STORAGE_KEY_BASE);
+  const all = getSavedParties();
+  const id = party.id || `party_${Date.now()}`;
+  const roles = Array.isArray(party.roles) && party.roles.length > 0 ? party.roles : ['CUSTOMER'];
+
+  const newParty = {
+    ...party,
     id,
+    roles,
     updatedAt: new Date().toISOString(),
   };
 
   const existingIndex = all.findIndex(
-    (v) => v.id === id || (v.name && vendor.name && v.name.trim().toUpperCase() === vendor.name.trim().toUpperCase())
+    (p) => p.id === id || (p.name && party.name && p.name.trim().toUpperCase() === party.name.trim().toUpperCase())
   );
+
   let updated;
   if (existingIndex >= 0) {
-    updated = all.map((v, i) => (i === existingIndex ? { ...v, ...newVendor, id: v.id } : v));
+    const existing = all[existingIndex];
+    const combinedRoles = Array.from(new Set([...(party.roles || []), ...(existing.roles || [])]));
+    updated = all.map((p, i) => (i === existingIndex ? { ...existing, ...newParty, roles: combinedRoles, id: existing.id } : p));
   } else {
-    updated = [newVendor, ...all];
+    updated = [newParty, ...all];
   }
 
-  localStorage.setItem(VENDORS_STORAGE_KEY, JSON.stringify(updated));
-  return newVendor;
+  localStorage.setItem(key, JSON.stringify(updated));
+  return newParty;
 }
 
 /**
- * Delete Vendor Template
+ * Delete Party from unified directory
  */
-export function deleteVendor(vendorId) {
-  const all = getSavedVendors();
-  const filtered = all.filter((v) => v.id !== vendorId);
-  localStorage.setItem(VENDORS_STORAGE_KEY, JSON.stringify(filtered));
+export function deleteParty(partyId) {
+  const key = getUserScopedKey(PARTIES_STORAGE_KEY_BASE);
+  const all = getSavedParties();
+  const filtered = all.filter((p) => p.id !== partyId);
+  localStorage.setItem(key, JSON.stringify(filtered));
   return true;
 }
 
 /**
- * Reset vendors to defaults
+ * Reset all parties to defaults
  */
+export function resetPartiesToDefault() {
+  const key = getUserScopedKey(PARTIES_STORAGE_KEY_BASE);
+  localStorage.setItem(key, JSON.stringify(DEFAULT_PARTIES));
+  return DEFAULT_PARTIES;
+}
+
+// ----------------------------------------------------------------------------
+// Unified Directory Accessors
+// ----------------------------------------------------------------------------
+
+export function getSavedBuyers() {
+  return getSavedParties();
+}
+
+export function saveBuyer(buyer) {
+  return saveParty(buyer);
+}
+
+export function deleteBuyer(buyerId) {
+  return deleteParty(buyerId);
+}
+
+export function resetBuyersToDefault() {
+  return resetPartiesToDefault();
+}
+
+export function getSavedShippers() {
+  return getSavedParties();
+}
+
+export function saveShipper(shipper) {
+  return saveParty(shipper);
+}
+
+export function deleteShipper(shipperId) {
+  return deleteParty(shipperId);
+}
+
+export function resetShippersToDefault() {
+  return resetPartiesToDefault();
+}
+
+export function getDistinctParties() {
+  return getSavedParties();
+}
+
+export function getSavedVendors() {
+  return getSavedParties();
+}
+
+export function saveVendor(vendor) {
+  return saveParty(vendor);
+}
+
+export function deleteVendor(vendorId) {
+  return deleteParty(vendorId);
+}
+
 export function resetVendorsToDefault() {
-  localStorage.setItem(VENDORS_STORAGE_KEY, JSON.stringify(DEFAULT_VENDORS));
-  return DEFAULT_VENDORS;
+  return resetPartiesToDefault();
 }
 
 const ITEM_PRESETS_STORAGE_KEY = 'cargo_billing_item_presets_directory';
@@ -802,21 +871,21 @@ export const DEFAULT_ITEM_PRESETS = [
  * Load all Item & Service Presets
  */
 export function getSavedItemPresets() {
+  const key = getUserScopedKey(ITEM_PRESETS_STORAGE_KEY_BASE);
   try {
-    const raw = localStorage.getItem(ITEM_PRESETS_STORAGE_KEY);
-    if (!raw) {
-      localStorage.setItem(ITEM_PRESETS_STORAGE_KEY, JSON.stringify(DEFAULT_ITEM_PRESETS));
+    const raw = localStorage.getItem(key);
+    if (raw === null) {
+      localStorage.setItem(key, JSON.stringify(DEFAULT_ITEM_PRESETS));
       return DEFAULT_ITEM_PRESETS;
     }
     const items = JSON.parse(raw);
-    if (!Array.isArray(items) || items.length === 0) {
-      localStorage.setItem(ITEM_PRESETS_STORAGE_KEY, JSON.stringify(DEFAULT_ITEM_PRESETS));
-      return DEFAULT_ITEM_PRESETS;
+    if (!Array.isArray(items)) {
+      return [];
     }
     return items;
   } catch (err) {
     console.error('Error loading item presets directory:', err);
-    return DEFAULT_ITEM_PRESETS;
+    return [];
   }
 }
 
@@ -824,6 +893,7 @@ export function getSavedItemPresets() {
  * Save / Update Item Preset
  */
 export function saveItemPreset(preset) {
+  const key = getUserScopedKey(ITEM_PRESETS_STORAGE_KEY_BASE);
   const all = getSavedItemPresets();
   const id = preset.id || `preset_${Date.now()}`;
   const label = preset.label || `+ ${preset.description || 'New Item'} (${preset.hsnCode || 'HSN'})`;
@@ -844,7 +914,7 @@ export function saveItemPreset(preset) {
     updated = [newPreset, ...all];
   }
 
-  localStorage.setItem(ITEM_PRESETS_STORAGE_KEY, JSON.stringify(updated));
+  localStorage.setItem(key, JSON.stringify(updated));
   return newPreset;
 }
 
@@ -852,9 +922,10 @@ export function saveItemPreset(preset) {
  * Delete Item Preset
  */
 export function deleteItemPreset(presetId) {
+  const key = getUserScopedKey(ITEM_PRESETS_STORAGE_KEY_BASE);
   const all = getSavedItemPresets();
   const filtered = all.filter((p) => p.id !== presetId);
-  localStorage.setItem(ITEM_PRESETS_STORAGE_KEY, JSON.stringify(filtered));
+  localStorage.setItem(key, JSON.stringify(filtered));
   return true;
 }
 
@@ -862,7 +933,56 @@ export function deleteItemPreset(presetId) {
  * Reset item presets to default built-in list
  */
 export function resetItemPresetsToDefault() {
-  localStorage.setItem(ITEM_PRESETS_STORAGE_KEY, JSON.stringify(DEFAULT_ITEM_PRESETS));
+  const key = getUserScopedKey(ITEM_PRESETS_STORAGE_KEY_BASE);
+  localStorage.setItem(key, JSON.stringify(DEFAULT_ITEM_PRESETS));
   return DEFAULT_ITEM_PRESETS;
+}
+
+export const INDIAN_GST_STATES = {
+  '01': 'Jammu & Kashmir (01)',
+  '02': 'Himachal Pradesh (02)',
+  '03': 'Punjab (03)',
+  '04': 'Chandigarh (04)',
+  '05': 'Uttarakhand (05)',
+  '06': 'Haryana (06)',
+  '07': 'Delhi (07)',
+  '08': 'Rajasthan (08)',
+  '09': 'Uttar Pradesh (09)',
+  '10': 'Bihar (10)',
+  '11': 'Sikkim (11)',
+  '12': 'Arunachal Pradesh (12)',
+  '13': 'Nagaland (13)',
+  '14': 'Manipur (14)',
+  '15': 'Mizoram (15)',
+  '16': 'Tripura (16)',
+  '17': 'Meghalaya (17)',
+  '18': 'Assam (18)',
+  '19': 'West Bengal (19)',
+  '20': 'Jharkhand (20)',
+  '21': 'Odisha (21)',
+  '22': 'Chhattisgarh (22)',
+  '23': 'Madhya Pradesh (23)',
+  '24': 'Gujarat (24)',
+  '26': 'Daman & Diu and Dadra & Nagar Haveli (26)',
+  '27': 'Maharashtra (27)',
+  '29': 'Karnataka (29)',
+  '30': 'Goa (30)',
+  '31': 'Lakshadweep (31)',
+  '32': 'Kerala (32)',
+  '33': 'Tamil Nadu (33)',
+  '34': 'Puducherry (34)',
+  '35': 'Andaman & Nicobar Islands (35)',
+  '36': 'Telangana (36)',
+  '37': 'Andhra Pradesh (37)',
+  '38': 'Ladakh (38)',
+  '97': 'Other Territory (97)',
+};
+
+export function getIndianStateFromGstin(gstin) {
+  if (!gstin || typeof gstin !== 'string' || gstin.trim().length < 2) {
+    return '';
+  }
+  const prefix = gstin.trim().substring(0, 2);
+  return INDIAN_GST_STATES[prefix] || '';
 }
 

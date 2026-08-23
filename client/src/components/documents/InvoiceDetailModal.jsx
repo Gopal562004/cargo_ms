@@ -23,6 +23,7 @@ import {
   Paperclip,
 } from 'lucide-react';
 import Button from '../ui/Button';
+import useBodyScrollLock from '../../hooks/useBodyScrollLock';
 
 function formatINR(val) {
   const num = parseFloat(val);
@@ -38,6 +39,7 @@ export default function InvoiceDetailModal({
   onPrint,
   onPreview,
 }) {
+  useBodyScrollLock(Boolean(doc));
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'payment' | 'activity'
   const [copied, setCopied] = useState(false);
@@ -141,7 +143,7 @@ export default function InvoiceDetailModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-md animate-fade-in overflow-y-auto"
       onClick={onClose}
     >
       <div

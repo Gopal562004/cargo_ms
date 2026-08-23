@@ -37,6 +37,7 @@ import {
 import { useAuthStore } from '../store/authStore';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
+import useBodyScrollLock from '../hooks/useBodyScrollLock';
 
 export default function MasterUsersPage() {
   const { user: currentUser } = useAuthStore();
@@ -54,6 +55,8 @@ export default function MasterUsersPage() {
   const [editingUser, setEditingUser] = useState(null);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [passwordTargetUser, setPasswordTargetUser] = useState(null);
+
+  useBodyScrollLock(Boolean(isUserModalOpen || isPasswordModalOpen));
 
   // User Form State
   const [userForm, setUserForm] = useState({

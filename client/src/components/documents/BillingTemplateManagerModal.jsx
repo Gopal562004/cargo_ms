@@ -5,7 +5,7 @@ import {
   Plus,
   Pencil,
   Trash2,
-  Image,
+  Image as ImageIcon,
   Building,
   Truck,
   Save,
@@ -26,8 +26,11 @@ import {
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import GstRateSelect from '../ui/GstRateSelect';
+import useBodyScrollLock from '../../hooks/useBodyScrollLock';
 
 export default function BillingTemplateManagerModal({ isOpen, onClose, onSelectTemplate }) {
+  useBodyScrollLock(Boolean(isOpen));
+
   const [profiles, setProfiles] = useState([]);
   const [buyers, setBuyers] = useState([]);
   const [shippers, setShippers] = useState([]);
@@ -326,7 +329,7 @@ export default function BillingTemplateManagerModal({ isOpen, onClose, onSelectT
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-fade-in overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-md animate-fade-in overflow-y-auto">
       <div className="bg-slate-900 border border-slate-700 rounded-md w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden my-auto">
         {/* Header */}
         <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/80">
@@ -470,7 +473,7 @@ export default function BillingTemplateManagerModal({ isOpen, onClose, onSelectT
 
                   <div className="flex items-center gap-3">
                     <label className="cursor-pointer px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-xs font-semibold border border-slate-700 transition-colors flex items-center gap-2 mt-auto">
-                      <Image size={13} />
+                      <ImageIcon size={13} />
                       <span>{formData.companyLogo ? 'Change Logo' : 'Upload Template Logo'}</span>
                       <input
                         type="file"

@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
-import { CreditCard, X, Save, Image, Trash2 } from 'lucide-react';
+import { CreditCard, X, Save, Image as ImageIcon, Trash2 } from 'lucide-react';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
+import useBodyScrollLock from '../../hooks/useBodyScrollLock';
 
 export default function PaymentDetailsModal({ isOpen, doc, onClose, onSave }) {
+  useBodyScrollLock(Boolean(isOpen && doc));
+
   if (!isOpen || !doc) return null;
 
   const data = doc.data || {};
@@ -59,7 +62,7 @@ export default function PaymentDetailsModal({ isOpen, doc, onClose, onSave }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fade-in">
       <div className="bg-slate-900 border border-slate-800 rounded-md max-w-lg w-full p-5 shadow-xl space-y-4">
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
           <div>
@@ -157,7 +160,7 @@ export default function PaymentDetailsModal({ isOpen, doc, onClose, onSave }) {
                     htmlFor="paymentProofInput"
                     className="cursor-pointer text-xs text-indigo-400 hover:text-indigo-300 font-semibold flex items-center justify-center gap-1.5"
                   >
-                    <Image size={14} /> Attach Screenshot / Receipt (Max 5MB)
+                    <ImageIcon size={14} /> Attach Screenshot / Receipt (Max 5MB)
                   </label>
                 </div>
               )}
