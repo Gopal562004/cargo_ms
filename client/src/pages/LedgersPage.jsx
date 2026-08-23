@@ -36,6 +36,7 @@ import {
 } from '../services/ledgerService';
 import { useDocumentStore } from '../store/documentStore';
 import { useFinancialYearStore, filterDocumentsByFY } from '../store/financialYearStore';
+import { getSavedParties } from '../services/billingProfileService';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import useBodyScrollLock from '../hooks/useBodyScrollLock';
@@ -86,12 +87,38 @@ export default function LedgersPage() {
     return filterDocumentsByFY(rawPurchases, activeFY);
   }, [documents, activeFY]);
 
-  // Auto-discover parties from purchase bills & sales invoices
+  // Auto-discover parties from Directory + purchase bills + sales invoices
   const allEffectiveLedgers = useMemo(() => {
     const list = [...ledgers];
     const existingNames = new Set(list.map((l) => (l.name || '').trim().toLowerCase()));
 
-    // Discover vendors from purchase bills
+    // 1. Discover parties from Directory (Company & Directory)
+    const directoryParties = getSavedParties();
+    for (const p of directoryParties) {
+      const pName = (p.name || '').trim();
+      if (pName && !existingNames.has(pName.toLowerCase())) {
+        existingNames.add(pName.toLowerCase());
+        const isVendor = Array.isArray(p.roles) && p.roles.includes('VENDOR') && !p.roles.includes('CUSTOMER');
+        const isCompanySelf = pName.toLowerCase().includes('dgr global logistics');
+
+        list.push({
+          id: p.id || 'dir_party_' + pName.toLowerCase().replace(/[^a-z0-9]/g, '_'),
+          name: pName,
+          alias: (pName.split(' ')[0] || '').toUpperCase(),
+          parentGroup: isCompanySelf ? 'CAPITAL_ACCOUNT' : isVendor ? 'SUNDRY_CREDITORS' : 'SUNDRY_DEBTORS',
+          openingBalance: 0,
+          openingDrCr: isVendor ? 'Cr' : 'Dr',
+          gstin: p.gstin || '',
+          state: p.state || 'Maharashtra (27)',
+          address: p.address || '',
+          phone: p.phone || '',
+          email: p.email || '',
+          isSystem: false,
+        });
+      }
+    }
+
+    // 2. Discover vendors from purchase bills
     for (const b of purchaseBills) {
       const vName = (b.data?.vendorName || '').trim();
       if (vName && !existingNames.has(vName.toLowerCase())) {
@@ -111,7 +138,7 @@ export default function LedgersPage() {
       }
     }
 
-    // Discover buyers from sales invoices
+    // 3. Discover buyers from sales invoices
     for (const inv of salesInvoices) {
       const bName = (inv.data?.buyerName || '').trim();
       if (bName && !existingNames.has(bName.toLowerCase())) {
