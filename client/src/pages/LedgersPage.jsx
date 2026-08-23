@@ -592,6 +592,42 @@ function LedgerCreateEditModal({ isOpen, initialData, onClose, onSave }) {
 
         {/* Modal Form */}
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          {/* Quick Ledger Category Preset Selector */}
+          <div>
+            <label className="block text-xs font-bold text-slate-800 mb-1.5">
+              Select Ledger Type / Accounting Purpose:
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {[
+                { id: 'CUSTOMER', label: '🏢 Customer / Client', group: 'SUNDRY_DEBTORS', drCr: 'Dr', desc: 'Outward sales invoices party' },
+                { id: 'VENDOR', label: '🚚 Vendor / Supplier', group: 'SUNDRY_CREDITORS', drCr: 'Cr', desc: 'Inward purchase bills party' },
+                { id: 'SALES', label: '📦 Sales Revenue', group: 'SALES_ACCOUNTS', drCr: 'Cr', desc: 'Air freight & cargo revenue' },
+                { id: 'EXPENSE', label: '🛒 Purchase / Expense', group: 'DIRECT_EXPENSES', drCr: 'Dr', desc: 'Packaging, cartage, freight' },
+                { id: 'BANK', label: '🏦 Bank / Cash', group: 'BANK_ACCOUNTS', drCr: 'Dr', desc: 'Current A/c & petty cash' },
+                { id: 'TAX', label: '🏛 Duties & Taxes', group: 'DUTIES_TAXES', drCr: 'Cr', desc: 'GST & TDS tax accounts' },
+              ].map((cat) => {
+                const isSelected = form.parentGroup === cat.group;
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setForm((p) => ({ ...p, parentGroup: cat.group, openingDrCr: cat.drCr }))}
+                    className={`p-2 rounded-lg border text-left transition-all ${
+                      isSelected
+                        ? 'bg-indigo-50 border-indigo-600 ring-1 ring-indigo-600/30'
+                        : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    <div className={`text-xs font-bold ${isSelected ? 'text-indigo-900' : 'text-slate-800'}`}>
+                      {cat.label}
+                    </div>
+                    <div className="text-[10px] text-slate-500 leading-tight mt-0.5">{cat.desc}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Main Master Fields */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div className="sm:col-span-2">
@@ -602,7 +638,17 @@ function LedgerCreateEditModal({ isOpen, initialData, onClose, onSave }) {
                 type="text"
                 value={form.name}
                 onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-                placeholder="e.g. Reliance Logistics Pvt Ltd, HDFC Bank Current A/c"
+                placeholder={
+                  form.parentGroup === 'SUNDRY_DEBTORS'
+                    ? 'e.g. Efficient Freight Forwarders Pvt Ltd (Client)'
+                    : form.parentGroup === 'SUNDRY_CREDITORS'
+                    ? 'e.g. DGR Packaging Company (Supplier)'
+                    : form.parentGroup === 'SALES_ACCOUNTS'
+                    ? 'e.g. International Air Cargo Sales A/c'
+                    : form.parentGroup === 'DIRECT_EXPENSES'
+                    ? 'e.g. UN Boxes & DG Packaging Material Expense'
+                    : 'e.g. HDFC Bank Current A/c'
+                }
                 className="text-xs font-bold"
                 required
               />
@@ -616,7 +662,7 @@ function LedgerCreateEditModal({ isOpen, initialData, onClose, onSave }) {
                 type="text"
                 value={form.alias}
                 onChange={(e) => setForm((p) => ({ ...p, alias: e.target.value.toUpperCase() }))}
-                placeholder="e.g. RELIANCE or HDFC_CA"
+                placeholder="e.g. EFF_MUM or DGR_PKG"
                 className="text-xs font-mono"
               />
             </div>
