@@ -40,6 +40,7 @@ import {
   saveShipper,
   getSavedItemPresets,
   profileToEditorState,
+  getNextInvoiceNumber,
 } from '../../services/billingProfileService';
 import BillingTemplateManagerModal from './BillingTemplateManagerModal';
 import VisualTaxInvoiceSheet from './VisualTaxInvoiceSheet';
@@ -306,14 +307,17 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
   const [formData, setFormData] = useState(() => {
     const defaultProfile = savedProfiles && savedProfiles.length > 0 ? savedProfiles[0] : null;
     const d = documentId ? (initialData || currentDocument?.data || {}) : (initialData || {});
-    const { formData: initialForm } = profileToEditorState(defaultProfile, d);
+    const { formData: initialForm } = profileToEditorState(defaultProfile, d, documents);
+    if (!documentId && !initialData?.invoiceNumber) {
+      initialForm.invoiceNumber = getNextInvoiceNumber(documents);
+    }
     return initialForm;
   });
 
   const [items, setItems] = useState(() => {
     const defaultProfile = savedProfiles && savedProfiles.length > 0 ? savedProfiles[0] : null;
     const d = documentId ? (initialData || currentDocument?.data || {}) : (initialData || {});
-    const { items: initialItems } = profileToEditorState(defaultProfile, d);
+    const { items: initialItems } = profileToEditorState(defaultProfile, d, documents);
     return initialItems;
   });
 
@@ -322,7 +326,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
       const loadedData = initialData || currentDocument?.data;
       if (loadedData && Object.keys(loadedData).length > 0) {
         const defaultProfile = savedProfiles && savedProfiles.length > 0 ? savedProfiles[0] : null;
-        const { formData: mergedForm, items: mergedItems } = profileToEditorState(defaultProfile, loadedData);
+        const { formData: mergedForm, items: mergedItems } = profileToEditorState(defaultProfile, loadedData, documents);
         setFormData(mergedForm);
         if (Array.isArray(loadedData.items) && loadedData.items.length > 0) {
           setItems(loadedData.items);
@@ -332,11 +336,14 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
       }
     } else {
       const defaultProfile = savedProfiles && savedProfiles.length > 0 ? savedProfiles[0] : null;
-      const { formData: defaultForm, items: defaultItems } = profileToEditorState(defaultProfile, initialData || {});
+      const { formData: defaultForm, items: defaultItems } = profileToEditorState(defaultProfile, initialData || {}, documents);
+      if (!initialData?.invoiceNumber) {
+        defaultForm.invoiceNumber = getNextInvoiceNumber(documents);
+      }
       setFormData(defaultForm);
       setItems(defaultItems);
     }
-  }, [documentId, initialData, currentDocument, savedProfiles]);
+  }, [documentId, initialData, currentDocument, savedProfiles, documents]);
 
   useEffect(() => {
     syncOnlineTemplates().then((fresh) => {

@@ -42,8 +42,25 @@ function autoGenerateNumber(documentType, data = {}) {
 export async function createDocument({ documentType, title, documentNumber, data, packages }, userId) {
   const category = getCategoryFromType(documentType);
 
-  // Auto-generate document number if not provided
-  const docNumber = documentNumber || autoGenerateNumber(documentType, data);
+  let docNumber = documentNumber || data?.invoiceNumber;
+  if (!docNumber) {
+    if (documentType === 'TAX_INVOICE') {
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const fullYear = now.getFullYear();
+      const startYear = currentMonth >= 3 ? fullYear : fullYear - 1;
+      const endYearShort = (startYear + 1).toString().slice(-2);
+      const fyStr = `${startYear}-${endYearShort}`;
+
+      const count = await prisma.document.count({
+        where: { documentType: 'TAX_INVOICE', createdById: userId },
+      });
+      const seqStr = (count + 1).toString().padStart(3, '0');
+      docNumber = `DGR/${seqStr}/${fyStr}`;
+    } else {
+      docNumber = autoGenerateNumber(documentType, data);
+    }
+  }
 
   const document = await prisma.document.create({
     data: {

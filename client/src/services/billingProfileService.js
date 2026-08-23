@@ -377,10 +377,45 @@ export function getDefaultInvoiceTemplate() {
 /**
  * Transforms a billing profile into flat editor formData and line items
  */
-export function profileToEditorState(profile, overrideData = {}) {
-  const currentYear = new Date().getFullYear().toString().slice(-2);
-  const nextYear = (parseInt(currentYear, 10) + 1).toString();
-  const defaultInvNo = `DGR/0496/${currentYear}-${nextYear}`;
+/**
+ * Generates the next sequential invoice number in the format: DGR/001/2026-27
+ */
+export function getNextInvoiceNumber(existingDocuments = []) {
+  const now = new Date();
+  const currentMonth = now.getMonth(); // 0 = Jan, 3 = April
+  const fullYear = now.getFullYear();
+  const startYear = currentMonth >= 3 ? fullYear : fullYear - 1;
+  const endYearShort = (startYear + 1).toString().slice(-2);
+  const fyStr = `${startYear}-${endYearShort}`; // e.g. "2026-27"
+
+  let maxSeq = 0;
+  const pattern = /DGR\/(\d+)\/(\d{2,4}-\d{2})/i;
+
+  if (Array.isArray(existingDocuments)) {
+    for (const doc of existingDocuments) {
+      if (doc.documentType === 'TAX_INVOICE' || doc.data?.invoiceKind !== 'PURCHASE') {
+        const invNo = doc.documentNumber || doc.data?.invoiceNumber || '';
+        const match = invNo.match(pattern);
+        if (match) {
+          const seq = parseInt(match[1], 10);
+          if (!isNaN(seq) && seq > maxSeq) {
+            maxSeq = seq;
+          }
+        }
+      }
+    }
+  }
+
+  const nextSeq = maxSeq + 1;
+  const paddedSeq = nextSeq.toString().padStart(3, '0');
+  return `DGR/${paddedSeq}/${fyStr}`;
+}
+
+/**
+ * Transforms a billing profile into flat editor formData and line items
+ */
+export function profileToEditorState(profile, overrideData = {}, existingDocuments = []) {
+  const defaultInvNo = getNextInvoiceNumber(existingDocuments);
 
   if (!profile) {
     const taxType = (overrideData?.buyerGstin?.startsWith('27') || !overrideData?.buyerGstin) ? 'INTRA_STATE' : 'INTER_STATE';
@@ -409,7 +444,7 @@ export function profileToEditorState(profile, overrideData = {}) {
         consigneeAddress: '',
         consigneeState: 'Maharashtra (27)',
         consigneeGstin: '',
-        invoiceNumber: defaultInvNo,
+        invoiceNumber: overrideData?.invoiceNumber || defaultInvNo,
         invoiceDate: new Date().toLocaleDateString('en-GB'),
         placeOfSupply: 'Maharashtra (27)',
         taxType,
@@ -465,8 +500,8 @@ export function profileToEditorState(profile, overrideData = {}) {
     consigneeAddress: cons.consigneeAddress || buyer.buyerAddress || '',
     consigneeState: cons.consigneeState || buyer.buyerState || 'Maharashtra (27)',
     consigneeGstin: cons.consigneeGstin || buyer.buyerGstin || '',
-    invoiceNumber: profile.invoiceNumber || defaultInvNo,
-    invoiceDate: profile.invoiceDate || new Date().toLocaleDateString('en-GB'),
+    invoiceNumber: overrideData?.invoiceNumber || defaultInvNo,
+    invoiceDate: overrideData?.invoiceDate || new Date().toLocaleDateString('en-GB'),
     placeOfSupply: profile.placeOfSupply || buyer.buyerState || 'Maharashtra (27)',
     taxType,
     reverseCharge: profile.reverseCharge || 'N',
