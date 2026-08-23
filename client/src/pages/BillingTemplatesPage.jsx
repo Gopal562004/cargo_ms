@@ -1862,27 +1862,6 @@ export default function BillingTemplatesPage() {
                   </div>
                 </div>
               </div>
-
-              {/* Actions Footer */}
-              <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={handleResetNumbering}
-                  className="text-xs"
-                >
-                  <RotateCcw size={13} className="mr-1.5 inline" /> Reset Series to Default
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="primary"
-                  onClick={() => navigate('/settings')}
-                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs px-5 py-2"
-                >
-                  <Pencil size={13} className="mr-1.5 inline" /> Edit Series & Manage Multiple FYs in Settings &rarr;
-                </Button>
-              </div>
             </div>
           </div>
         );
