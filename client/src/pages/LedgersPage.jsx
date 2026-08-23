@@ -192,31 +192,6 @@ export default function LedgersPage() {
 
         <div className="flex items-center gap-2.5 flex-wrap">
           <Button
-            variant="secondary"
-            onClick={handleResetDefaults}
-            title="Reset standard logistics ledgers"
-            className="rounded text-xs"
-          >
-            <RotateCcw size={13} className="mr-1.5 inline" /> Reset Defaults
-          </Button>
-
-          <Button
-            variant="secondary"
-            onClick={() => navigate('/billing')}
-            className="rounded text-xs"
-          >
-            <Receipt size={13} className="mr-1.5 inline" /> Sales Register
-          </Button>
-
-          <Button
-            variant="secondary"
-            onClick={() => navigate('/billing/purchases')}
-            className="rounded text-xs"
-          >
-            <ShoppingBag size={13} className="mr-1.5 inline" /> Purchase Bills
-          </Button>
-
-          <Button
             variant="primary"
             onClick={handleOpenCreate}
             className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-sm"

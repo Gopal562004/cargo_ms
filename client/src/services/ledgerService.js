@@ -37,7 +37,7 @@ export const DEFAULT_CORE_LEDGERS = [
     name: 'Cash-in-Hand A/c',
     alias: 'CASH',
     parentGroup: 'CASH_IN_HAND',
-    openingBalance: 25000,
+    openingBalance: 0,
     openingDrCr: 'Dr',
     state: 'Maharashtra (27)',
     country: 'India',
@@ -45,20 +45,16 @@ export const DEFAULT_CORE_LEDGERS = [
     description: 'Primary Petty Cash Account',
   },
   {
-    id: 'led_bank_hdfc',
-    name: 'HDFC Bank Current A/c - 50200012345678',
-    alias: 'HDFC_CA',
+    id: 'led_bank_main',
+    name: 'Bank Current A/c',
+    alias: 'BANK_CA',
     parentGroup: 'BANK_ACCOUNTS',
-    openingBalance: 350000,
+    openingBalance: 0,
     openingDrCr: 'Dr',
-    accountNumber: '50200012345678',
-    ifscCode: 'HDFC0000123',
-    bankName: 'HDFC Bank Ltd',
-    branchName: 'Andheri East, Mumbai',
     state: 'Maharashtra (27)',
     country: 'India',
     isSystem: false,
-    description: 'Main Operational Current Account',
+    description: 'Operational Current Account',
   },
   {
     id: 'led_sales_gst18',
@@ -159,40 +155,6 @@ export const DEFAULT_CORE_LEDGERS = [
     isSystem: true,
     description: 'Integrated GST paid on Inter-State Purchases (ITC)',
   },
-  {
-    id: 'led_party_reliance',
-    name: 'Reliance Logistics & Freight Hub',
-    alias: 'RELIANCE',
-    parentGroup: 'SUNDRY_DEBTORS',
-    openingBalance: 120000,
-    openingDrCr: 'Dr',
-    gstin: '27AABCR1234F1Z1',
-    panNumber: 'AABCR1234F',
-    state: 'Maharashtra (27)',
-    address: 'Gala 402, Building A, Andheri Cargo Complex, Mumbai 400099',
-    email: 'accounts@reliancelogistics.com',
-    phone: '+91 98200 11223',
-    registrationType: 'Regular',
-    isSystem: false,
-    description: 'Corporate Air Cargo Client',
-  },
-  {
-    id: 'led_vendor_airindia',
-    name: 'Air India Cargo Operations',
-    alias: 'AIR_INDIA',
-    parentGroup: 'SUNDRY_CREDITORS',
-    openingBalance: 85000,
-    openingDrCr: 'Cr',
-    gstin: '27AAACA0123A1Z8',
-    panNumber: 'AAACA0123A',
-    state: 'Maharashtra (27)',
-    address: 'Cargo Terminal 2, CSMI Airport, Mumbai 400099',
-    email: 'cargo.billing@airindia.in',
-    phone: '+91 22 2831 4455',
-    registrationType: 'Regular',
-    isSystem: false,
-    description: 'Airline Carrier Partner',
-  },
 ];
 
 /**
@@ -204,7 +166,8 @@ export function getSavedLedgers() {
     const raw = localStorage.getItem(key);
     if (!raw) return DEFAULT_CORE_LEDGERS;
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_CORE_LEDGERS;
+    if (!Array.isArray(parsed) || parsed.length === 0) return DEFAULT_CORE_LEDGERS;
+    return parsed.filter((l) => l.id !== 'led_party_reliance' && l.id !== 'led_vendor_airindia');
   } catch {
     return DEFAULT_CORE_LEDGERS;
   }
