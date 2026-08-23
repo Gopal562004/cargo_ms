@@ -1792,74 +1792,74 @@ export default function BillingTemplatesPage() {
         const sample3 = `${prefix}${(startSeq + 2).toString().padStart(padding, '0')}/${fyCode}${suffix}`;
 
         return (
-          <div className="space-y-6 animate-fade-in">
-            <div className="p-6 bg-white border border-slate-200 rounded-lg shadow-sm space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
-                    <SlidersHorizontal size={20} />
-                  </div>
+          <div className="animate-fade-in max-w-4xl">
+            <div className="p-4 bg-white border border-slate-200 rounded-lg shadow-xs space-y-3.5">
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2.5">
+                  <span className="p-1.5 rounded-md bg-indigo-50 text-indigo-600">
+                    <SlidersHorizontal size={16} />
+                  </span>
                   <div>
-                    <h2 className="text-base font-bold text-slate-900">
-                      Active Financial Year Series Profile (FY {fyCode})
+                    <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <span>Active Financial Year & Invoice Series</span>
+                      <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 border border-emerald-300 rounded text-[10px] font-bold font-mono">
+                        FY {fyCode}
+                      </span>
                     </h2>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      Configure your official GST tax invoice numbering format, starting series sequence, and Indian financial year cycles.
+                    <p className="text-[11px] text-slate-500">
+                      Standard GST tax invoice sequence configured for this accounting period.
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="primary"
-                    onClick={() => navigate('/settings')}
-                    className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold"
-                  >
-                    <Settings size={13} className="mr-1.5 inline" /> Open Full FY Management in Settings
-                  </Button>
+                <button
+                  type="button"
+                  onClick={() => navigate('/settings')}
+                  className="text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 font-semibold px-3 py-1.5 rounded border border-indigo-200 transition-colors flex items-center gap-1.5 self-start sm:self-auto"
+                >
+                  <Settings size={13} />
+                  <span>Manage / Switch in Settings &rarr;</span>
+                </button>
+              </div>
+
+              {/* Compact Metrics Row */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+                <div className="p-2.5 rounded bg-slate-50 border border-slate-100">
+                  <span className="text-[10px] text-slate-500 font-medium block">Financial Year:</span>
+                  <span className="font-bold text-slate-900 font-mono">FY {fyCode}</span>
+                </div>
+                <div className="p-2.5 rounded bg-slate-50 border border-slate-100">
+                  <span className="text-[10px] text-slate-500 font-medium block">Invoice Prefix:</span>
+                  <span className="font-bold text-indigo-700 font-mono">{prefix}</span>
+                </div>
+                <div className="p-2.5 rounded bg-slate-50 border border-slate-100">
+                  <span className="text-[10px] text-slate-500 font-medium block">Padding:</span>
+                  <span className="font-bold text-slate-800 font-mono">{padding} Digits</span>
+                </div>
+                <div className="p-2.5 rounded bg-slate-50 border border-slate-100">
+                  <span className="text-[10px] text-slate-500 font-medium block">Next Number:</span>
+                  <span className="font-bold text-emerald-700 font-mono">{sample1}</span>
                 </div>
               </div>
 
-              {/* Summary Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
-                <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1">
-                  <span className="text-slate-500 block text-[11px]">Active Financial Year:</span>
-                  <span className="text-base font-black text-slate-900 font-mono">FY {fyCode}</span>
-                </div>
-                <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1">
-                  <span className="text-slate-500 block text-[11px]">Invoice Prefix:</span>
-                  <span className="text-base font-black text-indigo-700 font-mono">{prefix}</span>
-                </div>
-                <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1">
-                  <span className="text-slate-500 block text-[11px]">Zero-Padding / Alignment:</span>
-                  <span className="text-base font-black text-slate-800 font-mono">{padding} Digits ({startSeq.toString().padStart(padding, '0')})</span>
-                </div>
-                <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1">
-                  <span className="text-slate-500 block text-[11px]">Next Generated Bill:</span>
-                  <span className="text-sm font-black text-emerald-700 font-mono">{sample1}</span>
-                </div>
-              </div>
-
-              {/* Live Series Preview Bar */}
-              <div className="p-4 bg-indigo-50/50 border border-indigo-200/80 rounded-lg space-y-2">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
-                  <Sparkles size={14} className="text-indigo-600" />
-                  <span>Sequential Invoice Numbering Progression:</span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                  <div className="p-3 bg-white border border-indigo-200 rounded-md">
-                    <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider block">First Next Bill</span>
-                    <span className="text-sm font-black text-slate-900 font-mono">{sample1}</span>
-                  </div>
-                  <div className="p-3 bg-white border border-slate-200 rounded-md">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Second Bill</span>
-                    <span className="text-sm font-black text-slate-800 font-mono">{sample2}</span>
-                  </div>
-                  <div className="p-3 bg-white border border-slate-200 rounded-md">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Third Bill</span>
-                    <span className="text-sm font-black text-slate-800 font-mono">{sample3}</span>
-                  </div>
+              {/* Compact Sequence Preview */}
+              <div className="p-2.5 bg-indigo-50/40 border border-indigo-100 rounded flex flex-wrap items-center justify-between gap-2 text-xs">
+                <span className="text-[11px] font-bold text-slate-600 flex items-center gap-1">
+                  <Sparkles size={12} className="text-indigo-600" /> Series Progression:
+                </span>
+                <div className="flex items-center gap-2 font-mono text-[11px] font-bold">
+                  <span className="px-2 py-0.5 bg-white border border-indigo-200 rounded text-indigo-700 shadow-2xs">
+                    1st: {sample1}
+                  </span>
+                  <span className="text-slate-400">&rarr;</span>
+                  <span className="px-2 py-0.5 bg-white border border-slate-200 rounded text-slate-700">
+                    2nd: {sample2}
+                  </span>
+                  <span className="text-slate-400">&rarr;</span>
+                  <span className="px-2 py-0.5 bg-white border border-slate-200 rounded text-slate-700">
+                    3rd: {sample3}
+                  </span>
                 </div>
               </div>
             </div>
