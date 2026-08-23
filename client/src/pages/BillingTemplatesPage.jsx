@@ -549,54 +549,6 @@ export default function BillingTemplatesPage() {
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap">
-          {activeTab === 'TEMPLATES' && (
-            <Button
-              variant="secondary"
-              onClick={handleResetDefaults}
-              title="Reset standard templates to initial state"
-              className="rounded text-xs"
-            >
-              <RotateCcw size={13} className="mr-1.5 inline" /> Reset Defaults
-            </Button>
-          )}
-
-          {activeTab === 'ITEMS' && (
-            <Button
-              variant="secondary"
-              onClick={handleResetItemPresets}
-              title="Reset standard logistics items to initial state"
-              className="rounded text-xs"
-            >
-              <RotateCcw size={13} className="mr-1.5 inline" /> Reset Items
-            </Button>
-          )}
-
-          {activeTab === 'PARTIES' && (
-            <Button
-              variant="secondary"
-              onClick={handleResetParties}
-              title="Reset directory to standard default companies"
-              className="rounded text-xs"
-            >
-              <RotateCcw size={13} className="mr-1.5 inline" /> Reset Directory
-            </Button>
-          )}
-
-          <Button
-            variant="secondary"
-            onClick={() => navigate('/billing')}
-            className="rounded text-xs"
-          >
-            <Receipt size={13} className="mr-1.5 inline" /> Bills Register
-          </Button>
-
-          <Button
-            variant="secondary"
-            onClick={() => navigate('/billing/purchases')}
-            className="rounded text-xs"
-          >
-            <ShoppingBag size={13} className="mr-1.5 inline" /> Purchase Bills
-          </Button>
 
           {activeTab === 'TEMPLATES' && (
             <Button
