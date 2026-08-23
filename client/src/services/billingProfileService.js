@@ -377,19 +377,65 @@ export function getDefaultInvoiceTemplate() {
 /**
  * Transforms a billing profile into flat editor formData and line items
  */
+const NUMBERING_SETTINGS_KEY_BASE = 'cargohub_invoice_numbering_settings';
+
+export const DEFAULT_NUMBERING_SETTINGS = {
+  prefix: 'DGR/',
+  financialYear: '2026-27',
+  autoFinancialYear: true,
+  startSequence: 1,
+  paddingDigits: 3,
+  suffix: '',
+};
+
+/**
+ * Load User-Scoped Invoice Numbering & Financial Year Settings
+ */
+export function getNumberingSettings() {
+  const key = getUserScopedKey(NUMBERING_SETTINGS_KEY_BASE);
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return DEFAULT_NUMBERING_SETTINGS;
+    return { ...DEFAULT_NUMBERING_SETTINGS, ...JSON.parse(raw) };
+  } catch {
+    return DEFAULT_NUMBERING_SETTINGS;
+  }
+}
+
+/**
+ * Save User-Scoped Invoice Numbering & Financial Year Settings
+ */
+export function saveNumberingSettings(settings) {
+  const key = getUserScopedKey(NUMBERING_SETTINGS_KEY_BASE);
+  const current = getNumberingSettings();
+  const merged = { ...current, ...settings };
+  localStorage.setItem(key, JSON.stringify(merged));
+  return merged;
+}
+
 /**
  * Generates the next sequential invoice number in the format: DGR/001/2026-27
  */
 export function getNextInvoiceNumber(existingDocuments = []) {
-  const now = new Date();
-  const currentMonth = now.getMonth(); // 0 = Jan, 3 = April
-  const fullYear = now.getFullYear();
-  const startYear = currentMonth >= 3 ? fullYear : fullYear - 1;
-  const endYearShort = (startYear + 1).toString().slice(-2);
-  const fyStr = `${startYear}-${endYearShort}`; // e.g. "2026-27"
+  const settings = getNumberingSettings();
 
-  let maxSeq = 0;
-  const pattern = /DGR\/(\d+)\/(\d{2,4}-\d{2})/i;
+  let fyStr = settings.financialYear || '2026-27';
+  if (settings.autoFinancialYear) {
+    const now = new Date();
+    const currentMonth = now.getMonth(); // 0 = Jan, 3 = April
+    const fullYear = now.getFullYear();
+    const startYear = currentMonth >= 3 ? fullYear : fullYear - 1;
+    const endYearShort = (startYear + 1).toString().slice(-2);
+    fyStr = `${startYear}-${endYearShort}`; // e.g. "2026-27"
+  }
+
+  const prefix = settings.prefix || 'DGR/';
+  const padding = parseInt(settings.paddingDigits, 10) || 3;
+  const baseStartSeq = parseInt(settings.startSequence, 10) || 1;
+
+  let maxSeq = baseStartSeq - 1;
+  const escapedPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const pattern = new RegExp(`${escapedPrefix}(\\d+)`, 'i');
 
   if (Array.isArray(existingDocuments)) {
     for (const doc of existingDocuments) {
@@ -407,8 +453,9 @@ export function getNextInvoiceNumber(existingDocuments = []) {
   }
 
   const nextSeq = maxSeq + 1;
-  const paddedSeq = nextSeq.toString().padStart(3, '0');
-  return `DGR/${paddedSeq}/${fyStr}`;
+  const paddedSeq = nextSeq.toString().padStart(padding, '0');
+  const suffix = settings.suffix ? `/${settings.suffix}` : '';
+  return `${prefix}${paddedSeq}/${fyStr}${suffix}`;
 }
 
 /**

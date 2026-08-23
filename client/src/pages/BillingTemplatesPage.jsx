@@ -22,6 +22,10 @@ import {
   Phone,
   Mail,
   Image as ImageIcon,
+  SlidersHorizontal,
+  Hash,
+  Calendar,
+  Sparkles,
 } from 'lucide-react';
 import {
   getSavedBillingProfiles,
@@ -38,6 +42,10 @@ import {
   deleteItemPreset,
   resetItemPresetsToDefault,
   getIndianStateFromGstin,
+  getNumberingSettings,
+  saveNumberingSettings,
+  DEFAULT_NUMBERING_SETTINGS,
+  getNextInvoiceNumber,
 } from '../services/billingProfileService';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
@@ -129,10 +137,14 @@ export default function BillingTemplatesPage() {
     ],
   });
 
+  // Financial Year & Invoice Numbering Series State
+  const [numberingForm, setNumberingForm] = useState(() => getNumberingSettings());
+
   const loadAllData = async () => {
     setTemplates(getSavedBillingProfiles());
     setItemPresets(getSavedItemPresets());
     setParties(getSavedParties());
+    setNumberingForm(getNumberingSettings());
 
     const onlineTemplates = await syncOnlineTemplates();
     if (onlineTemplates) {
@@ -147,6 +159,20 @@ export default function BillingTemplatesPage() {
   const showNotification = (msg) => {
     setSuccessMsg(msg);
     setTimeout(() => setSuccessMsg(''), 5000);
+  };
+
+  const handleSaveNumbering = (e) => {
+    e.preventDefault();
+    saveNumberingSettings(numberingForm);
+    showNotification('Financial Year & Invoice Numbering Series profile saved successfully!');
+  };
+
+  const handleResetNumbering = () => {
+    if (window.confirm('Reset numbering settings to default (DGR/001/2026-27)?')) {
+      saveNumberingSettings(DEFAULT_NUMBERING_SETTINGS);
+      setNumberingForm(DEFAULT_NUMBERING_SETTINGS);
+      showNotification('Numbering settings restored to default.');
+    }
   };
 
   // --------------------------------------------------------------------------
@@ -659,9 +685,28 @@ export default function BillingTemplatesPage() {
           <Building size={14} className={activeTab === 'PARTIES' ? 'text-white' : 'text-indigo-400'} />
           <span>Company & Directory ({parties.length})</span>
         </button>
+
+        <button
+          type="button"
+          className={`px-3.5 py-2 rounded text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
+            activeTab === 'NUMBERING'
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+          }`}
+          onClick={() => {
+            setActiveTab('NUMBERING');
+            setIsEditingTemplate(false);
+            setIsEditingItemPreset(false);
+            setIsEditingParty(false);
+          }}
+        >
+          <SlidersHorizontal size={14} className={activeTab === 'NUMBERING' ? 'text-white' : 'text-emerald-400'} />
+          <span>Financial Year & Series Settings</span>
+        </button>
       </div>
 
-      {/* SEARCH BAR */}
+      {/* SEARCH BAR (for lists) */}
+      {activeTab !== 'NUMBERING' && (
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-2.5 text-slate-500" size={14} />
@@ -695,6 +740,7 @@ export default function BillingTemplatesPage() {
           {activeTab === 'PARTIES' && `Showing ${filteredParties.length} of ${parties.length} companies`}
         </span>
       </div>
+      )}
 
       {/* ========================================================================= */}
       {/* TAB 1: FULL INVOICE TEMPLATES */}
@@ -1732,6 +1778,209 @@ export default function BillingTemplatesPage() {
           )}
         </div>
       )}
+
+      {/* ========================================================================= */}
+      {/* TAB 4: FINANCIAL YEAR & INVOICE NUMBERING SERIES SETTINGS */}
+      {/* ========================================================================= */}
+      {activeTab === 'NUMBERING' && (() => {
+        let previewFy = numberingForm.financialYear || '2026-27';
+        if (numberingForm.autoFinancialYear) {
+          const now = new Date();
+          const currentMonth = now.getMonth();
+          const fullYear = now.getFullYear();
+          const startYear = currentMonth >= 3 ? fullYear : fullYear - 1;
+          const endYearShort = (startYear + 1).toString().slice(-2);
+          previewFy = `${startYear}-${endYearShort}`;
+        }
+        const prefix = numberingForm.prefix || 'DGR/';
+        const padding = parseInt(numberingForm.paddingDigits, 10) || 3;
+        const startSeq = parseInt(numberingForm.startSequence, 10) || 1;
+        const suffix = numberingForm.suffix ? `/${numberingForm.suffix}` : '';
+
+        const sample1 = `${prefix}${startSeq.toString().padStart(padding, '0')}/${previewFy}${suffix}`;
+        const sample2 = `${prefix}${(startSeq + 1).toString().padStart(padding, '0')}/${previewFy}${suffix}`;
+        const sample3 = `${prefix}${(startSeq + 2).toString().padStart(padding, '0')}/${previewFy}${suffix}`;
+
+        return (
+          <div className="space-y-6 animate-fade-in">
+            {/* Setting Overview Card */}
+            <div className="p-6 bg-white border border-slate-200 rounded-lg shadow-sm space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
+                    <SlidersHorizontal size={20} />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold text-slate-900">
+                      Invoice Numbering & Financial Year Settings
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Configure your official GST tax invoice numbering format, financial year series, and auto-increment behavior.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={handleResetNumbering}
+                    className="text-xs"
+                  >
+                    <RotateCcw size={13} className="mr-1.5 inline" /> Reset to Default
+                  </Button>
+                </div>
+              </div>
+
+              {/* Live Preview Box */}
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-2">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                  <Sparkles size={14} className="text-indigo-600" />
+                  <span>Live Invoice Series Preview:</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                  <div className="p-3 bg-white border border-indigo-200 rounded-md">
+                    <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider block">First Next Bill</span>
+                    <span className="text-sm font-black text-slate-900 font-mono">{sample1}</span>
+                  </div>
+                  <div className="p-3 bg-white border border-slate-200 rounded-md">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Second Bill</span>
+                    <span className="text-sm font-black text-slate-800 font-mono">{sample2}</span>
+                  </div>
+                  <div className="p-3 bg-white border border-slate-200 rounded-md">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Third Bill</span>
+                    <span className="text-sm font-black text-slate-800 font-mono">{sample3}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Form Settings */}
+              <form onSubmit={handleSaveNumbering} className="space-y-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* Invoice Prefix */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                      Invoice Prefix / Identifier *
+                    </label>
+                    <Input
+                      type="text"
+                      value={numberingForm.prefix}
+                      onChange={(e) => setNumberingForm((prev) => ({ ...prev, prefix: e.target.value }))}
+                      placeholder="e.g. DGR/ or INV/ or BILL/"
+                      className="text-xs font-mono font-bold"
+                      required
+                    />
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      Prefix applied at the start of every bill (e.g. <span className="font-mono font-semibold">DGR/</span>).
+                    </p>
+                  </div>
+
+                  {/* Financial Year */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                      Financial Year (Indian FY) *
+                    </label>
+                    <Input
+                      type="text"
+                      value={numberingForm.financialYear}
+                      onChange={(e) => setNumberingForm((prev) => ({ ...prev, financialYear: e.target.value }))}
+                      placeholder="2026-27"
+                      className="text-xs font-mono font-bold"
+                      required
+                    />
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      FY code for this cycle (e.g. <span className="font-mono font-semibold">2026-27</span> or <span className="font-mono font-semibold">26-27</span>).
+                    </p>
+                  </div>
+
+                  {/* Sequence Digit Padding */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                      Zero-Padding Digits
+                    </label>
+                    <select
+                      className="w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                      value={numberingForm.paddingDigits}
+                      onChange={(e) => setNumberingForm((prev) => ({ ...prev, paddingDigits: parseInt(e.target.value, 10) }))}
+                    >
+                      <option value={3}>3 Digits (001, 002, 003...)</option>
+                      <option value={4}>4 Digits (0001, 0002, 0003...)</option>
+                      <option value={2}>2 Digits (01, 02, 03...)</option>
+                      <option value={1}>No Padding (1, 2, 3...)</option>
+                    </select>
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      Ensures neat 3-digit serial alignment (e.g. <span className="font-mono font-semibold">001</span>).
+                    </p>
+                  </div>
+
+                  {/* Starting Sequence Number */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                      Starting / Baseline Sequence Number
+                    </label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={numberingForm.startSequence}
+                      onChange={(e) => setNumberingForm((prev) => ({ ...prev, startSequence: Math.max(1, parseInt(e.target.value, 10) || 1) }))}
+                      className="text-xs font-mono font-bold"
+                      required
+                    />
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      Set to <span className="font-mono font-semibold">1</span> to start from 001, or any number if migrating mid-year.
+                    </p>
+                  </div>
+
+                  {/* Optional Suffix */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                      Optional Suffix (Leave blank if none)
+                    </label>
+                    <Input
+                      type="text"
+                      value={numberingForm.suffix || ''}
+                      onChange={(e) => setNumberingForm((prev) => ({ ...prev, suffix: e.target.value }))}
+                      placeholder="e.g. GST or EXP (Optional)"
+                      className="text-xs font-mono"
+                    />
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      Appended at the end if needed (e.g. <span className="font-mono">/GST</span>).
+                    </p>
+                  </div>
+
+                  {/* Auto-Rollover Toggle */}
+                  <div className="flex flex-col justify-center">
+                    <label className="flex items-center gap-2.5 cursor-pointer pt-3">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(numberingForm.autoFinancialYear)}
+                        onChange={(e) => setNumberingForm((prev) => ({ ...prev, autoFinancialYear: e.target.checked }))}
+                        className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                      />
+                      <span className="text-xs font-bold text-slate-800">
+                        Auto-Roll Financial Year on 1st April
+                      </span>
+                    </label>
+                    <p className="text-[11px] text-slate-500 mt-1 ml-6.5">
+                      Automatically detects and rolls the financial year (e.g. 2026-27 &rarr; 2027-28) according to Indian tax cycle.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs px-5 py-2.5 shadow-sm"
+                  >
+                    <Save size={14} className="mr-1.5 inline" /> Save Series Configuration
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
