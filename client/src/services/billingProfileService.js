@@ -1,9 +1,10 @@
 import { useAuthStore } from '../store/authStore';
+import api from './api';
 
 /**
  * Billing Profiles & Templates Service
  * Stores default and user-saved customer profiles, delivery destinations, and full invoice templates.
- * All user-created templates and directories are strictly scoped and isolated per user account.
+ * All user-created templates and directories are strictly scoped and persisted to online PostgreSQL (Neon DB).
  */
 
 function getUserScopedKey(baseKey) {
@@ -247,6 +248,32 @@ export const DEFAULT_BILLING_PROFILES = [
 ];
 
 /**
+ * Sync templates from Neon PostgreSQL DB online
+ */
+export async function syncOnlineTemplates() {
+  const key = getUserScopedKey(STORAGE_KEY_BASE);
+  try {
+    const res = await api.get('/templates?documentType=TAX_INVOICE');
+    const dbTemplates = res?.data?.templates || [];
+    if (Array.isArray(dbTemplates) && dbTemplates.length > 0) {
+      const formatted = dbTemplates.map((t) => ({
+        id: t.id,
+        name: t.name,
+        description: t.description || '',
+        category: 'Full Invoice Template',
+        isDefault: t.isDefault,
+        ...(t.data || {}),
+      }));
+      localStorage.setItem(key, JSON.stringify(formatted));
+      return formatted;
+    }
+  } catch (err) {
+    console.warn('Could not sync online templates, using local cache:', err);
+  }
+  return getSavedBillingProfiles();
+}
+
+/**
  * Load all billing profiles
  */
 export function getSavedBillingProfiles() {
@@ -290,6 +317,21 @@ export function saveBillingProfile(profile) {
   }
 
   localStorage.setItem(key, JSON.stringify(updated));
+
+  // Sync to Neon PostgreSQL online in the background
+  try {
+    api.post('/templates', {
+      id: newProfile.id,
+      name: newProfile.name,
+      description: newProfile.description || 'Full Invoice Template',
+      documentType: 'TAX_INVOICE',
+      isDefault: Boolean(newProfile.isDefault),
+      data: newProfile,
+    }).catch((err) => console.warn('Background online template save error:', err));
+  } catch (e) {
+    // Ignore offline error
+  }
+
   return newProfile;
 }
 
@@ -301,6 +343,14 @@ export function deleteBillingProfile(profileId) {
   const all = getSavedBillingProfiles();
   const filtered = all.filter((p) => p.id !== profileId);
   localStorage.setItem(key, JSON.stringify(filtered));
+
+  // Delete from Neon PostgreSQL online in the background
+  try {
+    api.delete(`/templates/${profileId}`).catch((err) => console.warn('Background online template delete error:', err));
+  } catch (e) {
+    // Ignore offline error
+  }
+
   return true;
 }
 

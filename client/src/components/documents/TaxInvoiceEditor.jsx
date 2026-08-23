@@ -32,6 +32,7 @@ import { useDocumentStore } from '../../store/documentStore';
 import { downloadDocumentPDF, printDocumentPDF } from '../../services/documentService';
 import {
   getSavedBillingProfiles,
+  syncOnlineTemplates,
   saveBillingProfile,
   getSavedBuyers,
   saveBuyer,
@@ -336,6 +337,14 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
       setItems(defaultItems);
     }
   }, [documentId, initialData, currentDocument, savedProfiles]);
+
+  useEffect(() => {
+    syncOnlineTemplates().then((fresh) => {
+      if (fresh && fresh.length > 0) {
+        setSavedProfiles(fresh);
+      }
+    });
+  }, []);
 
   // Recalculate item tax rates based on taxType (INTRA_STATE vs INTER_STATE)
   const applyTaxTypeToItems = (taxType, currentItems) => {

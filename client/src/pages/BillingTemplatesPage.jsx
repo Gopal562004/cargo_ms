@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import {
   getSavedBillingProfiles,
+  syncOnlineTemplates,
   saveBillingProfile,
   deleteBillingProfile,
   resetBillingProfilesToDefault,
@@ -128,10 +129,15 @@ export default function BillingTemplatesPage() {
     ],
   });
 
-  const loadAllData = () => {
+  const loadAllData = async () => {
     setTemplates(getSavedBillingProfiles());
     setItemPresets(getSavedItemPresets());
     setParties(getSavedParties());
+
+    const onlineTemplates = await syncOnlineTemplates();
+    if (onlineTemplates) {
+      setTemplates(onlineTemplates);
+    }
   };
 
   useEffect(() => {

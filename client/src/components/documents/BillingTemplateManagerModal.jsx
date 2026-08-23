@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import {
   getSavedBillingProfiles,
+  syncOnlineTemplates,
   saveBillingProfile,
   deleteBillingProfile,
   getSavedBuyers,
@@ -77,18 +78,22 @@ export default function BillingTemplateManagerModal({ isOpen, onClose, onSelectT
     ifscCode: 'HDFC0003126',
     swiftCode: 'HDFCINBBXXX',
     branchName: 'MAHAD-4',
-    termsAndConditions: `1. Goods once sold will not be taken back.\n2. Interest @ 18% p.a. will be charged if the payment is not made within the stipulated time.\n3. Discrepancy if any, in billed item must be communicated within 7 days.\n4. Subject to 'Maharashtra' Jurisdiction only.`,
+    termsAndConditions: 'Goods once sold will not be taken back.\nInterest @ 18% p.a. will be charged if payment is not made within stipulated time.\nDiscrepancy if any, in billed item must be communicated within 7 Days.\nSubject to \'Maharashtra\' Jurisdiction only.',
     items: [
       { sn: 1, description: 'UN APPROVED BOX X3', subText: '', hsnCode: '48191010', qty: 1, unit: 'Pcs', price: 110, gstRate: 5, cgstRate: 2.5, sgstRate: 2.5, igstRate: 0 },
       { sn: 2, description: 'UN APPROVED BOX X6', subText: '', hsnCode: '48191010', qty: 1, unit: 'Pcs', price: 160, gstRate: 5, cgstRate: 2.5, sgstRate: 2.5, igstRate: 0 },
-      { sn: 3, description: 'UN APPROVED BOX X22', subText: '', hsnCode: '48191010', qty: 3, unit: 'Pcs', price: 270, gstRate: 5, cgstRate: 2.5, sgstRate: 2.5, igstRate: 0 },
     ],
   });
 
-  const loadProfiles = () => {
+  const loadProfiles = async () => {
     setProfiles(getSavedBillingProfiles());
     setBuyers(getSavedBuyers());
     setShippers(getSavedShippers());
+
+    const onlineTemplates = await syncOnlineTemplates();
+    if (onlineTemplates) {
+      setProfiles(onlineTemplates);
+    }
   };
 
   useEffect(() => {

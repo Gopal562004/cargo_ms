@@ -1,4 +1,5 @@
 import { AppError } from '../middleware/error.middleware.js';
+import prisma from '../config/database.js';
 
 /**
  * POST /api/templates
@@ -6,7 +7,7 @@ import { AppError } from '../middleware/error.middleware.js';
  */
 export async function createTemplate(req, res, next) {
   try {
-    const { name, description, documentType, data, fromDocumentId } = req.body;
+    const { id, name, description, documentType = 'TAX_INVOICE', data, fromDocumentId, isDefault } = req.body;
 
     let templateData = data || {};
 
@@ -19,12 +20,34 @@ export async function createTemplate(req, res, next) {
       templateData = doc.data;
     }
 
+    // Check if updating existing template with same ID
+    if (id) {
+      const existing = await prisma.template.findFirst({
+        where: { id, createdById: req.user.id },
+      });
+      if (existing) {
+        const updated = await prisma.template.update({
+          where: { id },
+          data: {
+            name: name || existing.name,
+            description: description !== undefined ? description : existing.description,
+            documentType: documentType || existing.documentType,
+            data: templateData,
+            isDefault: isDefault !== undefined ? isDefault : existing.isDefault,
+          },
+        });
+        return res.json({ success: true, data: { template: updated } });
+      }
+    }
+
     const template = await prisma.template.create({
       data: {
-        name,
+        ...(id && { id }),
+        name: name || 'Untitled Template',
         description,
-        documentType,
+        documentType: documentType || 'TAX_INVOICE',
         data: templateData,
+        isDefault: Boolean(isDefault),
         createdById: req.user.id,
       },
     });

@@ -1,4 +1,5 @@
 import { AppError } from '../middleware/error.middleware.js';
+import prisma from '../config/database.js';
 
 /**
  * POST /api/contacts
