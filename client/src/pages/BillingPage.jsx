@@ -450,30 +450,6 @@ export default function BillingPage() {
             <FileSpreadsheet size={14} className="mr-1.5 inline text-emerald-400" /> Export GSTR-1 CSV
           </Button>
 
-          <Button
-            variant="secondary"
-            onClick={() => navigate('/billing/templates?tab=NUMBERING')}
-            className="rounded text-xs"
-            title="Configure Invoice Prefix, Financial Year & Serial Numbering"
-          >
-            <SlidersHorizontal size={14} className="mr-1.5 inline text-indigo-400" /> Series & Numbering
-          </Button>
-
-          <Button
-            variant="secondary"
-            onClick={() => navigate('/billing/ledgers')}
-            className="rounded text-xs"
-          >
-            <BookOpen size={14} className="mr-1.5 inline text-indigo-400" /> Accounting Ledgers
-          </Button>
-
-          <Button
-            variant="secondary"
-            onClick={() => navigate('/billing/templates')}
-            className="rounded text-xs"
-          >
-            <Bookmark size={14} className="mr-1.5 inline" /> Templates & Directory
-          </Button>
 
           <Button
             variant="primary"
