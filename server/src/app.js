@@ -49,7 +49,16 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// ─── Health Check ────────────────────────────────────
+// ─── Root & Health Check ───────────────────────────────
+app.get('/', (req, res) => {
+  res.json({
+    name: 'CargoMS Logistics & Billing API',
+    status: 'online',
+    version: '1.0.0',
+    timestamp: new Date().toISOString(),
+  });
+});
+
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
