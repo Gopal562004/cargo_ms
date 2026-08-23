@@ -230,117 +230,110 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Financial Year Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {financialYears.map((fy) => {
-            const isActive = activeFY === fy.code;
-            const prefix = fy.prefix || 'DGR/';
-            const padding = parseInt(fy.paddingDigits, 10) || 3;
-            const startSeq = parseInt(fy.startSequence, 10) || 1;
-            const suffix = fy.suffix ? `/${fy.suffix}` : '';
-            const sample = `${prefix}${startSeq.toString().padStart(padding, '0')}/${fy.code}${suffix}`;
+        {/* Financial Year Cards Grid (Chronological Order & Compact) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          {[...financialYears]
+            .sort((a, b) => (parseInt(a.code.split('-')[0], 10) || 0) - (parseInt(b.code.split('-')[0], 10) || 0))
+            .map((fy) => {
+              const isActive = activeFY === fy.code;
+              const prefix = fy.prefix || 'DGR/';
+              const padding = parseInt(fy.paddingDigits, 10) || 3;
+              const startSeq = parseInt(fy.startSequence, 10) || 1;
+              const suffix = fy.suffix ? `/${fy.suffix}` : '';
+              const sample = `${prefix}${startSeq.toString().padStart(padding, '0')}/${fy.code}${suffix}`;
+              const startYr = fy.code.split('-')[0];
+              const endYrShort = fy.code.split('-')[1] || '27';
 
-            return (
-              <div
-                key={fy.code}
-                className={`p-5 rounded-lg border transition-all relative flex flex-col justify-between space-y-4 ${
-                  isActive
-                    ? 'bg-indigo-50/40 border-indigo-500 shadow-md ring-2 ring-indigo-500/20'
-                    : 'bg-slate-50/70 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                }`}
-              >
-                {/* Header Badge */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg font-black text-slate-900 font-mono">
-                      FY {fy.code}
-                    </span>
-                    {isActive ? (
-                      <span className="px-2 py-0.5 bg-emerald-600 text-white rounded text-[10px] font-bold uppercase tracking-wider shadow-xs">
-                        Active
+              return (
+                <div
+                  key={fy.code}
+                  className={`p-3.5 rounded-lg border transition-all flex flex-col justify-between space-y-3 ${
+                    isActive
+                      ? 'bg-indigo-50/40 border-indigo-400 shadow-xs ring-1 ring-indigo-400/30'
+                      : 'bg-slate-50/60 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                  }`}
+                >
+                  {/* Header */}
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-200/60">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-black text-slate-900 font-mono">
+                        FY {fy.code}
                       </span>
-                    ) : (
-                      <span className="px-2 py-0.5 bg-slate-200 text-slate-600 rounded text-[10px] font-semibold">
-                        Inactive
-                      </span>
-                    )}
-                  </div>
+                      {isActive ? (
+                        <span className="px-1.5 py-0.5 bg-emerald-600 text-white rounded text-[10px] font-bold">
+                          Active
+                        </span>
+                      ) : (
+                        <span className="px-1.5 py-0.5 bg-slate-200 text-slate-600 rounded text-[10px] font-semibold">
+                          Inactive
+                        </span>
+                      )}
+                    </div>
 
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => handleOpenEdit(fy)}
-                      className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-white rounded transition-colors"
-                      title="Edit Series Configuration"
-                    >
-                      <Pencil size={14} />
-                    </button>
-                    {!isActive && financialYears.length > 1 && (
+                    <div className="flex items-center gap-1">
                       <button
                         type="button"
-                        onClick={() => handleDelete(fy.code)}
-                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-white rounded transition-colors"
-                        title="Delete Financial Year"
+                        onClick={() => handleOpenEdit(fy)}
+                        className="p-1 text-slate-500 hover:text-indigo-600 hover:bg-white rounded transition-colors"
+                        title="Edit Series"
                       >
-                        <Trash2 size={14} />
+                        <Pencil size={13} />
+                      </button>
+                      {!isActive && financialYears.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(fy.code)}
+                          className="p-1 text-slate-400 hover:text-rose-600 hover:bg-white rounded transition-colors"
+                          title="Delete Financial Year"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Details */}
+                  <div className="space-y-1.5 text-[11px]">
+                    <div className="flex items-center justify-between text-slate-600">
+                      <span>Period:</span>
+                      <span className="font-mono text-slate-800 font-semibold">
+                        01/04/{startYr} – 31/03/20{endYrShort}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-slate-600">
+                      <span>Prefix & Start:</span>
+                      <span className="font-mono text-slate-900 font-bold">
+                        {prefix} (Seq #{startSeq.toString().padStart(padding, '0')})
+                      </span>
+                    </div>
+
+                    <div className="p-1.5 bg-white border border-slate-200 rounded flex items-center justify-between">
+                      <span className="text-[10px] font-semibold text-slate-500">Sample Bill:</span>
+                      <span className="font-mono font-bold text-indigo-700 text-xs">{sample}</span>
+                    </div>
+                  </div>
+
+                  {/* Switch Active Button */}
+                  <div>
+                    {isActive ? (
+                      <div className="w-full py-1 bg-emerald-600 text-white rounded text-[11px] font-bold flex items-center justify-center gap-1">
+                        <CheckCircle2 size={12} /> Active Selected
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleSelectActive(fy.code)}
+                        className="w-full py-1 bg-white hover:bg-indigo-600 hover:text-white text-indigo-600 border border-indigo-200 hover:border-indigo-600 rounded text-[11px] font-bold transition-all flex items-center justify-center gap-1"
+                      >
+                        <span>Switch to FY {fy.code}</span>
+                        <ArrowRight size={11} />
                       </button>
                     )}
                   </div>
                 </div>
-
-                {/* Details Summary */}
-                <div className="space-y-2 text-xs">
-                  <div className="flex items-center justify-between py-1 border-b border-slate-200/60">
-                    <span className="text-slate-500">Date Range:</span>
-                    <span className="font-semibold text-slate-800 font-mono">
-                      01/04/{fy.code.split('-')[0]} – 31/03/20{fy.code.split('-')[1] || '27'}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between py-1 border-b border-slate-200/60">
-                    <span className="text-slate-500">Invoice Prefix:</span>
-                    <span className="font-mono font-bold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200">
-                      {prefix}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between py-1 border-b border-slate-200/60">
-                    <span className="text-slate-500">Starting Series:</span>
-                    <span className="font-mono font-bold text-slate-800">
-                      {startSeq.toString().padStart(padding, '0')} ({padding} Digits)
-                    </span>
-                  </div>
-
-                  <div className="p-2.5 bg-white border border-slate-200 rounded-md mt-2">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                      Sample Generated Invoice #:
-                    </span>
-                    <span className="text-xs font-black text-indigo-700 font-mono">
-                      {sample}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Action Button */}
-                <div className="pt-2">
-                  {isActive ? (
-                    <div className="w-full py-2 bg-emerald-600 text-white rounded text-xs font-bold flex items-center justify-center gap-1.5">
-                      <CheckCircle2 size={14} /> Active Year Selected
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => handleSelectActive(fy.code)}
-                      className="w-full py-2 bg-white hover:bg-indigo-600 hover:text-white text-indigo-600 border border-indigo-300 hover:border-indigo-600 rounded text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5"
-                    >
-                      <span>Switch to FY {fy.code}</span>
-                      <ArrowRight size={13} />
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
         </div>
       </div>
 
