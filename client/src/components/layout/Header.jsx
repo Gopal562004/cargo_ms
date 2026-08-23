@@ -1,7 +1,8 @@
 import React from 'react';
-import { useLocation } from 'react-router-dom';
-import { Search, Sun, Moon } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Search, Sun, Moon, Calendar, SlidersHorizontal } from 'lucide-react';
 import { useThemeStore } from '../../store/themeStore';
+import { useFinancialYearStore } from '../../store/financialYearStore';
 
 const BREADCRUMB_MAP = {
   '/': 'Dashboard',
@@ -17,7 +18,9 @@ const BREADCRUMB_MAP = {
 
 export default function Header() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { theme, toggleTheme } = useThemeStore();
+  const { activeFY, financialYears, setActiveFY } = useFinancialYearStore();
 
   const getBreadcrumbs = () => {
     const path = location.pathname;
@@ -68,6 +71,36 @@ export default function Header() {
       </div>
 
       <div className="flex items-center gap-3">
+        {/* Global Financial Year Switcher */}
+        <div className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-200 rounded-md px-2.5 py-1 text-xs shadow-xs">
+          <Calendar size={13} className="text-indigo-600 shrink-0" />
+          <span className="font-semibold text-slate-700 text-[11px]">FY:</span>
+          <select
+            className="bg-transparent text-xs font-bold font-mono text-indigo-700 focus:outline-none cursor-pointer"
+            value={activeFY}
+            onChange={(e) => {
+              if (e.target.value === '__manage__') {
+                navigate('/settings');
+              } else {
+                setActiveFY(e.target.value);
+              }
+            }}
+            title="Switch Active Financial Year across whole website"
+          >
+            {financialYears.map((fy) => (
+              <option key={fy.code} value={fy.code} className="bg-white text-slate-800 font-sans">
+                FY {fy.code}
+              </option>
+            ))}
+            <option value="ALL" className="bg-white text-slate-800 font-sans">
+              All Financial Years
+            </option>
+            <option value="__manage__" className="bg-white text-indigo-600 font-bold font-sans">
+              ⚙ Manage / Add FY...
+            </option>
+          </select>
+        </div>
+
         <div className="relative flex items-center">
           <Search
             size={14}
@@ -76,7 +109,7 @@ export default function Header() {
           />
           <input
             type="text"
-            className={`pl-8 pr-12 py-1.5 rounded text-xs transition-colors w-64 focus:outline-none ${theme === 'light'
+            className={`pl-8 pr-12 py-1.5 rounded text-xs transition-colors w-56 focus:outline-none ${theme === 'light'
                 ? 'bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:border-indigo-600'
                 : 'bg-slate-950 border border-slate-800 text-slate-200 placeholder-slate-500 focus:border-indigo-500'
               }`}

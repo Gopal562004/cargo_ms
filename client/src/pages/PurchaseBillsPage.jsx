@@ -41,6 +41,7 @@ import {
   MapPin,
 } from 'lucide-react';
 import { useDocumentStore } from '../store/documentStore';
+import { useFinancialYearStore, filterDocumentsByFY } from '../store/financialYearStore';
 import { deleteDocument, parseInvoiceDocument } from '../services/documentService';
 import { getSavedVendors, saveVendor } from '../services/billingProfileService';
 import Button from '../components/ui/Button';
@@ -353,12 +354,15 @@ export default function PurchaseBillsPage() {
     fetchDocuments({ documentType: 'TAX_INVOICE', limit: 100, sortBy: 'createdAt', sortOrder: 'desc' });
   }, []);
 
-  // Filter purchase bills (TAX_INVOICE documents with invoiceKind === 'PURCHASE')
-  const purchaseBills = documents.filter((doc) => {
+  const { activeFY } = useFinancialYearStore();
+
+  // Filter purchase bills (TAX_INVOICE documents with invoiceKind === 'PURCHASE') and active FY
+  const allPurchaseBills = documents.filter((doc) => {
     if (doc.documentType !== 'TAX_INVOICE') return false;
     const data = doc.data || {};
     return data.invoiceKind === 'PURCHASE' || data.isPurchase === true || (doc.title || '').toLowerCase().includes('purchase bill');
   });
+  const purchaseBills = filterDocumentsByFY(allPurchaseBills, activeFY);
 
   // Extract distinct vendor list for filter
   const distinctVendors = Array.from(

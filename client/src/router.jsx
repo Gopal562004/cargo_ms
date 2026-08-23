@@ -15,6 +15,7 @@ import BillingPage from './pages/BillingPage';
 import PurchaseBillsPage from './pages/PurchaseBillsPage';
 import BillingTemplatesPage from './pages/BillingTemplatesPage';
 import MasterUsersPage from './pages/MasterUsersPage';
+import SettingsPage from './pages/SettingsPage';
 import NotFound from './pages/NotFound';
 
 /**
@@ -206,12 +207,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'settings',
-        element: (
-          <div style={{ color: 'var(--text-secondary)', padding: '2rem' }}>
-            <h1>Settings</h1>
-            <p>Settings coming soon...</p>
-          </div>
-        ),
+        element: <SettingsPage />,
       },
     ],
   },

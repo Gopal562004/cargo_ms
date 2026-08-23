@@ -377,6 +377,8 @@ export function getDefaultInvoiceTemplate() {
 /**
  * Transforms a billing profile into flat editor formData and line items
  */
+import { useFinancialYearStore } from '../store/financialYearStore';
+
 const NUMBERING_SETTINGS_KEY_BASE = 'cargohub_invoice_numbering_settings';
 
 export const DEFAULT_NUMBERING_SETTINGS = {
@@ -392,6 +394,17 @@ export const DEFAULT_NUMBERING_SETTINGS = {
  * Load User-Scoped Invoice Numbering & Financial Year Settings
  */
 export function getNumberingSettings() {
+  const activeProfile = useFinancialYearStore.getState().getActiveFYProfile();
+  if (activeProfile) {
+    return {
+      prefix: activeProfile.prefix,
+      financialYear: activeProfile.code,
+      autoFinancialYear: false,
+      startSequence: activeProfile.startSequence,
+      paddingDigits: activeProfile.paddingDigits,
+      suffix: activeProfile.suffix || '',
+    };
+  }
   const key = getUserScopedKey(NUMBERING_SETTINGS_KEY_BASE);
   try {
     const raw = localStorage.getItem(key);
@@ -406,6 +419,14 @@ export function getNumberingSettings() {
  * Save User-Scoped Invoice Numbering & Financial Year Settings
  */
 export function saveNumberingSettings(settings) {
+  if (settings.financialYear) {
+    useFinancialYearStore.getState().updateFinancialYear(settings.financialYear, {
+      prefix: settings.prefix,
+      startSequence: settings.startSequence,
+      paddingDigits: settings.paddingDigits,
+      suffix: settings.suffix,
+    });
+  }
   const key = getUserScopedKey(NUMBERING_SETTINGS_KEY_BASE);
   const current = getNumberingSettings();
   const merged = { ...current, ...settings };
@@ -417,21 +438,11 @@ export function saveNumberingSettings(settings) {
  * Generates the next sequential invoice number in the format: DGR/001/2026-27
  */
 export function getNextInvoiceNumber(existingDocuments = []) {
-  const settings = getNumberingSettings();
-
-  let fyStr = settings.financialYear || '2026-27';
-  if (settings.autoFinancialYear) {
-    const now = new Date();
-    const currentMonth = now.getMonth(); // 0 = Jan, 3 = April
-    const fullYear = now.getFullYear();
-    const startYear = currentMonth >= 3 ? fullYear : fullYear - 1;
-    const endYearShort = (startYear + 1).toString().slice(-2);
-    fyStr = `${startYear}-${endYearShort}`; // e.g. "2026-27"
-  }
-
-  const prefix = settings.prefix || 'DGR/';
-  const padding = parseInt(settings.paddingDigits, 10) || 3;
-  const baseStartSeq = parseInt(settings.startSequence, 10) || 1;
+  const activeProfile = useFinancialYearStore.getState().getActiveFYProfile();
+  const fyStr = activeProfile?.code || '2026-27';
+  const prefix = activeProfile?.prefix || 'DGR/';
+  const padding = parseInt(activeProfile?.paddingDigits, 10) || 3;
+  const baseStartSeq = parseInt(activeProfile?.startSequence, 10) || 1;
 
   let maxSeq = baseStartSeq - 1;
   const escapedPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -454,7 +465,7 @@ export function getNextInvoiceNumber(existingDocuments = []) {
 
   const nextSeq = maxSeq + 1;
   const paddedSeq = nextSeq.toString().padStart(padding, '0');
-  const suffix = settings.suffix ? `/${settings.suffix}` : '';
+  const suffix = activeProfile?.suffix ? `/${activeProfile.suffix}` : '';
   return `${prefix}${paddedSeq}/${fyStr}${suffix}`;
 }
 

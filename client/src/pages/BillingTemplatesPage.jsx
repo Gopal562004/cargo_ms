@@ -1779,27 +1779,19 @@ export default function BillingTemplatesPage() {
       {/* TAB 4: FINANCIAL YEAR & INVOICE NUMBERING SERIES SETTINGS */}
       {/* ========================================================================= */}
       {activeTab === 'NUMBERING' && (() => {
-        let previewFy = numberingForm.financialYear || '2026-27';
-        if (numberingForm.autoFinancialYear) {
-          const now = new Date();
-          const currentMonth = now.getMonth();
-          const fullYear = now.getFullYear();
-          const startYear = currentMonth >= 3 ? fullYear : fullYear - 1;
-          const endYearShort = (startYear + 1).toString().slice(-2);
-          previewFy = `${startYear}-${endYearShort}`;
-        }
-        const prefix = numberingForm.prefix || 'DGR/';
-        const padding = parseInt(numberingForm.paddingDigits, 10) || 3;
-        const startSeq = parseInt(numberingForm.startSequence, 10) || 1;
-        const suffix = numberingForm.suffix ? `/${numberingForm.suffix}` : '';
+        const activeProfile = numberingForm;
+        const fyCode = activeProfile.financialYear || '2026-27';
+        const prefix = activeProfile.prefix || 'DGR/';
+        const padding = parseInt(activeProfile.paddingDigits, 10) || 3;
+        const startSeq = parseInt(activeProfile.startSequence, 10) || 1;
+        const suffix = activeProfile.suffix ? `/${activeProfile.suffix}` : '';
 
-        const sample1 = `${prefix}${startSeq.toString().padStart(padding, '0')}/${previewFy}${suffix}`;
-        const sample2 = `${prefix}${(startSeq + 1).toString().padStart(padding, '0')}/${previewFy}${suffix}`;
-        const sample3 = `${prefix}${(startSeq + 2).toString().padStart(padding, '0')}/${previewFy}${suffix}`;
+        const sample1 = `${prefix}${startSeq.toString().padStart(padding, '0')}/${fyCode}${suffix}`;
+        const sample2 = `${prefix}${(startSeq + 1).toString().padStart(padding, '0')}/${fyCode}${suffix}`;
+        const sample3 = `${prefix}${(startSeq + 2).toString().padStart(padding, '0')}/${fyCode}${suffix}`;
 
         return (
           <div className="space-y-6 animate-fade-in">
-            {/* Setting Overview Card */}
             <div className="p-6 bg-white border border-slate-200 rounded-lg shadow-sm space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
                 <div className="flex items-center gap-3">
@@ -1808,10 +1800,10 @@ export default function BillingTemplatesPage() {
                   </div>
                   <div>
                     <h2 className="text-base font-bold text-slate-900">
-                      Invoice Numbering & Financial Year Settings
+                      Active Financial Year Series Profile (FY {fyCode})
                     </h2>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Configure your official GST tax invoice numbering format, financial year series, and auto-increment behavior.
+                      Configure your official GST tax invoice numbering format, starting series sequence, and Indian financial year cycles.
                     </p>
                   </div>
                 </div>
@@ -1819,20 +1811,40 @@ export default function BillingTemplatesPage() {
                 <div className="flex items-center gap-2">
                   <Button
                     type="button"
-                    variant="secondary"
-                    onClick={handleResetNumbering}
-                    className="text-xs"
+                    variant="primary"
+                    onClick={() => navigate('/settings')}
+                    className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold"
                   >
-                    <RotateCcw size={13} className="mr-1.5 inline" /> Reset to Default
+                    <Settings size={13} className="mr-1.5 inline" /> Open Full FY Management in Settings
                   </Button>
                 </div>
               </div>
 
-              {/* Live Preview Box */}
-              <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-2">
+              {/* Summary Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+                <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1">
+                  <span className="text-slate-500 block text-[11px]">Active Financial Year:</span>
+                  <span className="text-base font-black text-slate-900 font-mono">FY {fyCode}</span>
+                </div>
+                <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1">
+                  <span className="text-slate-500 block text-[11px]">Invoice Prefix:</span>
+                  <span className="text-base font-black text-indigo-700 font-mono">{prefix}</span>
+                </div>
+                <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1">
+                  <span className="text-slate-500 block text-[11px]">Zero-Padding / Alignment:</span>
+                  <span className="text-base font-black text-slate-800 font-mono">{padding} Digits ({startSeq.toString().padStart(padding, '0')})</span>
+                </div>
+                <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-1">
+                  <span className="text-slate-500 block text-[11px]">Next Generated Bill:</span>
+                  <span className="text-sm font-black text-emerald-700 font-mono">{sample1}</span>
+                </div>
+              </div>
+
+              {/* Live Series Preview Bar */}
+              <div className="p-4 bg-indigo-50/50 border border-indigo-200/80 rounded-lg space-y-2">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
                   <Sparkles size={14} className="text-indigo-600" />
-                  <span>Live Invoice Series Preview:</span>
+                  <span>Sequential Invoice Numbering Progression:</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                   <div className="p-3 bg-white border border-indigo-200 rounded-md">
@@ -1850,129 +1862,26 @@ export default function BillingTemplatesPage() {
                 </div>
               </div>
 
-              {/* Form Settings */}
-              <form onSubmit={handleSaveNumbering} className="space-y-5">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {/* Invoice Prefix */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                      Invoice Prefix / Identifier *
-                    </label>
-                    <Input
-                      type="text"
-                      value={numberingForm.prefix}
-                      onChange={(e) => setNumberingForm((prev) => ({ ...prev, prefix: e.target.value }))}
-                      placeholder="e.g. DGR/ or INV/ or BILL/"
-                      className="text-xs font-mono font-bold"
-                      required
-                    />
-                    <p className="text-[11px] text-slate-500 mt-1">
-                      Prefix applied at the start of every bill (e.g. <span className="font-mono font-semibold">DGR/</span>).
-                    </p>
-                  </div>
+              {/* Actions Footer */}
+              <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={handleResetNumbering}
+                  className="text-xs"
+                >
+                  <RotateCcw size={13} className="mr-1.5 inline" /> Reset Series to Default
+                </Button>
 
-                  {/* Financial Year */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                      Financial Year (Indian FY) *
-                    </label>
-                    <Input
-                      type="text"
-                      value={numberingForm.financialYear}
-                      onChange={(e) => setNumberingForm((prev) => ({ ...prev, financialYear: e.target.value }))}
-                      placeholder="2026-27"
-                      className="text-xs font-mono font-bold"
-                      required
-                    />
-                    <p className="text-[11px] text-slate-500 mt-1">
-                      FY code for this cycle (e.g. <span className="font-mono font-semibold">2026-27</span> or <span className="font-mono font-semibold">26-27</span>).
-                    </p>
-                  </div>
-
-                  {/* Sequence Digit Padding */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                      Zero-Padding Digits
-                    </label>
-                    <select
-                      className="w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                      value={numberingForm.paddingDigits}
-                      onChange={(e) => setNumberingForm((prev) => ({ ...prev, paddingDigits: parseInt(e.target.value, 10) }))}
-                    >
-                      <option value={3}>3 Digits (001, 002, 003...)</option>
-                      <option value={4}>4 Digits (0001, 0002, 0003...)</option>
-                      <option value={2}>2 Digits (01, 02, 03...)</option>
-                      <option value={1}>No Padding (1, 2, 3...)</option>
-                    </select>
-                    <p className="text-[11px] text-slate-500 mt-1">
-                      Ensures neat 3-digit serial alignment (e.g. <span className="font-mono font-semibold">001</span>).
-                    </p>
-                  </div>
-
-                  {/* Starting Sequence Number */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                      Starting / Baseline Sequence Number
-                    </label>
-                    <Input
-                      type="number"
-                      min={1}
-                      value={numberingForm.startSequence}
-                      onChange={(e) => setNumberingForm((prev) => ({ ...prev, startSequence: Math.max(1, parseInt(e.target.value, 10) || 1) }))}
-                      className="text-xs font-mono font-bold"
-                      required
-                    />
-                    <p className="text-[11px] text-slate-500 mt-1">
-                      Set to <span className="font-mono font-semibold">1</span> to start from 001, or any number if migrating mid-year.
-                    </p>
-                  </div>
-
-                  {/* Optional Suffix */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                      Optional Suffix (Leave blank if none)
-                    </label>
-                    <Input
-                      type="text"
-                      value={numberingForm.suffix || ''}
-                      onChange={(e) => setNumberingForm((prev) => ({ ...prev, suffix: e.target.value }))}
-                      placeholder="e.g. GST or EXP (Optional)"
-                      className="text-xs font-mono"
-                    />
-                    <p className="text-[11px] text-slate-500 mt-1">
-                      Appended at the end if needed (e.g. <span className="font-mono">/GST</span>).
-                    </p>
-                  </div>
-
-                  {/* Auto-Rollover Toggle */}
-                  <div className="flex flex-col justify-center">
-                    <label className="flex items-center gap-2.5 cursor-pointer pt-3">
-                      <input
-                        type="checkbox"
-                        checked={Boolean(numberingForm.autoFinancialYear)}
-                        onChange={(e) => setNumberingForm((prev) => ({ ...prev, autoFinancialYear: e.target.checked }))}
-                        className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
-                      />
-                      <span className="text-xs font-bold text-slate-800">
-                        Auto-Roll Financial Year on 1st April
-                      </span>
-                    </label>
-                    <p className="text-[11px] text-slate-500 mt-1 ml-6.5">
-                      Automatically detects and rolls the financial year (e.g. 2026-27 &rarr; 2027-28) according to Indian tax cycle.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs px-5 py-2.5 shadow-sm"
-                  >
-                    <Save size={14} className="mr-1.5 inline" /> Save Series Configuration
-                  </Button>
-                </div>
-              </form>
+                <Button
+                  type="button"
+                  variant="primary"
+                  onClick={() => navigate('/settings')}
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs px-5 py-2"
+                >
+                  <Pencil size={13} className="mr-1.5 inline" /> Edit Series & Manage Multiple FYs in Settings &rarr;
+                </Button>
+              </div>
             </div>
           </div>
         );

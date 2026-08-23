@@ -26,6 +26,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { useDocumentStore } from '../store/documentStore';
+import { useFinancialYearStore, filterDocumentsByFY } from '../store/financialYearStore';
 import { printDocumentPDF, downloadDocumentPDF, deleteDocument } from '../services/documentService';
 import InvoiceDetailModal from '../components/documents/InvoiceDetailModal';
 import BillingTemplateManagerModal from '../components/documents/BillingTemplateManagerModal';
@@ -135,8 +136,11 @@ export default function BillingPage() {
     fetchDocuments({ documentType: 'TAX_INVOICE', limit: 100, sortBy: 'createdAt', sortOrder: 'desc' });
   };
 
-  // Filter invoices for TAX_INVOICE (Sales only)
-  const invoices = documents.filter((d) => d.documentType === 'TAX_INVOICE' && d.data?.invoiceKind !== 'PURCHASE');
+  const { activeFY } = useFinancialYearStore();
+
+  // Filter invoices for TAX_INVOICE (Sales only) and active FY
+  const allSalesInvoices = documents.filter((d) => d.documentType === 'TAX_INVOICE' && d.data?.invoiceKind !== 'PURCHASE');
+  const invoices = filterDocumentsByFY(allSalesInvoices, activeFY);
 
   // Extract distinct filter option lists from existing invoices
   const distinctBuyers = Array.from(
