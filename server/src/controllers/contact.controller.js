@@ -29,6 +29,9 @@ export async function getAllContacts(req, res, next) {
 
     const where = {
       createdById: req.user.id,
+      NOT: {
+        notes: { startsWith: '[DELETED]' },
+      },
       ...(type && { type }),
       ...(search && {
         OR: [
@@ -70,7 +73,7 @@ export async function getContactById(req, res, next) {
     const contact = await prisma.contact.findFirst({
       where: { id: req.params.id, createdById: req.user.id },
     });
-    if (!contact) throw new AppError('Contact not found', 404);
+    if (!contact || contact.notes?.startsWith('[DELETED]')) throw new AppError('Contact not found', 404);
     res.json({ success: true, data: { contact } });
   } catch (error) {
     next(error);
@@ -85,7 +88,7 @@ export async function updateContact(req, res, next) {
     const existing = await prisma.contact.findFirst({
       where: { id: req.params.id, createdById: req.user.id },
     });
-    if (!existing) throw new AppError('Contact not found', 404);
+    if (!existing || existing.notes?.startsWith('[DELETED]')) throw new AppError('Contact not found', 404);
 
     const contact = await prisma.contact.update({
       where: { id: req.params.id },
@@ -107,8 +110,15 @@ export async function deleteContact(req, res, next) {
     });
     if (!existing) throw new AppError('Contact not found', 404);
 
-    await prisma.contact.delete({ where: { id: req.params.id } });
-    res.json({ success: true, message: 'Contact deleted successfully' });
+    // Soft delete: prefix notes with [DELETED]
+    await prisma.contact.update({
+      where: { id: req.params.id },
+      data: {
+        notes: `[DELETED] ${existing.notes || ''}`.trim(),
+      },
+    });
+
+    res.json({ success: true, message: 'Contact soft-deleted successfully' });
   } catch (error) {
     next(error);
   }

@@ -114,7 +114,7 @@ export async function getAllDocuments(userId, query = {}) {
     createdById: userId,
     ...(documentType && { documentType }),
     ...(category && { category }),
-    ...(status && { status }),
+    ...(status ? { status } : { status: { not: 'CANCELLED' } }),
     ...(search && {
       OR: [
         { documentNumber: { contains: search, mode: 'insensitive' } },
@@ -232,7 +232,7 @@ export async function updateDocument(id, userId, updateData) {
 }
 
 /**
- * Delete a document.
+ * Delete a document (Soft delete — archives document and marks as CANCELLED).
  */
 export async function deleteDocument(id, userId) {
   const existing = await prisma.document.findFirst({
@@ -243,8 +243,28 @@ export async function deleteDocument(id, userId) {
     throw new AppError('Document not found', 404);
   }
 
-  await prisma.document.delete({ where: { id } });
-  return { message: 'Document deleted successfully' };
+  // Soft delete: Mark document as CANCELLED and preserve records in db
+  const currentData = (typeof existing.data === 'object' && existing.data !== null) ? existing.data : {};
+  await prisma.document.update({
+    where: { id },
+    data: {
+      status: 'CANCELLED',
+      data: {
+        ...currentData,
+        isDeleted: true,
+        deletedAt: new Date().toISOString(),
+      },
+      statusHistory: {
+        create: {
+          status: 'CANCELLED',
+          note: 'Document soft-deleted (archived)',
+          changedBy: userId,
+        },
+      },
+    },
+  });
+
+  return { message: 'Document soft-deleted successfully' };
 }
 
 /**

@@ -258,11 +258,15 @@ export async function deleteUser(req, res, next) {
       throw new AppError('User not found', 404);
     }
 
-    await prisma.user.delete({ where: { id } });
+    // Soft delete: Deactivate user account
+    await prisma.user.update({
+      where: { id },
+      data: { isActive: false },
+    });
 
     res.json({
       success: true,
-      message: `User ${existing.name} removed successfully`,
+      message: `User ${existing.name} soft-deleted (deactivated) successfully`,
     });
   } catch (error) {
     next(error);

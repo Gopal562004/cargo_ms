@@ -73,7 +73,8 @@ export async function getAllTemplates(req, res, next) {
       orderBy: { name: 'asc' },
     });
 
-    res.json({ success: true, data: { templates } });
+    const activeTemplates = templates.filter((t) => !t.data?.isDeleted);
+    res.json({ success: true, data: { templates: activeTemplates } });
   } catch (error) {
     next(error);
   }
@@ -87,7 +88,7 @@ export async function getTemplateById(req, res, next) {
     const template = await prisma.template.findFirst({
       where: { id: req.params.id, createdById: req.user.id },
     });
-    if (!template) throw new AppError('Template not found', 404);
+    if (!template || template.data?.isDeleted) throw new AppError('Template not found', 404);
     res.json({ success: true, data: { template } });
   } catch (error) {
     next(error);
@@ -102,7 +103,7 @@ export async function updateTemplate(req, res, next) {
     const existing = await prisma.template.findFirst({
       where: { id: req.params.id, createdById: req.user.id },
     });
-    if (!existing) throw new AppError('Template not found', 404);
+    if (!existing || existing.data?.isDeleted) throw new AppError('Template not found', 404);
 
     const template = await prisma.template.update({
       where: { id: req.params.id },
@@ -124,8 +125,20 @@ export async function deleteTemplate(req, res, next) {
     });
     if (!existing) throw new AppError('Template not found', 404);
 
-    await prisma.template.delete({ where: { id: req.params.id } });
-    res.json({ success: true, message: 'Template deleted successfully' });
+    // Soft delete: Store isDeleted and deletedAt in template data
+    const currentData = (typeof existing.data === 'object' && existing.data !== null) ? existing.data : {};
+    await prisma.template.update({
+      where: { id: req.params.id },
+      data: {
+        data: {
+          ...currentData,
+          isDeleted: true,
+          deletedAt: new Date().toISOString(),
+        },
+      },
+    });
+
+    res.json({ success: true, message: 'Template soft-deleted successfully' });
   } catch (error) {
     next(error);
   }
