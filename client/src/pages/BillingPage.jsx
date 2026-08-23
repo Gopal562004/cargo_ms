@@ -447,6 +447,15 @@ export default function BillingPage() {
 
           <Button
             variant="secondary"
+            onClick={() => navigate('/billing/templates?tab=NUMBERING')}
+            className="rounded text-xs"
+            title="Configure Invoice Prefix, Financial Year & Serial Numbering"
+          >
+            <SlidersHorizontal size={14} className="mr-1.5 inline text-indigo-400" /> Series & Numbering
+          </Button>
+
+          <Button
+            variant="secondary"
             onClick={() => navigate('/billing/templates')}
             className="rounded text-xs"
           >

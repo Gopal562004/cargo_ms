@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Bookmark,
   RotateCcw,
@@ -52,9 +52,25 @@ import Input from '../components/ui/Input';
 
 export default function BillingTemplatesPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  // Active Main Tab: 'TEMPLATES' | 'ITEMS' | 'PARTIES'
-  const [activeTab, setActiveTab] = useState('TEMPLATES');
+  // Active Main Tab: 'TEMPLATES' | 'ITEMS' | 'PARTIES' | 'NUMBERING'
+  const tabFromUrl = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(tabFromUrl || 'TEMPLATES');
+
+  useEffect(() => {
+    if (tabFromUrl && ['TEMPLATES', 'ITEMS', 'PARTIES', 'NUMBERING'].includes(tabFromUrl)) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [tabFromUrl]);
+
+  const handleTabChange = (newTab) => {
+    setActiveTab(newTab);
+    setSearchParams({ tab: newTab });
+    setIsEditingTemplate(false);
+    setIsEditingItemPreset(false);
+    setIsEditingParty(false);
+  };
   const [search, setSearch] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
@@ -639,12 +655,7 @@ export default function BillingTemplatesPage() {
               ? 'bg-indigo-600 text-white shadow-sm'
               : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
           }`}
-          onClick={() => {
-            setActiveTab('TEMPLATES');
-            setIsEditingTemplate(false);
-            setIsEditingItemPreset(false);
-            setIsEditingParty(false);
-          }}
+          onClick={() => handleTabChange('TEMPLATES')}
         >
           <Zap size={14} className={activeTab === 'TEMPLATES' ? 'text-white' : 'text-amber-400'} />
           <span>Full Invoice Templates ({templates.length})</span>
@@ -657,12 +668,7 @@ export default function BillingTemplatesPage() {
               ? 'bg-indigo-600 text-white shadow-sm'
               : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
           }`}
-          onClick={() => {
-            setActiveTab('ITEMS');
-            setIsEditingTemplate(false);
-            setIsEditingItemPreset(false);
-            setIsEditingParty(false);
-          }}
+          onClick={() => handleTabChange('ITEMS')}
         >
           <Package size={14} className={activeTab === 'ITEMS' ? 'text-white' : 'text-amber-400'} />
           <span>Cargo & Packaging Items ({itemPresets.length})</span>
@@ -675,12 +681,7 @@ export default function BillingTemplatesPage() {
               ? 'bg-indigo-600 text-white shadow-sm'
               : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
           }`}
-          onClick={() => {
-            setActiveTab('PARTIES');
-            setIsEditingTemplate(false);
-            setIsEditingItemPreset(false);
-            setIsEditingParty(false);
-          }}
+          onClick={() => handleTabChange('PARTIES')}
         >
           <Building size={14} className={activeTab === 'PARTIES' ? 'text-white' : 'text-indigo-400'} />
           <span>Company & Directory ({parties.length})</span>
@@ -693,12 +694,7 @@ export default function BillingTemplatesPage() {
               ? 'bg-indigo-600 text-white shadow-sm'
               : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
           }`}
-          onClick={() => {
-            setActiveTab('NUMBERING');
-            setIsEditingTemplate(false);
-            setIsEditingItemPreset(false);
-            setIsEditingParty(false);
-          }}
+          onClick={() => handleTabChange('NUMBERING')}
         >
           <SlidersHorizontal size={14} className={activeTab === 'NUMBERING' ? 'text-white' : 'text-emerald-400'} />
           <span>Financial Year & Series Settings</span>
