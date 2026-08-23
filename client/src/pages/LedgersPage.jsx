@@ -655,6 +655,85 @@ function LedgerCreateEditModal({ isOpen, initialData, onClose, onSave }) {
             </div>
           </div>
 
+          {/* Quick Autofill from Directory Companies (For Debtors / Creditors) */}
+          {isDebtorOrCreditor && (
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1.5">
+              <label className="block text-[11px] font-bold text-slate-700">
+                ⚡ 1-Click Auto-Fill from Saved Directory Companies:
+              </label>
+              <select
+                onChange={(e) => {
+                  const partyId = e.target.value;
+                  if (!partyId) return;
+                  const allParties = getSavedParties();
+                  const p = allParties.find((x) => x.id === partyId || x.name === partyId);
+                  if (p) {
+                    const gstin = p.gstin || '';
+                    const pan = gstin.length >= 12 ? gstin.slice(2, 12) : '';
+                    setForm((prev) => ({
+                      ...prev,
+                      name: p.name || prev.name,
+                      alias: (p.name?.split(' ')[0] || '').toUpperCase(),
+                      gstin,
+                      panNumber: pan || prev.panNumber,
+                      state: p.state || 'Maharashtra (27)',
+                      address: p.address || prev.address,
+                      phone: p.phone || prev.phone,
+                      email: p.email || prev.email,
+                      registrationType: gstin ? 'Regular' : 'Unregistered',
+                    }));
+                  }
+                }}
+                className="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-xs text-slate-800 font-medium focus:outline-none focus:border-indigo-500"
+              >
+                <option value="">-- Select a company from directory to auto-fill details --</option>
+                {getSavedParties().map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} {p.gstin ? `(${p.gstin})` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Quick Logistics Expense Presets (For Expense / Sales Accounts) */}
+          {(form.parentGroup === 'DIRECT_EXPENSES' || form.parentGroup === 'SALES_ACCOUNTS') && (
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1.5">
+              <label className="block text-[11px] font-bold text-slate-700">
+                ⚡ 1-Click Auto-Fill from Standard Logistics Heads:
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { name: 'UN 4G DG Packaging Material Expense A/c', alias: 'PKG_EXP', group: 'DIRECT_EXPENSES' },
+                  { name: 'Airline Master Freight & Surcharges Expense A/c', alias: 'FREIGHT_EXP', group: 'DIRECT_EXPENSES' },
+                  { name: 'DGD Dangerous Goods Certification & Inspection A/c', alias: 'DGD_EXP', group: 'DIRECT_EXPENSES' },
+                  { name: 'Terminal Handling Charges (THC) & Security A/c', alias: 'THC_EXP', group: 'DIRECT_EXPENSES' },
+                  { name: 'Customs Clearance & Brokerage Charges A/c', alias: 'CHA_EXP', group: 'DIRECT_EXPENSES' },
+                  { name: 'Domestic Air Cargo Freight Sales A/c', alias: 'DOM_SALES', group: 'SALES_ACCOUNTS' },
+                  { name: 'International Air Freight Sales A/c', alias: 'INTL_SALES', group: 'SALES_ACCOUNTS' },
+                ]
+                  .filter((preset) => preset.group === form.parentGroup)
+                  .map((preset) => (
+                    <button
+                      key={preset.alias}
+                      type="button"
+                      onClick={() =>
+                        setForm((prev) => ({
+                          ...prev,
+                          name: preset.name,
+                          alias: preset.alias,
+                          parentGroup: preset.group,
+                        }))
+                      }
+                      className="px-2 py-1 bg-white border border-slate-300 hover:border-indigo-500 hover:text-indigo-600 rounded text-[11px] font-medium transition-colors"
+                    >
+                      + {preset.name.split(' A/c')[0]}
+                    </button>
+                  ))}
+              </div>
+            </div>
+          )}
+
           {/* Main Master Fields */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div className="sm:col-span-2">
