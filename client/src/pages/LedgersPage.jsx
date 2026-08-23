@@ -96,13 +96,22 @@ export default function LedgersPage() {
     const directoryParties = getSavedParties();
     for (const p of directoryParties) {
       const pName = (p.name || '').trim();
-      if (pName && !existingNames.has(pName.toLowerCase())) {
-        existingNames.add(pName.toLowerCase());
-        const isVendor = Array.isArray(p.roles) && p.roles.includes('VENDOR') && !p.roles.includes('CUSTOMER');
-        const isCompanySelf = pName.toLowerCase().includes('dgr global logistics');
+      const pNameLower = pName.toLowerCase();
+      if (pName && !existingNames.has(pNameLower)) {
+        existingNames.add(pNameLower);
+        const isCompanySelf = pNameLower.includes('dgr global logistics');
+        const isVendor =
+          (Array.isArray(p.roles) && p.roles.includes('VENDOR') && !p.roles.includes('CUSTOMER')) ||
+          p.category === 'PACKAGING' ||
+          p.category === 'WAREHOUSE' ||
+          p.category === 'CUSTOMS' ||
+          pNameLower.includes('packaging') ||
+          pNameLower.includes('warehouse') ||
+          pNameLower.includes('customs') ||
+          pNameLower.includes('celebi');
 
         list.push({
-          id: p.id || 'dir_party_' + pName.toLowerCase().replace(/[^a-z0-9]/g, '_'),
+          id: p.id || 'dir_party_' + pNameLower.replace(/[^a-z0-9]/g, '_'),
           name: pName,
           alias: (pName.split(' ')[0] || '').toUpperCase(),
           parentGroup: isCompanySelf ? 'CAPITAL_ACCOUNT' : isVendor ? 'SUNDRY_CREDITORS' : 'SUNDRY_DEBTORS',

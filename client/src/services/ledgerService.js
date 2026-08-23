@@ -258,9 +258,13 @@ export function computeLedgerStatement(ledger, salesInvoices = [], purchaseBills
       const ledgerGstin = (ledger.gstin || '').trim().toUpperCase();
 
       const isDebtorMatch =
-        (ledger.parentGroup === 'SUNDRY_DEBTORS' || ledger.parentGroup === 'CURRENT_ASSETS') &&
         ((ledgerGstin && buyerGstin && ledgerGstin === buyerGstin) ||
-          (buyerName && ledgerName && (buyerName.includes(ledgerName) || ledgerName.includes(buyerName))));
+          (buyerName && ledgerName && (buyerName.includes(ledgerName) || ledgerName.includes(buyerName)))) &&
+        ledger.parentGroup !== 'SALES_ACCOUNTS' &&
+        ledger.parentGroup !== 'DUTIES_TAXES' &&
+        ledger.parentGroup !== 'DIRECT_EXPENSES' &&
+        ledger.parentGroup !== 'BANK_ACCOUNTS' &&
+        ledger.parentGroup !== 'CASH_IN_HAND';
 
       const isSalesAccountMatch = ledger.parentGroup === 'SALES_ACCOUNTS';
       const isOutputTaxMatch =
@@ -348,9 +352,13 @@ export function computeLedgerStatement(ledger, salesInvoices = [], purchaseBills
       const expenseCategory = (d.expenseCategory || '').toLowerCase();
 
       const isCreditorMatch =
-        (ledger.parentGroup === 'SUNDRY_CREDITORS' || ledger.parentGroup === 'CURRENT_LIABILITIES') &&
         ((ledgerGstin && vendorGstin && ledgerGstin === vendorGstin) ||
-          (vendorName && ledgerName && (vendorName.includes(ledgerName) || ledgerName.includes(vendorName))));
+          (vendorName && ledgerName && (vendorName.includes(ledgerName) || ledgerName.includes(vendorName)))) &&
+        ledger.parentGroup !== 'SALES_ACCOUNTS' &&
+        ledger.parentGroup !== 'DUTIES_TAXES' &&
+        ledger.parentGroup !== 'DIRECT_EXPENSES' &&
+        ledger.parentGroup !== 'BANK_ACCOUNTS' &&
+        ledger.parentGroup !== 'CASH_IN_HAND';
 
       const isExpenseMatch =
         (ledger.parentGroup === 'DIRECT_EXPENSES' || ledger.parentGroup === 'INDIRECT_EXPENSES') &&
