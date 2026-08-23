@@ -26,6 +26,7 @@ import {
   Hash,
   Calendar,
   Sparkles,
+  Settings,
 } from 'lucide-react';
 import {
   getSavedBillingProfiles,
