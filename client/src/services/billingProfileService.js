@@ -446,11 +446,20 @@ export function getNextInvoiceNumber(existingDocuments = []) {
 
   let maxSeq = baseStartSeq - 1;
   const escapedPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const pattern = new RegExp(`${escapedPrefix}(\\d+)`, 'i');
+  const escapedFy = fyStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const fyShort = fyStr.length === 7 ? fyStr.slice(2, 4) + '-' + fyStr.slice(5) : fyStr;
+  const pattern = new RegExp(`${escapedPrefix}(\\d+).*?(${escapedFy}|${fyShort})`, 'i');
 
   if (Array.isArray(existingDocuments)) {
     for (const doc of existingDocuments) {
-      if (doc.documentType === 'TAX_INVOICE' || doc.data?.invoiceKind !== 'PURCHASE') {
+      const isPurchase =
+        doc.data?.invoiceKind === 'PURCHASE' ||
+        doc.data?.isPurchase === true ||
+        (doc.title || '').toLowerCase().includes('purchase');
+      const isCancelled = doc.status === 'CANCELLED' || doc.data?.isDeleted === true;
+
+      // Only count active SALES invoices
+      if (!isPurchase && !isCancelled && (doc.documentType === 'TAX_INVOICE' || doc.data?.invoiceNumber)) {
         const invNo = doc.documentNumber || doc.data?.invoiceNumber || '';
         const match = invNo.match(pattern);
         if (match) {
