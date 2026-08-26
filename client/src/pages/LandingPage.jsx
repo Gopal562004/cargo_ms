@@ -60,12 +60,12 @@ const FLIGHTS = [
 const DOC_TEMPLATES = [
   {
     id: 'MAWB',
-    title: 'IATA Master Air Waybill (MAWB)',
-    code: 'IATA RES 600B',
+    title: 'Master Air Waybill (MAWB)',
+    code: 'STANDARD AIR WAYBILL',
     badge: 'AIR FREIGHT',
     color: 'border-indigo-500 text-indigo-400 bg-indigo-500/10',
     icon: Plane,
-    desc: 'Standardized 8-copy color layout with automated Modulus-7 validation, volumetric ratio (1:6000), and SITA airline routing.',
+    desc: 'Standardized layout with automated Modulus-7 validation, volumetric weight calculation (1:6000 ratio), and multi-copy printing.',
     fields: [
       { label: 'AWB Prefix & Number', val: '098 - 4820 1920' },
       { label: 'Airport of Departure', val: 'DEL (Indira Gandhi Intl, New Delhi)' },
@@ -97,29 +97,29 @@ const DOC_TEMPLATES = [
   {
     id: 'DGD',
     title: 'Dangerous Goods Declaration',
-    code: 'IATA DGR SPEC',
-    badge: 'HAZMAT COMPLIANCE',
+    code: 'HAZMAT DECLARATION SPEC',
+    badge: 'HAZMAT DOCUMENTATION',
     color: 'border-rose-500 text-rose-400 bg-rose-500/10',
     icon: ShieldCheck,
-    desc: 'UN 3,500+ hazardous cargo classification with mandatory red-striped hazard borders, emergency response contact, and CAO packaging.',
+    desc: 'UN 3,500+ hazardous cargo classification with mandatory red-striped hazard borders, emergency response contact, and packaging details.',
     fields: [
       { label: 'UN Number & PSN', val: 'UN 1845 / CARBON DIOXIDE, SOLID (DRY ICE)' },
       { label: 'Hazard Class / Div', val: 'Class 9 (Miscellaneous Dangerous Goods)' },
       { label: 'Packing Group & Inst.', val: 'III / Packing Instruction 954' },
       { label: 'Quantity & Overpack', val: '12 Packages x 10.0 KG Dry Ice (Net: 120 KG)' },
       { label: 'Aircraft Limitation', val: 'PASSENGER AND CARGO AIRCRAFT' },
-      { label: '24hr Emergency Desk', val: '+91-11-2849-0000 (CHEMTREC CERT)' },
+      { label: '24hr Emergency Desk', val: '+91-11-2849-0000 (EMERGENCY CONTACT)' },
     ],
-    status: 'COMPLIANT & VERIFIED',
+    status: 'READY FOR DISPATCH',
   },
   {
     id: 'BOL',
     title: 'Ocean Multimodal Bill of Lading',
-    code: 'FMC / FIATA',
+    code: 'OCEAN FREIGHT SPEC',
     badge: 'OCEAN FREIGHT',
     color: 'border-cyan-500 text-cyan-400 bg-cyan-500/10',
     icon: Ship,
-    desc: 'Full container load (FCL) and groupage (LCL) bills with container ISO codes, high-security bottle seal numbers, and marine port routing.',
+    desc: 'Full container load (FCL) and groupage (LCL) bills with container ISO codes, high-security seal numbers, and marine port routing.',
     fields: [
       { label: 'B/L Number', val: 'BL-SEA-2026-4401' },
       { label: 'Port of Loading', val: 'JNPT (Nhava Sheva, Mumbai)' },
@@ -228,7 +228,7 @@ export default function LandingPage() {
       >
         <div className="flex items-center gap-3">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="font-semibold text-emerald-500 tracking-wider">IATA SPEC 600B READY</span>
+          <span className="font-semibold text-emerald-500 tracking-wider">FREIGHT & BILLING PLATFORM ONLINE</span>
           <span className="hidden sm:inline text-slate-400">·</span>
           <span className="hidden sm:inline font-mono">{liveUtc || 'UTC TIME'}</span>
         </div>
@@ -328,7 +328,7 @@ export default function LandingPage() {
               </h1>
 
               <p className="text-sm sm:text-base text-slate-400 font-normal leading-relaxed max-w-lg">
-                Effortlessly create, edit, duplicate, print, and track IATA Air Waybills, GST Invoices, and Dangerous Goods declarations on a single console.
+                Effortlessly create, edit, duplicate, print, and track Air Waybills, GST Invoices, and Dangerous Goods declarations on a single console.
               </p>
             </div>
 
@@ -427,7 +427,7 @@ export default function LandingPage() {
               </h2>
             </div>
             <p className="text-xs sm:text-sm font-mono text-slate-400">
-              Live SITA / ARINC Telemetry · Handheld Barcode Ready
+              Freight Document Management · Fast Waybill Generation
             </p>
           </div>
 
@@ -444,10 +444,10 @@ export default function LandingPage() {
                   DISPATCH ROOM
                 </span>
                 <h3 className="text-lg font-bold text-white leading-tight">
-                  Multi-Operator Flight Deck Telemetry
+                  Multi-Operator Operations Coordination
                 </h3>
                 <p className="text-xs text-slate-300 font-sans mt-1 leading-relaxed">
-                  Real-time status coordination between booking agents, weight inspectors, and airline freight desks.
+                  Streamlined status coordination between booking agents, accounts, and freight operations teams.
                 </p>
               </div>
             </div>
@@ -456,18 +456,18 @@ export default function LandingPage() {
             <div className="relative rounded overflow-hidden border border-slate-800 shadow-xl group">
               <img
                 src="/images/cargo_pallet_scanner.jpg"
-                alt="IATA ULD Pallet Scanning & Inspection"
+                alt="Cargo Pallet & Container Management"
                 className="w-full h-64 sm:h-72 object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#090d16] via-[#090d16]/40 to-transparent flex flex-col justify-end p-6">
                 <span className="px-2.5 py-0.5 rounded bg-emerald-600 text-white font-mono text-[10px] font-bold w-fit uppercase mb-2">
-                  TARMAC INSPECTION
+                  CARGO MANAGEMENT
                 </span>
                 <h3 className="text-lg font-bold text-white leading-tight">
-                  IATA ULD Barcode Verification
+                  Pallet & Container Tracking
                 </h3>
                 <p className="text-xs text-slate-300 font-sans mt-1 leading-relaxed">
-                  Instant barcode matching from physical pallets and dangerous goods containers to digital waybill manifests.
+                  Organize container IDs, piece counts, and weights connected directly to digital waybill records.
                 </p>
               </div>
             </div>
@@ -607,7 +607,7 @@ export default function LandingPage() {
                   <span className="flex items-center gap-1 text-indigo-400"><Copy size={13} /> 1-Click Duplicate</span>
                   <span className="flex items-center gap-1 text-amber-400"><Clock size={13} /> Real-Time Audit Log</span>
                 </div>
-                <span className="text-slate-400 font-mono">IATA 600B & GST 9965 COMPLIANT</span>
+                <span className="text-slate-400 font-mono">STANDARD AIR WAYBILL & GST INVOICE LAYOUT</span>
               </div>
             </div>
           </div>

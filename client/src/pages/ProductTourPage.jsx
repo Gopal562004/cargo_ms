@@ -33,17 +33,17 @@ import { useAuthStore } from '../store/authStore';
 const TOUR_MODULES = [
   {
     id: 'mawb',
-    name: '1. IATA Air Waybills (MAWB & HAWB)',
+    name: '1. Air Waybills (MAWB & HAWB)',
     badge: 'AIR FREIGHT ENGINE',
     icon: Plane,
-    tagline: 'Standardized Resolution 600b document generation with automated rate calculation.',
+    tagline: 'Standardized air waybill document generation with automated rate calculation.',
     steps: [
       { step: '01', title: 'Input AWB Number & Port Pairs', desc: 'Enter 3-digit airline prefix (e.g. 098 Air India, 125 Lufthansa) with automated 7-digit modulus-7 check digit verification.' },
-      { step: '02', title: 'Weight & Dimension Auto-Calc', desc: 'Calculates volume weight (1:6000 IATA ratio) and sets the higher chargeable weight against gross weight instantly.' },
-      { step: '03', title: 'Multi-Copy PDF & Thermal Print', desc: 'Instant print-ready 8-copy color-coded layout or standard A4 laser PDF with pre-aligned field coordinates.' },
+      { step: '02', title: 'Weight & Dimension Auto-Calc', desc: 'Calculates volume weight (1:6000 volumetric ratio) and sets the higher chargeable weight against gross weight instantly.' },
+      { step: '03', title: 'Multi-Copy PDF & Thermal Print', desc: 'Instant print-ready multi-copy layout or standard A4 laser PDF with pre-aligned field coordinates.' },
     ],
     sampleData: {
-      type: 'AIR WAYBILL (IATA 600B)',
+      type: 'STANDARD AIR WAYBILL',
       code: '098-48201920',
       origin: 'DEL (Indira Gandhi Intl, India)',
       dest: 'LHR (London Heathrow, UK)',
@@ -56,22 +56,22 @@ const TOUR_MODULES = [
   {
     id: 'edi',
     name: '2. eAWB / Cargo-IMP EDI Gateway',
-    badge: 'DIRECT SITA/ARINC EDI',
+    badge: 'DIGITAL EDI FORMATS',
     icon: Zap,
-    tagline: 'Paperless digital messaging transmitted directly to airline freight mainframes.',
+    tagline: 'Digital freight messaging syntax generator for standard airline exchange formats.',
     steps: [
       { step: '01', title: 'One-Click EDI Packet Generation', desc: 'Translates completed AWB documents into standard Cargo-IMP FWB (Freight Waybill) or FHL (House List) syntax.' },
       { step: '02', title: 'Syntax & Error Validation', desc: 'Pre-flight parser checks for missing postal codes, airline routing errors, and mandatory customs fields.' },
-      { step: '03', title: 'Airline Telemetry & Acknowledgment', desc: 'Receives and parses incoming FMA (Acknowledgment) or FNA (Error) telegrams in real-time.' },
+      { step: '03', title: 'Digital Telegram Export', desc: 'Generates and copies standard FWB and FHL message strings ready for transmission.' },
     ],
     sampleData: {
       type: 'CARGO-IMP MESSAGE (FWB/16)',
       code: 'FWB/16/098-48201920DELLHR/T18K540.0MC4.85',
       origin: 'DEL → LHR',
-      carrier: 'SITA GATEWAY ADDR: DELFFAIEK',
-      rate: 'IATA ED16 STANDARD',
+      carrier: 'MESSAGE HEADER: FWB',
+      rate: 'STANDARD EDI FORMAT',
       weight: '18 PIECES / 540 KG',
-      status: 'FMA ACK RECEIVED (AIRLINE ACCEPTED)',
+      status: 'MESSAGE GENERATED & READY',
     },
   },
   {
@@ -98,10 +98,10 @@ const TOUR_MODULES = [
   },
   {
     id: 'dgd',
-    name: '4. Dangerous Goods (DGD) Compliance',
-    badge: 'IATA DGR COMPLIANCE',
+    name: '4. Dangerous Goods (DGD) Declarations',
+    badge: 'HAZMAT DOCUMENTATION',
     icon: ShieldCheck,
-    tagline: 'Automated UN hazard classification, emergency response codes, and compliance check.',
+    tagline: 'Automated UN hazard classification, emergency response codes, and declaration format.',
     steps: [
       { step: '01', title: 'UN Number & Proper Shipping Name Lookup', desc: 'Instant searchable database of 3,500+ hazardous cargo UN numbers, packing groups, and hazard classes.' },
       { step: '02', title: 'Passenger & Cargo-Only Limitation Checks', desc: 'Automatic quantity limit checks for Cargo Aircraft Only (CAO) vs. Passenger Aircraft.' },
