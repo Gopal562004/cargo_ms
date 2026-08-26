@@ -31,6 +31,7 @@ import { useFinancialYearStore, filterDocumentsByFY } from '../store/financialYe
 import { printDocumentPDF, downloadDocumentPDF, deleteDocument } from '../services/documentService';
 import InvoiceDetailModal from '../components/documents/InvoiceDetailModal';
 import BillingTemplateManagerModal from '../components/documents/BillingTemplateManagerModal';
+import BillingExportModal from '../components/documents/BillingExportModal';
 import PdfPreviewModal from '../components/ui/PdfPreviewModal';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
@@ -101,6 +102,7 @@ export default function BillingPage() {
   const [printingId, setPrintingId] = useState(null);
   const [downloadingId, setDownloadingId] = useState(null);
   const [templateManagerOpen, setTemplateManagerOpen] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
@@ -124,6 +126,20 @@ export default function BillingPage() {
       status: 'COMPLETED',
       statusNote: `Payment recorded via ${paymentInfo.paymentMode} (Txn Ref: ${paymentInfo.transactionId || 'N/A'})`,
     });
+    setSelectedInvoice((prev) => (prev && prev.id === docId ? {
+      ...prev,
+      status: 'COMPLETED',
+      data: updatedData,
+      statusHistory: [
+        {
+          id: Date.now().toString(),
+          status: 'COMPLETED',
+          note: `Payment recorded via ${paymentInfo.paymentMode} (Txn Ref: ${paymentInfo.transactionId || 'N/A'})`,
+          changedAt: new Date().toISOString(),
+        },
+        ...(prev.statusHistory || []),
+      ]
+    } : prev));
     setSuccessMessage(`Payment recorded successfully for Invoice #${target.documentNumber || currentData.invoiceNumber || ''}! Status updated to Paid / Completed.`);
     fetchDocuments({ documentType: 'TAX_INVOICE', limit: 100, sortBy: 'createdAt', sortOrder: 'desc' });
   };
@@ -133,11 +149,24 @@ export default function BillingPage() {
       status,
       statusNote: note || `Status updated to ${status}`,
     });
+    setSelectedInvoice((prev) => (prev && prev.id === docId ? {
+      ...prev,
+      status,
+      statusHistory: [
+        {
+          id: Date.now().toString(),
+          status,
+          note: note || `Status updated to ${status}`,
+          changedAt: new Date().toISOString(),
+        },
+        ...(prev.statusHistory || []),
+      ]
+    } : prev));
     setSuccessMessage(`Invoice status updated to ${status}!`);
     fetchDocuments({ documentType: 'TAX_INVOICE', limit: 100, sortBy: 'createdAt', sortOrder: 'desc' });
   };
 
-  const { activeFY } = useFinancialYearStore();
+  const { activeFY, financialYears } = useFinancialYearStore();
 
   // Filter invoices for TAX_INVOICE (Sales only) and active FY
   const allSalesInvoices = documents.filter((d) => d.documentType === 'TAX_INVOICE' && d.data?.invoiceKind !== 'PURCHASE');
@@ -443,13 +472,12 @@ export default function BillingPage() {
         <div className="flex items-center gap-2.5 flex-wrap">
           <Button
             variant="secondary"
-            onClick={exportGstr1Csv}
-            className="rounded text-xs bg-slate-800 hover:bg-slate-700 text-slate-200"
-            title="Download CSV for monthly GSTR-1 filing"
+            onClick={() => setExportModalOpen(true)}
+            className="rounded text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-750"
+            title="Custom export data, choose columns, duration, FY, and GSTR-1 formats"
           >
-            <FileSpreadsheet size={14} className="mr-1.5 inline text-emerald-400" /> Export GSTR-1 CSV
+            <FileSpreadsheet size={14} className="mr-1.5 inline text-emerald-400" /> Export Sales Register & GSTR-1
           </Button>
-
 
           <Button
             variant="primary"
@@ -868,18 +896,18 @@ export default function BillingPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left">
-              <thead className="bg-slate-950/50 text-slate-400 font-semibold border-b border-slate-800">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead className="bg-slate-950/50 text-slate-400 font-semibold border-b border-slate-800 text-[11px]">
                 <tr>
-                  <th className="py-3 px-4">Invoice #</th>
-                  <th className="py-3 px-4">Date</th>
-                  <th className="py-3 px-4 min-w-[150px]">Billed To (Buyer)</th>
-                  <th className="py-3 px-4 min-w-[150px]">Shipper / Destination</th>
-                  <th className="py-3 px-4 min-w-[170px]">Products / Items</th>
-                  <th className="py-3 px-4">AWB / Ref</th>
-                  <th className="py-3 px-4 text-right">Amount (₹)</th>
-                  <th className="py-3 px-4 text-center">Status</th>
-                  <th className="py-3 px-4 text-right min-w-[200px]">Actions</th>
+                  <th className="py-3 px-3 whitespace-nowrap">Invoice #</th>
+                  <th className="py-3 px-3 whitespace-nowrap">Date</th>
+                  <th className="py-3 px-3 min-w-[130px] max-w-[200px]">Billed To (Buyer)</th>
+                  <th className="py-3 px-3 min-w-[130px] max-w-[200px]">Shipper / Destination</th>
+                  <th className="py-3 px-3 min-w-[140px] max-w-[220px]">Products / Items</th>
+                  <th className="py-3 px-3 whitespace-nowrap">AWB / Ref</th>
+                  <th className="py-3 px-3 text-right whitespace-nowrap">Amount (₹)</th>
+                  <th className="py-3 px-3 text-center whitespace-nowrap">Status</th>
+                  <th className="py-3 px-3 text-right whitespace-nowrap shrink-0">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/80">
@@ -892,7 +920,7 @@ export default function BillingPage() {
 
                   return (
                     <tr key={doc.id} className="hover:bg-slate-800/30 transition-colors">
-                      <td className="py-3.5 px-4 font-bold text-slate-100 font-mono">
+                      <td className="py-3 px-3 font-bold text-slate-100 font-mono whitespace-nowrap">
                         <button
                           type="button"
                           className="hover:text-indigo-400 transition-colors text-left font-mono underline decoration-dotted underline-offset-4"
@@ -902,27 +930,27 @@ export default function BillingPage() {
                           {invoiceNum}
                         </button>
                         {data.paymentInfo?.transactionId && (
-                          <div className="mt-1 flex items-center gap-1 text-[10px] font-normal text-emerald-400 font-mono">
+                          <div className="mt-0.5 flex items-center gap-1 text-[10px] font-normal text-emerald-400 font-mono">
                             <CreditCard size={11} /> {data.paymentInfo.paymentMode}: {data.paymentInfo.transactionId}
                           </div>
                         )}
                       </td>
-                      <td className="py-3.5 px-4 text-slate-300 font-mono">
+                      <td className="py-3 px-3 text-slate-300 font-mono whitespace-nowrap">
                         {invoiceDate}
                       </td>
-                      <td className="py-3.5 px-4">
-                        <div className="font-semibold text-slate-200">{data.buyerName || 'Unspecified'}</div>
-                        <div className="text-[11px] text-slate-400 truncate max-w-xs">{data.buyerState || ''}</div>
+                      <td className="py-3 px-3 max-w-[200px]">
+                        <div className="font-semibold text-slate-200 truncate" title={data.buyerName}>{data.buyerName || 'Unspecified'}</div>
+                        <div className="text-[10px] text-slate-400 truncate">{data.buyerState || ''}</div>
                       </td>
-                      <td className="py-3.5 px-4">
-                        <div className="text-slate-300 font-medium">{data.consigneeName || data.shipperName || '-'}</div>
+                      <td className="py-3 px-3 max-w-[200px]">
+                        <div className="text-slate-300 font-medium truncate" title={data.consigneeName || data.shipperName}>{data.consigneeName || data.shipperName || '-'}</div>
                         {data.consigneeState && (
-                          <div className="text-[11px] text-slate-500 truncate max-w-xs">{data.consigneeState}</div>
+                          <div className="text-[10px] text-slate-500 truncate">{data.consigneeState}</div>
                         )}
                       </td>
-                      <td className="py-3.5 px-4">
+                      <td className="py-3 px-3 max-w-[220px]">
                         {items.length > 0 ? (
-                          <div className="space-y-0.5 max-w-xs">
+                          <div className="space-y-0.5">
                             <div className="text-slate-200 font-medium truncate" title={items.map((i) => i.description).join(', ')}>
                               {items[0].description || 'Item'}
                               {items.length > 1 && (
@@ -931,7 +959,7 @@ export default function BillingPage() {
                                 </span>
                               )}
                             </div>
-                            <div className="text-[10px] text-slate-400 font-mono">
+                            <div className="text-[10px] text-slate-400 font-mono truncate">
                               Qty: {items.reduce((sum, it) => sum + (parseFloat(it.qty || it.quantity) || 0), 0)} {items[0]?.unit || 'Pcs'}
                               {items[0]?.hsnCode && ` | HSN: ${items[0].hsnCode}`}
                             </div>
@@ -940,70 +968,70 @@ export default function BillingPage() {
                           <span className="text-slate-500">-</span>
                         )}
                       </td>
-                      <td className="py-3.5 px-4 text-slate-300 font-mono">
+                      <td className="py-3 px-3 text-slate-300 font-mono whitespace-nowrap">
                         {data.airwayBillNo || data.poNumberAndDate || '-'}
                       </td>
-                      <td className="py-3.5 px-4 text-right font-mono font-bold text-emerald-400">
+                      <td className="py-3 px-3 text-right font-mono font-bold text-emerald-400 whitespace-nowrap">
                         ₹{formatINR(grandTotal)}
                       </td>
-                      <td className="py-3.5 px-4 text-center">
+                      <td className="py-3 px-3 text-center whitespace-nowrap">
                         <Badge status={doc.status} />
                       </td>
-                      <td className="py-3.5 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+                      <td className="py-3 px-3 text-right whitespace-nowrap shrink-0">
+                        <div className="flex items-center justify-end gap-1">
                           {/* 1-Click Direct Print */}
                           <button
                             type="button"
-                            className="px-2.5 py-1 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded shadow-sm transition-all flex items-center gap-1 cursor-pointer"
+                            className="px-2 py-1 text-[11px] font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded shadow-sm transition-all flex items-center gap-1 cursor-pointer shrink-0"
                             onClick={() => handlePrint(doc.id)}
                             disabled={printingId === doc.id}
                             title="Print this invoice immediately"
                           >
-                            <Printer size={13} />
+                            <Printer size={12} />
                             <span>{printingId === doc.id ? 'Printing...' : 'Print Bill'}</span>
                           </button>
 
                           {/* Direct Document Preview (PDF) */}
                           <button
                             type="button"
-                            className="p-1.5 text-slate-400 hover:text-indigo-400 hover:bg-slate-800 rounded transition-colors"
+                            className="p-1 text-slate-400 hover:text-indigo-400 hover:bg-slate-800 rounded transition-colors"
                             onClick={() => {
                               setPreviewDocTitle(`Invoice #${invoiceNum}`);
                               setPreviewDocId(doc.id);
                             }}
                             title="Direct Document Preview (PDF)"
                           >
-                            <Eye size={15} />
+                            <Eye size={14} />
                           </button>
 
                           {/* Payment / Activity Details Modal */}
                           <button
                             type="button"
-                            className="p-1.5 text-slate-400 hover:text-emerald-400 hover:bg-slate-800 rounded transition-colors"
+                            className="p-1 text-slate-400 hover:text-emerald-400 hover:bg-slate-800 rounded transition-colors"
                             onClick={() => setSelectedInvoice(doc)}
                             title={data.paymentInfo?.transactionId ? `Payment Recorded (${data.paymentInfo.transactionId})` : "Record Client Payment Details"}
                           >
-                            <CreditCard size={15} />
+                            <CreditCard size={14} />
                           </button>
 
                           {/* Edit Bill Form */}
                           <button
                             type="button"
-                            className="p-1.5 text-slate-400 hover:text-indigo-400 hover:bg-slate-800 rounded transition-colors"
+                            className="p-1 text-slate-400 hover:text-indigo-400 hover:bg-slate-800 rounded transition-colors"
                             onClick={() => navigate(`/documents/${doc.id}`)}
                             title="Edit Bill Form"
                           >
-                            <Pencil size={15} />
+                            <Pencil size={14} />
                           </button>
 
                           {/* Delete */}
                           <button
                             type="button"
-                            className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition-colors"
+                            className="p-1 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition-colors"
                             onClick={() => handleDelete(doc.id)}
                             title="Delete Invoice"
                           >
-                            <Trash2 size={15} />
+                            <Trash2 size={14} />
                           </button>
                         </div>
                       </td>
@@ -1060,6 +1088,17 @@ export default function BillingPage() {
           onSelectTemplate={() => {
             setTemplateManagerOpen(false);
           }}
+        />
+      )}
+
+      {/* Comprehensive Custom Sales Export Modal */}
+      {exportModalOpen && (
+        <BillingExportModal
+          isOpen={exportModalOpen}
+          onClose={() => setExportModalOpen(false)}
+          allInvoices={allSalesInvoices}
+          activeFY={activeFY}
+          financialYears={financialYears}
         />
       )}
     </div>

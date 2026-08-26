@@ -1356,15 +1356,15 @@ export default function PurchaseBillsPage() {
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-slate-800 bg-slate-950/50 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
-                  <th className="py-3 px-4">Voucher / Bill #</th>
-                  <th className="py-3 px-4">Vendor / Supplier</th>
-                  <th className="py-3 px-4">Category & SAC</th>
-                  <th className="py-3 px-4">Bill Date</th>
-                  <th className="py-3 px-4 text-right">Taxable (₹)</th>
-                  <th className="py-3 px-4 text-right">GST Breakdown</th>
-                  <th className="py-3 px-4 text-right">Grand Total (₹)</th>
-                  <th className="py-3 px-4 text-center">Status</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
+                  <th className="py-3 px-3 whitespace-nowrap">Voucher / Bill #</th>
+                  <th className="py-3 px-3 min-w-[130px] max-w-[200px]">Vendor / Supplier</th>
+                  <th className="py-3 px-3 whitespace-nowrap">Category & SAC</th>
+                  <th className="py-3 px-3 whitespace-nowrap">Bill Date</th>
+                  <th className="py-3 px-3 text-right whitespace-nowrap">Taxable (₹)</th>
+                  <th className="py-3 px-3 text-right whitespace-nowrap">GST Breakdown</th>
+                  <th className="py-3 px-3 text-right whitespace-nowrap">Grand Total (₹)</th>
+                  <th className="py-3 px-3 text-center whitespace-nowrap">Status</th>
+                  <th className="py-3 px-3 text-right whitespace-nowrap shrink-0">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
@@ -1377,7 +1377,7 @@ export default function PurchaseBillsPage() {
                   return (
                     <tr key={doc.id} className="hover:bg-slate-800/40 transition-colors group">
                       {/* Voucher & Bill Number */}
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-3 whitespace-nowrap font-mono">
                         <div className="font-mono font-bold flex items-center gap-1.5">
                           <button
                             type="button"
@@ -1410,8 +1410,8 @@ export default function PurchaseBillsPage() {
                       </td>
 
                       {/* Vendor */}
-                      <td className="py-3 px-4">
-                        <div className="font-medium text-slate-200 truncate max-w-[200px]" title={data.vendorName}>
+                      <td className="py-3 px-3 max-w-[200px]">
+                        <div className="font-medium text-slate-200 truncate" title={data.vendorName}>
                           {data.vendorName || '—'}
                         </div>
                         {data.vendorGstin && (
@@ -1425,7 +1425,7 @@ export default function PurchaseBillsPage() {
                       </td>
 
                       {/* Category */}
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-3 whitespace-nowrap">
                         <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold border ${cat.color}`}>
                           {cat.label}
                         </span>
@@ -1435,7 +1435,7 @@ export default function PurchaseBillsPage() {
                       </td>
 
                       {/* Bill Date */}
-                      <td className="py-3 px-4 text-slate-400">
+                      <td className="py-3 px-3 text-slate-400 whitespace-nowrap font-mono">
                         {data.billDate ? new Date(data.billDate).toLocaleDateString('en-IN') : '—'}
                         {data.dueDate && (
                           <div className="text-[10px] text-slate-500">
@@ -1445,7 +1445,7 @@ export default function PurchaseBillsPage() {
                       </td>
 
                       {/* Taxable */}
-                      <td className="py-3 px-4 text-right font-mono text-slate-300">
+                      <td className="py-3 px-3 text-right font-mono text-slate-300 whitespace-nowrap">
                         {(() => {
                           const brk = getBillGstBreakdown(data);
                           return `₹${formatINR(brk.taxable)}`;
@@ -1453,7 +1453,7 @@ export default function PurchaseBillsPage() {
                       </td>
 
                       {/* GST Split */}
-                      <td className="py-3 px-4 text-right font-mono text-[11px]">
+                      <td className="py-3 px-3 text-right font-mono text-[11px] whitespace-nowrap">
                         {(() => {
                           const brk = getBillGstBreakdown(data);
                           if (brk.isInterState) {
@@ -1482,7 +1482,7 @@ export default function PurchaseBillsPage() {
                       </td>
 
                       {/* Grand Total */}
-                      <td className="py-3 px-4 text-right font-mono font-bold text-slate-100">
+                      <td className="py-3 px-3 text-right font-mono font-bold text-slate-100 whitespace-nowrap">
                         {(() => {
                           const brk = getBillGstBreakdown(data);
                           return (
@@ -1499,7 +1499,7 @@ export default function PurchaseBillsPage() {
                       </td>
 
                       {/* Payment Status Badge */}
-                      <td className="py-3 px-4 text-center">
+                      <td className="py-3 px-3 text-center whitespace-nowrap">
                         {isPaid ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                             <CheckCircle2 size={11} /> Paid
@@ -1516,12 +1516,12 @@ export default function PurchaseBillsPage() {
                       </td>
 
                       {/* Actions */}
-                      <td className="py-3 px-4 text-right">
-                        <div className="inline-flex items-center gap-1.5">
+                      <td className="py-3 px-3 text-right whitespace-nowrap shrink-0">
+                        <div className="inline-flex items-center gap-1">
                           <button
                             type="button"
                             onClick={() => handleOpenDetailModal(doc)}
-                            className="p-1.5 text-slate-400 hover:text-indigo-400 rounded hover:bg-slate-800 transition-colors"
+                            className="p-1 text-slate-400 hover:text-indigo-400 rounded hover:bg-slate-800 transition-colors"
                             title="View Voucher Details"
                           >
                             <Eye size={14} />
@@ -1529,7 +1529,7 @@ export default function PurchaseBillsPage() {
                           <button
                             type="button"
                             onClick={() => handleOpenPaymentModal(doc)}
-                            className={`p-1.5 rounded transition-colors ${
+                            className={`p-1 rounded transition-colors ${
                               isPaid
                                 ? 'text-emerald-400 hover:bg-emerald-500/10'
                                 : 'text-amber-400 hover:bg-amber-500/10'
@@ -1541,7 +1541,7 @@ export default function PurchaseBillsPage() {
                           <button
                             type="button"
                             onClick={() => handleOpenEditModal(doc)}
-                            className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors"
+                            className="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors"
                             title="Edit Purchase Bill"
                           >
                             <Pencil size={14} />
@@ -1549,7 +1549,7 @@ export default function PurchaseBillsPage() {
                           <button
                             type="button"
                             onClick={() => handleDeleteBill(doc.id)}
-                            className="p-1.5 text-slate-400 hover:text-rose-400 rounded hover:bg-rose-500/10 transition-colors"
+                            className="p-1 text-slate-400 hover:text-rose-400 rounded hover:bg-rose-500/10 transition-colors"
                             title="Delete"
                           >
                             <Trash2 size={14} />

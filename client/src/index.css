@@ -159,6 +159,10 @@ html.light .text-slate-500 {
   color: #94a3b8 !important;
 }
 
+html.light .text-white:not(button):not(button *):not([class*="bg-indigo-600"]):not([class*="bg-emerald-600"]):not([class*="bg-rose-600"]):not([class*="bg-amber-600"]):not([class*="bg-blue-600"]):not([class*="bg-cyan-600"]):not([class*="bg-violet-600"]) {
+  color: #0f172a !important;
+}
+
 /* Clean Crisp Inputs & Forms in Light Theme */
 html.light label {
   color: #475569 !important;
