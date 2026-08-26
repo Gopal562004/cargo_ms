@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import prisma from '../config/database.js';
 import { AppError } from '../middleware/error.middleware.js';
 
 const SALT_ROUNDS = 12;
@@ -23,7 +24,7 @@ export async function comparePassword(password, hash) {
  */
 export function generateAccessToken(user) {
   return jwt.sign(
-    { id: user.id, email: user.email, role: user.role },
+    { id: user.id, email: user.email, username: user.username, role: user.role },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
   );
@@ -75,41 +76,99 @@ export async function registerUser({ email, password, name, company }) {
 
   const user = await prisma.user.create({
     data: { email, passwordHash, name, company },
-    select: { id: true, email: true, name: true, company: true, role: true, isActive: true, allowedServices: true, createdAt: true },
+    select: {
+      id: true,
+      email: true,
+      username: true,
+      name: true,
+      company: true,
+      role: true,
+      isActive: true,
+      allowedServices: true,
+      licenseKey: true,
+      subscriptionPlan: true,
+      subscriptionExpiresAt: true,
+      createdAt: true,
+    },
   });
 
   return user;
 }
 
 /**
- * Login a user — accepts either email or username + password.
+ * Login / Activate a user — accepts username, email, or License Key.
  */
-export async function loginUser({ email, username, identifier, password }) {
-  const loginId = (username || email || identifier || '').trim().toLowerCase();
-  if (!loginId || !password) {
-    throw new AppError('Please provide your username or email and password', 400);
+export async function loginUser({ email, username, identifier, password, licenseKey }) {
+  const rawId = (licenseKey || username || email || identifier || '').trim();
+  if (!rawId) {
+    throw new AppError('Please provide your Username, Email, or License Key', 400);
   }
 
-  const user = await prisma.user.findFirst({
-    where: {
-      OR: [
-        { username: loginId },
-        { email: loginId },
-      ],
-    },
-  });
+  // 1. Check if user is logging in via License Key
+  const isLicenseKeyInput = rawId.toUpperCase().startsWith('CRGO-');
+  let user;
 
-  if (!user) {
-    throw new AppError('Invalid username/email or password', 401);
+  if (isLicenseKeyInput) {
+    user = await prisma.user.findFirst({
+      where: {
+        licenseKey: rawId.toUpperCase(),
+      },
+    });
+
+    if (!user) {
+      throw new AppError('Invalid License Key. Please check the code provided by your administrator.', 401);
+    }
+  } else {
+    // Standard Username or Email login
+    const loginId = rawId.toLowerCase();
+    user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { username: loginId },
+          { email: loginId },
+        ],
+      },
+    });
+
+    if (!user) {
+      throw new AppError('Invalid username/email or password', 401);
+    }
+
+    if (!password) {
+      throw new AppError('Please enter your password', 400);
+    }
+
+    const isMatch = await comparePassword(password, user.passwordHash);
+    if (!isMatch) {
+      throw new AppError('Invalid username/email or password', 401);
+    }
   }
 
-  if (user.isActive === false) {
-    throw new AppError('This user account has been deactivated. Please contact your system administrator.', 403);
+  if (user.isActive === false || user.subscriptionStatus === 'INACTIVE' || user.subscriptionStatus === 'SUSPENDED') {
+    throw new AppError('This user account has been suspended or deactivated. Please contact your administrator to renew.', 403);
   }
 
-  const isMatch = await comparePassword(password, user.passwordHash);
-  if (!isMatch) {
-    throw new AppError('Invalid username/email or password', 401);
+  // Update last login timestamp and increment login counter
+  try {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        lastLoginAt: new Date(),
+        loginCount: { increment: 1 },
+      },
+    });
+
+    // Record login in activity logs
+    await prisma.userActivityLog.create({
+      data: {
+        userId: user.id,
+        action: 'LOGIN',
+        description: `Signed in via ${isLicenseKeyInput ? 'License Key' : 'Credentials'}`,
+        performedBy: user.name || user.username || 'User',
+      },
+    });
+  } catch (err) {
+    console.error('Error logging user login event:', err.message);
   }
 
   const accessToken = generateAccessToken(user);
@@ -127,7 +186,22 @@ export async function refreshTokens(refreshToken) {
 
   const user = await prisma.user.findUnique({
     where: { id: payload.id },
-    select: { id: true, email: true, name: true, company: true, role: true, isActive: true, allowedServices: true, phone: true, department: true },
+    select: {
+      id: true,
+      email: true,
+      username: true,
+      name: true,
+      company: true,
+      role: true,
+      isActive: true,
+      allowedServices: true,
+      phone: true,
+      department: true,
+      licenseKey: true,
+      subscriptionPlan: true,
+      subscriptionExpiresAt: true,
+      subscriptionStatus: true,
+    },
   });
 
   if (!user) {

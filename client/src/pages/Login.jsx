@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Package, Mail, Lock, AlertCircle, Sun, Moon, ArrowLeft, ArrowRight, ShieldCheck, Plane, Radio, Terminal } from 'lucide-react';
+import { Package, Mail, Lock, AlertCircle, Sun, Moon, ArrowLeft, ArrowRight, ShieldCheck, KeyRound, Sparkles } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
@@ -8,8 +8,10 @@ import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 
 export default function Login() {
+  const [loginMode, setLoginMode] = useState('CREDENTIALS'); // 'CREDENTIALS' | 'LICENSE_KEY'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [licenseKey, setLicenseKey] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [liveUtc, setLiveUtc] = useState('');
@@ -29,11 +31,19 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-      const data = await login(email, password);
+      let payloadIdentifier = email;
+      let payloadPassword = password;
+
+      if (loginMode === 'LICENSE_KEY') {
+        payloadIdentifier = licenseKey.trim().toUpperCase();
+        payloadPassword = ''; // License key validation
+      }
+
+      const data = await login(payloadIdentifier, payloadPassword);
       toast.success(`Welcome back, ${data?.user?.name || 'User'}!`);
       navigate('/');
     } catch (err) {
-      const msg = err.message || 'Invalid username/email or password';
+      const msg = err.response?.data?.message || err.message || 'Invalid login credentials or License Key';
       setError(msg);
       toast.error(msg);
     } finally {
@@ -54,7 +64,6 @@ export default function Login() {
           alt="Cargo Freighter Runway"
           className="w-full h-full object-cover object-center scale-105 filter blur-[2px] transition-transform duration-1000"
         />
-        {/* Dark & Light Theme Contrast Overlays */}
         <div
           className={`absolute inset-0 transition-colors ${
             theme === 'light'
@@ -62,7 +71,6 @@ export default function Login() {
               : 'bg-gradient-to-b from-[#060a12]/92 via-[#060a12]/88 to-[#090d16]/96'
           }`}
         />
-        {/* Subtle Technical Grid Overlay */}
         <div
           className="absolute inset-0 opacity-10"
           style={{
@@ -108,7 +116,7 @@ export default function Login() {
       {/* Main Login Console Card (Z-10) */}
       <div className="relative z-10 max-w-sm mx-auto w-full my-auto py-6">
         <div
-          className={`p-7 sm:p-8 rounded border backdrop-blur-xl transition-all space-y-6 ${
+          className={`p-7 sm:p-8 rounded border backdrop-blur-xl transition-all space-y-5 ${
             theme === 'light'
               ? 'bg-white/95 border-slate-300 shadow-2xl shadow-slate-400/20'
               : 'bg-[#0b101c]/95 border-slate-800/90 shadow-2xl shadow-black/80'
@@ -134,9 +142,47 @@ export default function Login() {
             </span>
           </div>
 
+          {/* Dual Login Mode Tabs */}
+          <div className="grid grid-cols-2 gap-1 p-1 bg-slate-950/80 border border-slate-800 rounded text-xs font-mono">
+            <button
+              type="button"
+              onClick={() => {
+                setLoginMode('CREDENTIALS');
+                setError('');
+              }}
+              className={`py-1.5 rounded transition-all font-bold cursor-pointer ${
+                loginMode === 'CREDENTIALS'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Credentials
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setLoginMode('LICENSE_KEY');
+                setError('');
+              }}
+              className={`py-1.5 rounded transition-all font-bold cursor-pointer ${
+                loginMode === 'LICENSE_KEY'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              License Key
+            </button>
+          </div>
+
           <div className="space-y-1">
-            <h1 className="text-xl font-bold tracking-tight">Operator Sign In</h1>
-            <p className="text-xs text-slate-400 font-mono">Authenticate to access dispatch board</p>
+            <h1 className="text-xl font-bold tracking-tight">
+              {loginMode === 'CREDENTIALS' ? 'Operator Sign In' : 'Activate with License'}
+            </h1>
+            <p className="text-xs text-slate-400 font-mono">
+              {loginMode === 'CREDENTIALS'
+                ? 'Authenticate with username or email'
+                : 'Enter your 16-character License Key'}
+            </p>
           </div>
 
           {error && (
@@ -147,25 +193,49 @@ export default function Login() {
           )}
 
           <form className="space-y-4" onSubmit={handleSubmit}>
-            <Input
-              label="Operator Username / Email"
-              type="text"
-              placeholder="e.g. operator or admin@dgrlogistics.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              icon={<Mail size={15} />}
-            />
+            {loginMode === 'CREDENTIALS' ? (
+              <>
+                <Input
+                  label="Operator Username / Email"
+                  type="text"
+                  placeholder="e.g. operator or admin@dgrlogistics.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  icon={<Mail size={15} />}
+                />
 
-            <Input
-              label="Security Access Key"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              icon={<Lock size={15} />}
-            />
+                <Input
+                  label="Security Access Key"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  icon={<Lock size={15} />}
+                />
+              </>
+            ) : (
+              <div>
+                <label className="text-xs font-mono font-medium text-slate-300 block mb-1">
+                  Product License Key
+                </label>
+                <div className="relative">
+                  <KeyRound size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder="CRGO-2026-XXXX-YYYY-ZZZZ"
+                    value={licenseKey}
+                    onChange={(e) => setLicenseKey(e.target.value)}
+                    required
+                    className="w-full pl-9 pr-3 py-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-100 font-mono uppercase tracking-wider placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1">
+                  License key provided by your CargoHub dispatch administrator.
+                </p>
+              </div>
+            )}
 
             <Button
               type="submit"
@@ -175,7 +245,7 @@ export default function Login() {
               loading={loading}
               className="rounded font-mono text-xs font-bold mt-2 shadow-md shadow-indigo-600/20 cursor-pointer"
             >
-              SIGN IN TO CONSOLE <ArrowRight size={14} className="ml-1" />
+              {loginMode === 'CREDENTIALS' ? 'SIGN IN TO CONSOLE' : 'ACTIVATE SESSION'} <ArrowRight size={14} className="ml-1" />
             </Button>
           </form>
 

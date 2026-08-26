@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   ShieldCheck,
   UserPlus,
@@ -25,14 +25,38 @@ import {
   EyeOff,
   Copy,
   AtSign,
+  Calendar,
+  Clock,
+  Activity,
+  AlertTriangle,
+  FileText,
+  CreditCard,
+  Send,
+  Sliders,
+  Filter,
+  CheckSquare,
+  Square,
+  Shield,
+  HelpCircle,
+  Info,
+  ExternalLink,
+  ChevronRight,
+  RefreshCw,
+  PlusCircle,
+  ArrowUpRight,
 } from 'lucide-react';
 import {
   fetchUsers,
   createUser,
   updateUser,
   updateUserPassword,
+  extendUserSubscription,
+  regenerateUserLicenseKey,
+  fetchUserActivityLogs,
   deleteUser,
   SYSTEM_SERVICES,
+  SUBSCRIPTION_PLANS,
+  DURATION_PRESETS,
 } from '../services/userService';
 import { useAuthStore } from '../store/authStore';
 import Button from '../components/ui/Button';
@@ -45,18 +69,42 @@ export default function MasterUsersPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState('ALL');
+  const [planFilter, setPlanFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [roleFilter, setRoleFilter] = useState('ALL');
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Modal States
+  // Modals
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [passwordTargetUser, setPasswordTargetUser] = useState(null);
+  const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
+  const [activityTargetUser, setActivityTargetUser] = useState(null);
+  const [activityLogs, setActivityLogs] = useState([]);
+  const [loadingActivity, setLoadingActivity] = useState(false);
 
-  useBodyScrollLock(Boolean(isUserModalOpen || isPasswordModalOpen));
+  // User Complete Info Modal
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+  const [infoTargetUser, setInfoTargetUser] = useState(null);
+
+  // Custom Confirmation Modal
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Confirm',
+    cancelText: 'Cancel',
+    variant: 'danger', // 'danger' | 'warning' | 'primary'
+    onConfirm: () => {},
+  });
+
+  // Quick Action feedback
+  const [copiedKeyId, setCopiedKeyId] = useState(null);
+  const [copiedHandoverId, setCopiedHandoverId] = useState(null);
+
+  useBodyScrollLock(Boolean(isUserModalOpen || isPasswordModalOpen || isActivityModalOpen || isInfoModalOpen || confirmDialog.isOpen));
 
   // User Form State
   const [userForm, setUserForm] = useState({
@@ -69,6 +117,12 @@ export default function MasterUsersPage() {
     phone: '',
     role: 'OPERATOR',
     isActive: true,
+    subscriptionPlan: 'STARTER',
+    subscriptionDuration: '1_YEAR',
+    customExpiresAt: '',
+    subscriptionStatus: 'ACTIVE',
+    maxSeats: 1,
+    notes: '',
     allowedServices: [
       'SALES_BILLING',
       'PURCHASE_BILLS',
@@ -88,6 +142,11 @@ export default function MasterUsersPage() {
       const res = await fetchUsers();
       const usersList = res?.data?.users || res?.users || (Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : []);
       setUsers(usersList);
+      // Update infoTargetUser if open
+      if (infoTargetUser) {
+        const updated = usersList.find((u) => u.id === infoTargetUser.id);
+        if (updated) setInfoTargetUser(updated);
+      }
     } catch (err) {
       setErrorMsg(err.response?.data?.message || err.message || 'Failed to load users');
     } finally {
@@ -109,7 +168,55 @@ export default function MasterUsersPage() {
     }
   };
 
+  // Helper to open custom confirmation dialog
+  const promptConfirm = ({ title, message, confirmText = 'Confirm', cancelText = 'Cancel', variant = 'danger', onConfirm }) => {
+    setConfirmDialog({
+      isOpen: true,
+      title,
+      message,
+      confirmText,
+      cancelText,
+      variant,
+      onConfirm: async () => {
+        setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
+        if (onConfirm) await onConfirm();
+      },
+    });
+  };
+
+  // Helper to calculate expiry date string for form preview
+  const getCalculatedExpiryPreview = (duration, customDate, baseDate = new Date()) => {
+    if (duration === 'CUSTOM' && customDate) {
+      return new Date(customDate).toLocaleDateString('en-IN', { dateStyle: 'medium' });
+    }
+    const d = new Date(baseDate);
+    switch (duration) {
+      case '7_DAYS':
+        d.setDate(d.getDate() + 7);
+        break;
+      case '1_MONTH':
+        d.setMonth(d.getMonth() + 1);
+        break;
+      case '3_MONTHS':
+        d.setMonth(d.getMonth() + 3);
+        break;
+      case '6_MONTHS':
+        d.setMonth(d.getMonth() + 6);
+        break;
+      case '1_YEAR':
+      default:
+        d.setFullYear(d.getFullYear() + 1);
+        break;
+    }
+    return d.toLocaleDateString('en-IN', { dateStyle: 'medium' });
+  };
+
   // ─── Modal Handlers ───────────────────────────────────────────────────────
+  const handleOpenInfoModal = (u) => {
+    setInfoTargetUser(u);
+    setIsInfoModalOpen(true);
+  };
+
   const handleOpenCreateModal = () => {
     setEditingUser(null);
     setUserForm({
@@ -122,6 +229,12 @@ export default function MasterUsersPage() {
       phone: '',
       role: 'OPERATOR',
       isActive: true,
+      subscriptionPlan: 'STARTER',
+      subscriptionDuration: '1_YEAR',
+      customExpiresAt: '',
+      subscriptionStatus: 'ACTIVE',
+      maxSeats: 1,
+      notes: '',
       allowedServices: [
         'SALES_BILLING',
         'PURCHASE_BILLS',
@@ -144,6 +257,12 @@ export default function MasterUsersPage() {
       phone: u.phone || '',
       role: u.role || 'OPERATOR',
       isActive: u.isActive !== undefined ? u.isActive : true,
+      subscriptionPlan: u.subscriptionPlan || 'STARTER',
+      subscriptionDuration: u.subscriptionDuration || '1_YEAR',
+      customExpiresAt: u.subscriptionExpiresAt ? new Date(u.subscriptionExpiresAt).toISOString().split('T')[0] : '',
+      subscriptionStatus: u.subscriptionStatus || 'ACTIVE',
+      maxSeats: u.maxSeats || 1,
+      notes: u.notes || '',
       allowedServices: Array.isArray(u.allowedServices) ? u.allowedServices : [],
     });
     setIsUserModalOpen(true);
@@ -154,6 +273,132 @@ export default function MasterUsersPage() {
     setNewPassword('');
     setCopiedPassword(false);
     setIsPasswordModalOpen(true);
+  };
+
+  const handleOpenActivityModal = async (u) => {
+    setActivityTargetUser(u);
+    setIsActivityModalOpen(true);
+    setLoadingActivity(true);
+    try {
+      const res = await fetchUserActivityLogs(u.id);
+      setActivityLogs(res?.data?.logs || []);
+    } catch (err) {
+      showNotification('Failed to load user activity trail: ' + (err.response?.data?.message || err.message), true);
+    } finally {
+      setLoadingActivity(false);
+    }
+  };
+
+  // ─── Quick Actions ────────────────────────────────────────────────────────
+  const handleCopyLicenseKey = (u) => {
+    if (!u.licenseKey) return;
+    navigator.clipboard.writeText(u.licenseKey);
+    setCopiedKeyId(u.id);
+    showNotification(`License Key for ${u.name} copied to clipboard!`);
+    setTimeout(() => setCopiedKeyId(null), 3000);
+  };
+
+  const handleCopyClientHandover = (u) => {
+    const handoverText = `CargoHub Logistics OS — Client Access Credentials
+--------------------------------------------------
+Customer: ${u.name} (${u.company || 'Enterprise'})
+Username / Login ID: ${u.username || u.email}
+Login Email: ${u.email || 'N/A'}
+Subscription Plan: ${u.subscriptionPlan || 'Standard'}
+License Key: ${u.licenseKey || 'N/A'}
+Plan Expiry Date: ${u.subscriptionExpiresAt ? new Date(u.subscriptionExpiresAt).toLocaleDateString('en-IN') : 'Active (Annual)'}
+
+Web Access Link: ${window.location.origin}/login
+Desktop App (.exe): Download from Client Portal
+--------------------------------------------------
+Please keep your credentials secure.`;
+
+    navigator.clipboard.writeText(handoverText);
+    setCopiedHandoverId(u.id);
+    showNotification(`Client Handover details for ${u.name} copied! Ready to send to customer.`);
+    setTimeout(() => setCopiedHandoverId(null), 3000);
+  };
+
+  const handleQuickExtend = (u, durationType) => {
+    const durationLabel = durationType.replace('_', ' ');
+    promptConfirm({
+      title: `Extend Subscription: ${u.name}`,
+      message: `Are you sure you want to add ${durationLabel} to ${u.name}'s current subscription?`,
+      confirmText: `Yes, Extend +${durationLabel}`,
+      variant: 'primary',
+      onConfirm: async () => {
+        try {
+          await extendUserSubscription(u.id, { extensionType: durationType });
+          showNotification(`Subscription extended by ${durationLabel} for ${u.name}!`);
+          loadUsersData();
+        } catch (err) {
+          showNotification(err.response?.data?.message || err.message || 'Error extending plan', true);
+        }
+      },
+    });
+  };
+
+  const handleToggleStatus = (u) => {
+    const newStatus = u.isActive ? false : true;
+    const actionLabel = newStatus ? 'Activate' : 'Suspend / Deactivate';
+
+    promptConfirm({
+      title: `${actionLabel} User: ${u.name}`,
+      message: newStatus
+        ? `Are you sure you want to activate ${u.name}? They will regain full access to their allocated modules.`
+        : `Are you sure you want to suspend ${u.name}? They will immediately be locked out from creating invoices and documents.`,
+      confirmText: `Yes, ${actionLabel}`,
+      variant: newStatus ? 'primary' : 'danger',
+      onConfirm: async () => {
+        try {
+          await updateUser(u.id, {
+            isActive: newStatus,
+            subscriptionStatus: newStatus ? 'ACTIVE' : 'SUSPENDED',
+          });
+          showNotification(`User ${u.name} is now ${newStatus ? 'ACTIVE' : 'SUSPENDED'}`);
+          loadUsersData();
+        } catch (err) {
+          showNotification(err.response?.data?.message || err.message || 'Error updating status', true);
+        }
+      },
+    });
+  };
+
+  const handleRegenerateKey = (u) => {
+    promptConfirm({
+      title: `Re-issue License Key: ${u.name}`,
+      message: `Are you sure you want to generate a new License Key for ${u.name}? The previous key will be permanently invalidated immediately.`,
+      confirmText: 'Yes, Re-issue Key',
+      variant: 'warning',
+      onConfirm: async () => {
+        try {
+          const res = await regenerateUserLicenseKey(u.id);
+          showNotification(`New License Key generated: ${res?.data?.licenseKey}`);
+          loadUsersData();
+        } catch (err) {
+          showNotification(err.response?.data?.message || err.message || 'Error regenerating key', true);
+        }
+      },
+    });
+  };
+
+  const handleDeleteUser = (u) => {
+    promptConfirm({
+      title: `Delete / Deactivate User: ${u.name}`,
+      message: `Are you sure you want to deactivate ${u.name}'s account? All existing invoices and documents will be preserved, but the user login will be disabled.`,
+      confirmText: 'Yes, Deactivate User',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await deleteUser(u.id);
+          showNotification(`User ${u.name} deactivated successfully.`);
+          setIsInfoModalOpen(false);
+          loadUsersData();
+        } catch (err) {
+          showNotification(err.response?.data?.message || err.message || 'Error deleting user', true);
+        }
+      },
+    });
   };
 
   // ─── Service Allocation Handlers ──────────────────────────────────────────
@@ -218,20 +463,30 @@ export default function MasterUsersPage() {
       return;
     }
 
-    try {
-      if (editingUser) {
-        await updateUser(editingUser.id, userForm);
-        showNotification(`User "${userForm.name}" updated successfully!`);
-      } else {
-        await createUser(userForm);
-        showNotification(`New user "${userForm.name}" created with Username: "${userForm.username || userForm.email}"!`);
-      }
+    promptConfirm({
+      title: editingUser ? `Update User: ${editingUser.name}` : `Create New User: ${userForm.name}`,
+      message: editingUser
+        ? `Are you sure you want to save subscription & permission changes for ${editingUser.name}?`
+        : `Are you sure you want to create user "${userForm.name}" with Username "${userForm.username || userForm.email}" and plan "${userForm.subscriptionPlan}"?`,
+      confirmText: editingUser ? 'Yes, Save Changes' : 'Yes, Create User',
+      variant: 'primary',
+      onConfirm: async () => {
+        try {
+          if (editingUser) {
+            await updateUser(editingUser.id, userForm);
+            showNotification(`User "${userForm.name}" updated successfully!`);
+          } else {
+            await createUser(userForm);
+            showNotification(`New user "${userForm.name}" created with Username: "${userForm.username || userForm.email}"!`);
+          }
 
-      setIsUserModalOpen(false);
-      loadUsersData();
-    } catch (err) {
-      showNotification(err.response?.data?.message || err.message || 'Error saving user', true);
-    }
+          setIsUserModalOpen(false);
+          loadUsersData();
+        } catch (err) {
+          showNotification(err.response?.data?.message || err.message || 'Error saving user', true);
+        }
+      },
+    });
   };
 
   // ─── Password Reset Submit ────────────────────────────────────────────────
@@ -242,93 +497,84 @@ export default function MasterUsersPage() {
       return;
     }
 
-    try {
-      await updateUserPassword(passwordTargetUser.id, newPassword);
-      showNotification(`Password for ${passwordTargetUser.name} updated successfully!`);
-      setIsPasswordModalOpen(false);
-    } catch (err) {
-      showNotification(err.response?.data?.message || err.message || 'Error updating password', true);
-    }
+    promptConfirm({
+      title: `Reset Password: ${passwordTargetUser.name}`,
+      message: `Are you sure you want to update the login password for ${passwordTargetUser.name}?`,
+      confirmText: 'Yes, Update Password',
+      variant: 'warning',
+      onConfirm: async () => {
+        try {
+          await updateUserPassword(passwordTargetUser.id, newPassword);
+          showNotification(`Password for ${passwordTargetUser.name} updated successfully!`);
+          setIsPasswordModalOpen(false);
+        } catch (err) {
+          showNotification(err.response?.data?.message || err.message || 'Error updating password', true);
+        }
+      },
+    });
   };
 
-  // ─── Toggle Active / Inactive ─────────────────────────────────────────────
-  const handleToggleStatus = async (targetUser) => {
-    if (targetUser.id === currentUser?.id) {
-      alert('You cannot deactivate your own logged-in account.');
-      return;
-    }
+  // ─── Filtered Users & Metric Counts ───────────────────────────────────────
+  const metrics = useMemo(() => {
+    let total = users.length;
+    let active = 0;
+    let expiringSoon = 0;
+    let expired = 0;
+    let suspended = 0;
 
-    const nextStatus = !targetUser.isActive;
-    try {
-      await updateUser(targetUser.id, { isActive: nextStatus });
-      showNotification(`User ${targetUser.name} marked as ${nextStatus ? 'ACTIVE' : 'DEACTIVATED'}.`);
-      loadUsersData();
-    } catch (err) {
-      showNotification(err.response?.data?.message || err.message || 'Error updating status', true);
-    }
-  };
-
-  // ─── Delete User ──────────────────────────────────────────────────────────
-  const handleDeleteUser = async (targetUser) => {
-    if (targetUser.id === currentUser?.id) {
-      alert('You cannot delete your own account.');
-      return;
-    }
-
-    if (window.confirm(`Are you sure you want to permanently delete user account "${targetUser.name}"?`)) {
-      try {
-        await deleteUser(targetUser.id);
-        showNotification(`User ${targetUser.name} deleted successfully.`);
-        loadUsersData();
-      } catch (err) {
-        showNotification(err.response?.data?.message || err.message || 'Error deleting user', true);
+    users.forEach((u) => {
+      if (!u.isActive || u.subscriptionStatus === 'SUSPENDED' || u.subscriptionStatus === 'INACTIVE') {
+        suspended++;
+      } else if (u.isExpired) {
+        expired++;
+      } else {
+        active++;
+        if (u.daysRemaining !== null && u.daysRemaining <= 15 && u.daysRemaining > 0) {
+          expiringSoon++;
+        }
       }
-    }
-  };
+    });
 
-  // Filtered Users list
-  const filteredUsers = users.filter((u) => {
-    const q = search.toLowerCase().trim();
-    const matchesQuery =
-      !q ||
-      (u.name || '').toLowerCase().includes(q) ||
-      (u.username || '').toLowerCase().includes(q) ||
-      (u.email || '').toLowerCase().includes(q) ||
-      (u.department || '').toLowerCase().includes(q) ||
-      (u.company || '').toLowerCase().includes(q);
+    return { total, active, expiringSoon, expired, suspended };
+  }, [users]);
 
-    const matchesRole = roleFilter === 'ALL' || u.role === roleFilter;
-    const matchesStatus =
-      statusFilter === 'ALL' ||
-      (statusFilter === 'ACTIVE' && u.isActive) ||
-      (statusFilter === 'INACTIVE' && !u.isActive);
+  const filteredUsers = useMemo(() => {
+    return users.filter((u) => {
+      const q = search.toLowerCase();
+      const matchQuery =
+        !search ||
+        (u.name && u.name.toLowerCase().includes(q)) ||
+        (u.username && u.username.toLowerCase().includes(q)) ||
+        (u.email && u.email.toLowerCase().includes(q)) ||
+        (u.company && u.company.toLowerCase().includes(q)) ||
+        (u.licenseKey && u.licenseKey.toLowerCase().includes(q));
 
-    return matchesQuery && matchesRole && matchesStatus;
-  });
+      if (!matchQuery) return false;
 
-  const totalUsers = users.length;
-  const activeUsers = users.filter((u) => u.isActive).length;
-  const adminUsers = users.filter((u) => u.role === 'ADMIN').length;
-  const operatorUsers = users.filter((u) => u.role === 'OPERATOR').length;
+      // Plan Filter
+      if (planFilter !== 'ALL' && (u.subscriptionPlan || 'STARTER') !== planFilter) {
+        return false;
+      }
 
-  if (currentUser && currentUser.role !== 'ADMIN') {
-    return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-6 space-y-4 animate-fade-in">
-        <div className="w-16 h-16 rounded bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400">
-          <Lock size={32} />
-        </div>
-        <div className="space-y-1">
-          <h2 className="text-lg font-bold text-slate-100">Administrator Access Required</h2>
-          <p className="text-xs text-slate-400 max-w-md">
-            The Master Administration & User Allocation section is strictly restricted to system Administrators.
-          </p>
-        </div>
-        <Button variant="secondary" onClick={() => window.location.href = '/'} className="rounded text-xs">
-          Return to Dashboard
-        </Button>
-      </div>
-    );
-  }
+      // Role Filter
+      if (roleFilter !== 'ALL' && u.role !== roleFilter) {
+        return false;
+      }
+
+      // Status Filter
+      if (statusFilter === 'ACTIVE') {
+        if (!u.isActive || u.isExpired) return false;
+      } else if (statusFilter === 'EXPIRING_SOON') {
+        if (!u.isActive || u.isExpired || u.daysRemaining === null || u.daysRemaining > 15) return false;
+      } else if (statusFilter === 'EXPIRED') {
+        if (!u.isExpired) return false;
+      } else if (statusFilter === 'SUSPENDED') {
+        if (u.isActive && u.subscriptionStatus !== 'SUSPENDED') return false;
+      }
+
+      return true;
+    });
+  }, [users, search, planFilter, statusFilter, roleFilter]);
 
   return (
     <div className="space-y-6 animate-fade-in pb-16">
@@ -340,579 +586,996 @@ export default function MasterUsersPage() {
               <ShieldCheck size={18} />
             </div>
             <h1 className="text-2xl font-bold text-slate-100 tracking-tight">
-              Master Administration & User Allocation
+              Master User & Subscription Administration
             </h1>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Create operator accounts, provision login usernames & passwords, and selectively allocate service & module permissions.
+            Create operator logins, assign subscription durations, auto-generate License Keys, and monitor user audit trails. Click on any user to view full profile & subscription details.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 flex-wrap">
           <Button
             variant="secondary"
             onClick={loadUsersData}
-            title="Refresh user list"
-            className="rounded text-xs"
+            className="rounded text-xs bg-slate-800 hover:bg-slate-700 text-slate-200"
+            title="Refresh Users"
           >
-            <RotateCw size={13} className="mr-1.5 inline" /> Refresh
+            <RotateCw size={13} className={`mr-1.5 inline ${loading ? 'animate-spin' : ''}`} /> Refresh
           </Button>
 
           <Button
             variant="primary"
             onClick={handleOpenCreateModal}
-            className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-sm"
+            className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold flex items-center gap-1.5 shadow-md shadow-indigo-950/40"
           >
-            <UserPlus size={14} className="mr-1.5 inline" /> Create New User
+            <UserPlus size={14} /> Create User & License
           </Button>
         </div>
       </div>
 
       {/* Notifications */}
       {successMsg && (
-        <div className="p-3.5 bg-emerald-500/15 border border-emerald-500/30 rounded text-xs text-emerald-300 flex items-center justify-between animate-fade-in shadow-sm">
+        <div className="p-3 bg-emerald-500/15 border border-emerald-500/30 rounded text-xs text-emerald-300 flex items-center justify-between animate-fade-in">
           <div className="flex items-center gap-2 font-medium">
-            <CheckCircle2 size={16} className="text-emerald-400" />
+            <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
             <span>{successMsg}</span>
           </div>
-          <button type="button" className="text-emerald-400 hover:text-white font-bold text-xs" onClick={() => setSuccessMsg('')}>
-            ✕
-          </button>
+          <button type="button" onClick={() => setSuccessMsg('')} className="text-emerald-400 hover:text-white">✕</button>
         </div>
       )}
 
       {errorMsg && (
-        <div className="p-3.5 bg-rose-500/15 border border-rose-500/30 rounded text-xs text-rose-300 flex items-center justify-between animate-fade-in shadow-sm">
+        <div className="p-3 bg-rose-500/15 border border-rose-500/30 rounded text-xs text-rose-300 flex items-center justify-between animate-fade-in">
           <div className="flex items-center gap-2 font-medium">
-            <XCircle size={16} className="text-rose-400" />
+            <AlertTriangle size={16} className="text-rose-400 shrink-0" />
             <span>{errorMsg}</span>
           </div>
-          <button type="button" className="text-rose-400 hover:text-white font-bold text-xs" onClick={() => setErrorMsg('')}>
-            ✕
-          </button>
+          <button type="button" onClick={() => setErrorMsg('')} className="text-rose-400 hover:text-white">✕</button>
         </div>
       )}
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-        <div className="p-3.5 bg-slate-900/70 border border-slate-800 rounded shadow-sm flex items-center gap-3">
-          <div className="w-10 h-10 rounded bg-indigo-500/15 text-indigo-400 flex items-center justify-center shrink-0">
-            <Users size={18} />
+      {/* Metrics Summary Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div className="p-3 bg-slate-900/80 border border-slate-800 rounded space-y-0.5 shadow-sm">
+          <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5">
+            <Users size={13} className="text-indigo-400" /> Total Users
           </div>
-          <div>
-            <div className="text-[11px] text-slate-400 font-medium">Total Users</div>
-            <div className="text-xl font-bold text-slate-100 font-mono">{totalUsers}</div>
-          </div>
+          <div className="text-xl font-bold text-slate-100 font-mono">{metrics.total}</div>
         </div>
 
-        <div className="p-3.5 bg-slate-900/70 border border-slate-800 rounded shadow-sm flex items-center gap-3">
-          <div className="w-10 h-10 rounded bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0">
-            <CheckCircle2 size={18} />
+        <div className="p-3 bg-slate-900/80 border border-slate-800 rounded space-y-0.5 shadow-sm">
+          <div className="text-[11px] text-emerald-400 font-medium flex items-center gap-1.5">
+            <CheckCircle2 size={13} /> Active Plans
           </div>
-          <div>
-            <div className="text-[11px] text-slate-400 font-medium">Active Accounts</div>
-            <div className="text-xl font-bold text-emerald-400 font-mono">{activeUsers}</div>
-          </div>
+          <div className="text-xl font-bold text-emerald-400 font-mono">{metrics.active}</div>
         </div>
 
-        <div className="p-3.5 bg-slate-900/70 border border-slate-800 rounded shadow-sm flex items-center gap-3">
-          <div className="w-10 h-10 rounded bg-amber-500/15 text-amber-400 flex items-center justify-center shrink-0">
-            <ShieldCheck size={18} />
+        <div className="p-3 bg-slate-900/80 border border-slate-800 rounded space-y-0.5 shadow-sm">
+          <div className="text-[11px] text-amber-400 font-medium flex items-center gap-1.5">
+            <Clock size={13} /> Expiring &lt;15d
           </div>
-          <div>
-            <div className="text-[11px] text-slate-400 font-medium">Administrators</div>
-            <div className="text-xl font-bold text-amber-400 font-mono">{adminUsers}</div>
-          </div>
+          <div className="text-xl font-bold text-amber-400 font-mono">{metrics.expiringSoon}</div>
         </div>
 
-        <div className="p-3.5 bg-slate-900/70 border border-slate-800 rounded shadow-sm flex items-center gap-3">
-          <div className="w-10 h-10 rounded bg-cyan-500/15 text-cyan-400 flex items-center justify-center shrink-0">
-            <Layers size={18} />
+        <div className="p-3 bg-slate-900/80 border border-slate-800 rounded space-y-0.5 shadow-sm">
+          <div className="text-[11px] text-rose-400 font-medium flex items-center gap-1.5">
+            <XCircle size={13} /> Expired
           </div>
-          <div>
-            <div className="text-[11px] text-slate-400 font-medium">Allocated Operators</div>
-            <div className="text-xl font-bold text-cyan-400 font-mono">{operatorUsers}</div>
+          <div className="text-xl font-bold text-rose-400 font-mono">{metrics.expired}</div>
+        </div>
+
+        <div className="p-3 bg-slate-900/80 border border-slate-800 rounded space-y-0.5 shadow-sm col-span-2 sm:col-span-1">
+          <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5">
+            <Lock size={13} className="text-slate-500" /> Suspended
+          </div>
+          <div className="text-xl font-bold text-slate-400 font-mono">{metrics.suspended}</div>
+        </div>
+      </div>
+
+      {/* Search & Filter Controls */}
+      <div className="bg-slate-900/70 border border-slate-800 rounded p-3.5 space-y-3 shadow-sm">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+          <div className="relative flex-1">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search user name, username, email, company, license key..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+            />
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            {/* Plan Tier Filter */}
+            <select
+              value={planFilter}
+              onChange={(e) => setPlanFilter(e.target.value)}
+              className="px-2.5 py-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+            >
+              <option value="ALL">All Plans</option>
+              <option value="FREE_TRIAL">Free Trial</option>
+              <option value="STARTER">Starter</option>
+              <option value="PROFESSIONAL">Professional</option>
+              <option value="ENTERPRISE">Enterprise</option>
+              <option value="CUSTOM">Custom</option>
+            </select>
+
+            {/* Status Filter */}
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-2.5 py-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+            >
+              <option value="ALL">All Statuses</option>
+              <option value="ACTIVE">Active Only</option>
+              <option value="EXPIRING_SOON">Expiring Soon (&lt;15d)</option>
+              <option value="EXPIRED">Expired</option>
+              <option value="SUSPENDED">Suspended / Inactive</option>
+            </select>
+
+            {/* Role Filter */}
+            <select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+              className="px-2.5 py-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+            >
+              <option value="ALL">All Roles</option>
+              <option value="ADMIN">ADMIN</option>
+              <option value="OPERATOR">OPERATOR</option>
+              <option value="VIEWER">VIEWER</option>
+            </select>
           </div>
         </div>
       </div>
 
-      {/* Filter Toolbar */}
-      <div className="bg-slate-900/70 border border-slate-800 rounded p-3.5 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="relative w-full sm:w-80">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-          <input
-            type="text"
-            placeholder="Search users by name, username, email, department..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-          />
-        </div>
-
-        <div className="flex items-center gap-2.5 w-full sm:w-auto">
-          <select
-            className="px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-          >
-            <option value="ALL">All Roles</option>
-            <option value="ADMIN">Administrators</option>
-            <option value="OPERATOR">Operators</option>
-            <option value="VIEWER">Viewers</option>
-          </select>
-
-          <select
-            className="px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="ALL">All Statuses</option>
-            <option value="ACTIVE">Active Only</option>
-            <option value="INACTIVE">Deactivated</option>
-          </select>
-
-          <span className="text-xs text-slate-400 font-mono whitespace-nowrap ml-auto">
-            Showing {filteredUsers.length} of {users.length} users
-          </span>
-        </div>
-      </div>
-
-      {/* Users Table */}
+      {/* Users List Table */}
       <div className="bg-slate-900/70 border border-slate-800 rounded overflow-hidden shadow-sm">
-        {loading ? (
-          <div className="p-12 text-center text-slate-400 text-xs">
-            <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-            Loading master user directory...
-          </div>
-        ) : filteredUsers.length === 0 ? (
-          <div className="p-12 text-center space-y-3">
-            <Users size={36} className="text-slate-600 mx-auto" />
-            <p className="text-sm font-medium text-slate-300">No users match your criteria</p>
-            <Button variant="primary" size="sm" onClick={handleOpenCreateModal} className="rounded">
-              <UserPlus size={14} className="mr-1 inline" /> Create First User
-            </Button>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left">
-              <thead className="bg-slate-950/80 text-slate-400 font-semibold border-b border-slate-800">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="border-b border-slate-800 bg-slate-950/50 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
+                <th className="py-3 px-3.5">User & Credentials</th>
+                <th className="py-3 px-3.5">Company & Dept</th>
+                <th className="py-3 px-3.5">License Key</th>
+                <th className="py-3 px-3.5">Subscription Plan</th>
+                <th className="py-3 px-3.5">Plan Expiry</th>
+                <th className="py-3 px-3.5">Status</th>
+                <th className="py-3 px-3.5 text-right">Admin Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800/60">
+              {loading ? (
                 <tr>
-                  <th className="py-3 px-4 min-w-[220px]">User & Login Credentials</th>
-                  <th className="py-3 px-4">Role & Department</th>
-                  <th className="py-3 px-4 min-w-[280px]">Allocated Services / Permissions</th>
-                  <th className="py-3 px-4 text-center">Status</th>
-                  <th className="py-3 px-4">Created Date</th>
-                  <th className="py-3 px-4 text-right min-w-[160px]">Actions</th>
+                  <td colSpan={7} className="py-8 text-center text-slate-400 font-mono">
+                    <RotateCw size={18} className="animate-spin inline mr-2 text-indigo-400" />
+                    Loading user directory & subscriptions...
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/80">
-                {filteredUsers.map((u) => {
-                  const isCurrent = u.id === currentUser?.id;
-                  const servicesList = Array.isArray(u.allowedServices) ? u.allowedServices : [];
-                  const isAdmin = u.role === 'ADMIN';
-                  const displayUsername = u.username || (u.email ? u.email.split('@')[0] : 'user');
+              ) : filteredUsers.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-8 text-center text-slate-400 font-mono">
+                    No matching users found. Click "Create User & License" to issue a new operator license.
+                  </td>
+                </tr>
+              ) : (
+                filteredUsers.map((u) => {
+                  const isCurrent = currentUser?.id === u.id;
+                  const isExpiring = u.daysRemaining !== null && u.daysRemaining <= 15 && u.daysRemaining > 0;
+                  const isExpired = u.isExpired;
+                  const isSuspended = !u.isActive || u.subscriptionStatus === 'SUSPENDED';
 
                   return (
-                    <tr key={u.id} className="hover:bg-slate-800/30 transition-colors">
-                      {/* Name, Username & Email */}
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded bg-indigo-600 text-white font-bold flex items-center justify-center text-xs shrink-0 font-mono">
-                            {u.name?.charAt(0)?.toUpperCase() || 'U'}
-                          </div>
-                          <div className="min-w-0">
-                            <div className="font-semibold text-slate-200 flex items-center gap-1.5">
-                              <span>{u.name}</span>
-                              {isCurrent && (
-                                <span className="text-[10px] px-1.5 py-0.2 bg-indigo-500/20 text-indigo-300 rounded font-mono">
-                                  You
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-[11px] text-indigo-400 font-mono font-bold flex items-center gap-1">
-                              <AtSign size={11} className="text-indigo-400" />
-                              <span>{displayUsername}</span>
-                            </div>
-                            {u.email ? (
-                              <div className="text-[11px] text-slate-400 font-mono flex items-center gap-1 mt-0.5">
-                                <Mail size={11} className="text-slate-500" />
-                                <span>{u.email}</span>
-                              </div>
-                            ) : (
-                              <div className="text-[10px] text-slate-500 italic mt-0.5">
-                                Email optional / not set
-                              </div>
-                            )}
-                            {u.phone && (
-                              <div className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5">
-                                <Phone size={10} />
-                                <span>{u.phone}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Role & Department */}
-                      <td className="py-3 px-4">
-                        <div className="space-y-1">
-                          <span
-                            className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold font-mono ${
-                              isAdmin
-                                ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
-                                : u.role === 'OPERATOR'
-                                ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30'
-                                : 'bg-slate-700/50 text-slate-300 border border-slate-600'
-                            }`}
-                          >
-                            {u.role}
-                          </span>
-                          <div className="text-[11px] text-slate-400">
-                            {u.department || 'General Operations'}
-                          </div>
-                          {u.company && (
-                            <div className="text-[10px] text-slate-500 truncate">
-                              {u.company}
-                            </div>
+                    <tr key={u.id} className="hover:bg-slate-800/40 transition-colors group">
+                      {/* 1. User & Credentials — Click to open User Profile Info Modal */}
+                      <td
+                        className="py-3 px-3.5 cursor-pointer"
+                        onClick={() => handleOpenInfoModal(u)}
+                        title="Click to view complete user & subscription details"
+                      >
+                        <div className="font-bold text-slate-100 flex items-center gap-1.5 group-hover:text-indigo-400 transition-colors">
+                          <span>{u.name}</span>
+                          {isCurrent && (
+                            <span className="px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 text-[9px] font-mono">
+                              YOU
+                            </span>
                           )}
+                          <ExternalLink size={11} className="opacity-0 group-hover:opacity-100 transition-opacity text-indigo-400 ml-0.5" />
                         </div>
-                      </td>
-
-                      {/* Allocated Services */}
-                      <td className="py-3 px-4">
-                        {isAdmin ? (
-                          <div className="flex items-center gap-1.5 text-xs text-amber-300 font-medium">
-                            <ShieldCheck size={14} />
-                            <span>Full Master Access (All 9 Modules)</span>
-                          </div>
-                        ) : servicesList.length === 0 ? (
-                          <span className="text-slate-500 italic text-[11px]">No services allocated</span>
-                        ) : (
-                          <div className="flex flex-wrap gap-1 max-w-sm">
-                            {servicesList.map((srvId) => {
-                              const srvObj = SYSTEM_SERVICES.find((s) => s.id === srvId);
-                              if (!srvObj) return null;
-                              return (
-                                <span
-                                  key={srvId}
-                                  className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${srvObj.color}`}
-                                  title={srvObj.description}
-                                >
-                                  {srvObj.label.split(' ')[0]} {srvObj.label.split(' ')[1] || ''}
-                                </span>
-                              );
-                            })}
-                          </div>
+                        <div className="text-[11px] font-mono text-indigo-400 flex items-center gap-1 mt-0.5">
+                          <AtSign size={10} /> {u.username || u.email}
+                        </div>
+                        {u.email && u.email !== u.username && (
+                          <div className="text-[10px] text-slate-400 font-mono truncate max-w-[170px]">{u.email}</div>
                         )}
                       </td>
 
-                      {/* Status */}
-                      <td className="py-3 px-4 text-center">
-                        <button
-                          type="button"
-                          onClick={() => handleToggleStatus(u)}
-                          disabled={isCurrent}
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold uppercase transition-all ${
-                            u.isActive
-                              ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25'
-                              : 'bg-rose-500/15 text-rose-400 border border-rose-500/30 hover:bg-rose-500/25'
-                          } ${isCurrent ? 'cursor-default opacity-80' : 'cursor-pointer'}`}
-                          title={isCurrent ? 'Current user active' : 'Click to toggle account status'}
-                        >
-                          {u.isActive ? <CheckCircle2 size={11} /> : <XCircle size={11} />}
-                          <span>{u.isActive ? 'ACTIVE' : 'DISABLED'}</span>
-                        </button>
+                      {/* 2. Company & Dept */}
+                      <td className="py-3 px-3.5">
+                        <div className="font-medium text-slate-200">{u.company || '—'}</div>
+                        <div className="text-[10px] text-slate-400">{u.department || 'Operations'}</div>
+                        <div className="text-[9px] text-slate-400 font-mono mt-0.5">
+                          Role: <span className="text-slate-300 font-semibold">{u.role}</span>
+                        </div>
                       </td>
 
-                      {/* Created Date */}
-                      <td className="py-3 px-4 text-slate-400 font-mono text-[11px]">
-                        {new Date(u.createdAt).toLocaleDateString('en-GB')}
-                      </td>
-
-                      {/* Actions */}
-                      <td className="py-3 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          {/* Edit Details & Allocated Services */}
+                      {/* 3. License Key */}
+                      <td className="py-3 px-3.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono font-bold text-[11px] text-slate-200 px-2 py-1 rounded bg-slate-950 border border-slate-800 select-all">
+                            {u.licenseKey || 'CRGO-2026-LEGACY'}
+                          </span>
                           <button
                             type="button"
-                            className="p-1.5 text-slate-400 hover:text-indigo-400 hover:bg-slate-800 rounded transition-colors"
-                            onClick={() => handleOpenEditModal(u)}
-                            title="Edit User & Service Allocation"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCopyLicenseKey(u);
+                            }}
+                            className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                            title="Copy License Key"
                           >
-                            <Pencil size={14} />
+                            {copiedKeyId === u.id ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                          </button>
+                        </div>
+                        <div className="text-[9px] text-slate-400 font-mono mt-0.5">
+                          Seats: {u.maxSeats || 1} Operator{u.maxSeats === 1 ? '' : 's'}
+                        </div>
+                      </td>
+
+                      {/* 4. Subscription Plan */}
+                      <td className="py-3 px-3.5">
+                        <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold border bg-indigo-500/15 text-indigo-300 border-indigo-500/30">
+                          {u.subscriptionPlan || 'STARTER'}
+                        </span>
+                        <div className="text-[10px] text-slate-400 mt-0.5">
+                          {(u.allowedServices || []).length} module{(u.allowedServices || []).length === 1 ? '' : 's'} enabled
+                        </div>
+                      </td>
+
+                      {/* 5. Plan Expiry & Countdown */}
+                      <td className="py-3 px-3.5 font-mono">
+                        {u.subscriptionExpiresAt ? (
+                          <>
+                            <div className="text-slate-200 font-medium">
+                              {new Date(u.subscriptionExpiresAt).toLocaleDateString('en-IN')}
+                            </div>
+                            <div
+                              className={`text-[10px] font-bold ${
+                                isExpired
+                                  ? 'text-rose-400'
+                                  : isExpiring
+                                  ? 'text-amber-400 animate-pulse'
+                                  : 'text-emerald-400'
+                              }`}
+                            >
+                              {isExpired
+                                ? 'EXPIRED'
+                                : u.daysRemaining !== null
+                                ? `${u.daysRemaining} days remaining`
+                                : 'Active'}
+                            </div>
+                          </>
+                        ) : (
+                          <span className="text-slate-400">1 Year (Default)</span>
+                        )}
+                      </td>
+
+                      {/* 6. Status Badge */}
+                      <td className="py-3 px-3.5">
+                        {isSuspended ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                            <XCircle size={11} /> Suspended
+                          </span>
+                        ) : isExpired ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                            <Clock size={11} /> Expired
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                            <CheckCircle2 size={11} /> Active
+                          </span>
+                        )}
+                      </td>
+
+                      {/* 7. Action Buttons */}
+                      <td className="py-3 px-3.5 text-right whitespace-nowrap">
+                        <div className="inline-flex items-center gap-1">
+                          {/* Complete User Info Button */}
+                          <button
+                            type="button"
+                            onClick={() => handleOpenInfoModal(u)}
+                            className="p-1.5 text-slate-400 hover:text-indigo-300 rounded hover:bg-slate-800 transition-colors cursor-pointer"
+                            title="View Full User Info & Subscription Card"
+                          >
+                            <Info size={13} />
                           </button>
 
-                          {/* Set/Reset Password */}
+                          {/* Copy Handover Text */}
                           <button
                             type="button"
-                            className="p-1.5 text-slate-400 hover:text-amber-400 hover:bg-slate-800 rounded transition-colors"
+                            onClick={() => handleCopyClientHandover(u)}
+                            className="p-1.5 text-slate-400 hover:text-indigo-400 rounded hover:bg-slate-800 transition-colors cursor-pointer"
+                            title="Copy Full Client Handover Details (Credentials + Key)"
+                          >
+                            {copiedHandoverId === u.id ? <Check size={13} className="text-emerald-400" /> : <Send size={13} />}
+                          </button>
+
+                          {/* Quick Extend +1 Month */}
+                          <button
+                            type="button"
+                            onClick={() => handleQuickExtend(u, '1_MONTH')}
+                            className="px-1.5 py-1 text-[10px] font-mono text-emerald-400 hover:bg-emerald-500/10 rounded border border-emerald-500/20 transition-colors cursor-pointer"
+                            title="Quick Extend Subscription (+1 Month)"
+                          >
+                            +1M
+                          </button>
+
+                          {/* Quick Extend +1 Year */}
+                          <button
+                            type="button"
+                            onClick={() => handleQuickExtend(u, '1_YEAR')}
+                            className="px-1.5 py-1 text-[10px] font-mono text-indigo-400 hover:bg-indigo-500/10 rounded border border-indigo-500/20 transition-colors cursor-pointer"
+                            title="Quick Extend Subscription (+1 Full Year)"
+                          >
+                            +1Y
+                          </button>
+
+                          {/* Activity Trail */}
+                          <button
+                            type="button"
+                            onClick={() => handleOpenActivityModal(u)}
+                            className="p-1.5 text-slate-400 hover:text-cyan-400 rounded hover:bg-slate-800 transition-colors cursor-pointer"
+                            title="View Activity & Audit Trail"
+                          >
+                            <Activity size={13} />
+                          </button>
+
+                          {/* Reset Password */}
+                          <button
+                            type="button"
                             onClick={() => handleOpenPasswordModal(u)}
-                            title="Set / Reset Login Password"
+                            className="p-1.5 text-slate-400 hover:text-amber-400 rounded hover:bg-slate-800 transition-colors cursor-pointer"
+                            title="Reset Login Password"
                           >
-                            <KeyRound size={14} />
+                            <KeyRound size={13} />
                           </button>
 
-                          {/* Delete Account */}
+                          {/* Edit User & Subscription */}
                           <button
                             type="button"
-                            disabled={isCurrent}
-                            className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                            onClick={() => handleDeleteUser(u)}
-                            title={isCurrent ? 'Cannot delete current account' : 'Delete User Account'}
+                            onClick={() => handleOpenEditModal(u)}
+                            className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors cursor-pointer"
+                            title="Edit User Profile & Plan"
                           >
-                            <Trash2 size={14} />
+                            <Pencil size={13} />
                           </button>
+
+                          {/* Activate / Suspend Toggle */}
+                          {!isCurrent && (
+                            <button
+                              type="button"
+                              onClick={() => handleToggleStatus(u)}
+                              className={`p-1.5 rounded transition-colors cursor-pointer ${
+                                u.isActive
+                                  ? 'text-slate-400 hover:text-rose-400 hover:bg-rose-500/10'
+                                  : 'text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10'
+                              }`}
+                              title={u.isActive ? 'Suspend / Deactivate User' : 'Activate User'}
+                            >
+                              <Lock size={13} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
                   );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* ========================================================================= */}
-      {/* MODAL 1: CREATE / EDIT USER & ALLOCATE SERVICES */}
-      {/* ========================================================================= */}
+      {/* ─── COMPLETE USER PROFILE & SUBSCRIPTION INFO MODAL ─────────────────── */}
+      {isInfoModalOpen && infoTargetUser && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-md animate-fade-in overflow-y-auto"
+          onClick={() => setIsInfoModalOpen(false)}
+        >
+          <div
+            className="bg-slate-900 border border-slate-800 rounded-md max-w-2xl w-full p-5 sm:p-6 shadow-2xl space-y-5 my-auto max-h-[92vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-start justify-between border-b border-slate-800 pb-4 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-lg bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center font-bold text-lg text-indigo-400 uppercase font-mono">
+                  {infoTargetUser.name.charAt(0)}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-bold text-slate-100">{infoTargetUser.name}</h2>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                      {infoTargetUser.role}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 font-mono flex items-center gap-2 mt-0.5">
+                    <span>@{infoTargetUser.username || infoTargetUser.email}</span>
+                    {infoTargetUser.email && <span>• {infoTargetUser.email}</span>}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsInfoModalOpen(false)}
+                className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800 cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Scrollable Body */}
+            <div className="flex-1 overflow-y-auto space-y-4 pr-1 text-xs">
+              {/* 1. Subscription & Plan Live Status Card */}
+              <div className="p-4 bg-slate-950 border border-slate-800 rounded space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                  <div className="font-bold text-slate-200 flex items-center gap-2">
+                    <CreditCard size={15} className="text-emerald-400" />
+                    <span>Current Subscription & Plan Details</span>
+                  </div>
+                  {infoTargetUser.isExpired ? (
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse">
+                      EXPIRED
+                    </span>
+                  ) : !infoTargetUser.isActive ? (
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700">
+                      SUSPENDED
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                      ACTIVE & RUNNING
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                  <div className="space-y-0.5">
+                    <span className="text-[10px] text-slate-400 block uppercase font-mono">Plan Tier</span>
+                    <span className="font-bold text-slate-100 text-sm">
+                      {infoTargetUser.subscriptionPlan || 'STARTER'}
+                    </span>
+                  </div>
+
+                  <div className="space-y-0.5">
+                    <span className="text-[10px] text-slate-400 block uppercase font-mono">Expiry Date</span>
+                    <span className="font-bold text-slate-100 font-mono text-xs">
+                      {infoTargetUser.subscriptionExpiresAt
+                        ? new Date(infoTargetUser.subscriptionExpiresAt).toLocaleDateString('en-IN', { dateStyle: 'medium' })
+                        : '1 Year (Default)'}
+                    </span>
+                  </div>
+
+                  <div className="space-y-0.5">
+                    <span className="text-[10px] text-slate-400 block uppercase font-mono">Remaining Validity</span>
+                    <span
+                      className={`font-bold font-mono text-xs ${
+                        infoTargetUser.isExpired
+                          ? 'text-rose-400'
+                          : infoTargetUser.daysRemaining <= 15
+                          ? 'text-amber-400'
+                          : 'text-emerald-400'
+                      }`}
+                    >
+                      {infoTargetUser.isExpired
+                        ? 'Expired'
+                        : `${infoTargetUser.daysRemaining ?? 365} Days Left`}
+                    </span>
+                  </div>
+
+                  <div className="space-y-0.5">
+                    <span className="text-[10px] text-slate-400 block uppercase font-mono">Operator Seats</span>
+                    <span className="font-bold text-slate-100 font-mono">
+                      {infoTargetUser.maxSeats || 1} Seat{infoTargetUser.maxSeats === 1 ? '' : 's'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* License Key Display & Copy */}
+                <div className="pt-2 border-t border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-slate-400 font-mono">License Key:</span>
+                    <span className="font-mono font-bold text-xs text-indigo-300 px-2 py-1 rounded bg-slate-900 border border-slate-800 select-all">
+                      {infoTargetUser.licenseKey || 'CRGO-2026-LEGACY'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => handleCopyLicenseKey(infoTargetUser)}
+                      className="text-[11px] py-1 px-2.5 rounded bg-slate-900 border border-slate-800"
+                    >
+                      <Copy size={12} className="mr-1" /> Copy Key
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => handleRegenerateKey(infoTargetUser)}
+                      className="text-[11px] py-1 px-2.5 rounded text-amber-400 bg-amber-500/10 border border-amber-500/20"
+                    >
+                      <RefreshCw size={12} className="mr-1" /> Re-issue Key
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. Quick Plan Extension & Renewal Section */}
+              <div className="p-4 bg-slate-950 border border-slate-800 rounded space-y-3">
+                <div className="font-bold text-slate-200 flex items-center justify-between border-b border-slate-800 pb-2">
+                  <div className="flex items-center gap-2">
+                    <PlusCircle size={15} className="text-indigo-400" />
+                    <span>Extend Plan / Add Duration</span>
+                  </div>
+                  <span className="text-[10px] text-slate-400">1-click instant subscription extension</span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleQuickExtend(infoTargetUser, '1_MONTH')}
+                    className="p-2.5 rounded bg-slate-900 border border-slate-800 hover:border-emerald-500/50 hover:bg-emerald-500/10 text-left transition-all cursor-pointer group"
+                  >
+                    <div className="text-xs font-bold text-slate-200 group-hover:text-emerald-400">+1 Month</div>
+                    <div className="text-[10px] text-slate-400">Adds 30 days</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleQuickExtend(infoTargetUser, '3_MONTHS')}
+                    className="p-2.5 rounded bg-slate-900 border border-slate-800 hover:border-emerald-500/50 hover:bg-emerald-500/10 text-left transition-all cursor-pointer group"
+                  >
+                    <div className="text-xs font-bold text-slate-200 group-hover:text-emerald-400">+3 Months</div>
+                    <div className="text-[10px] text-slate-400">Adds 90 days</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleQuickExtend(infoTargetUser, '6_MONTHS')}
+                    className="p-2.5 rounded bg-slate-900 border border-slate-800 hover:border-emerald-500/50 hover:bg-emerald-500/10 text-left transition-all cursor-pointer group"
+                  >
+                    <div className="text-xs font-bold text-slate-200 group-hover:text-emerald-400">+6 Months</div>
+                    <div className="text-[10px] text-slate-400">Adds 180 days</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleQuickExtend(infoTargetUser, '1_YEAR')}
+                    className="p-2.5 rounded bg-slate-900 border border-slate-800 hover:border-indigo-500/50 hover:bg-indigo-500/10 text-left transition-all cursor-pointer group"
+                  >
+                    <div className="text-xs font-bold text-slate-200 group-hover:text-indigo-400">+1 Full Year</div>
+                    <div className="text-[10px] text-slate-400">Adds 365 days</div>
+                  </button>
+                </div>
+              </div>
+
+              {/* 3. Company, Contact & Quotas */}
+              <div className="p-4 bg-slate-950 border border-slate-800 rounded space-y-2.5">
+                <div className="font-bold text-slate-200 text-xs border-b border-slate-800 pb-1.5 flex items-center gap-2">
+                  <Building size={14} className="text-indigo-400" />
+                  <span>Company & Department Information</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <span className="text-[10px] text-slate-400 block uppercase font-mono">Company / Client</span>
+                    <span className="font-medium text-slate-200">{infoTargetUser.company || '—'}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 block uppercase font-mono">Department</span>
+                    <span className="font-medium text-slate-200">{infoTargetUser.department || 'Operations'}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 block uppercase font-mono">Phone Number</span>
+                    <span className="font-medium text-slate-200 font-mono">{infoTargetUser.phone || '—'}</span>
+                  </div>
+                </div>
+
+                {infoTargetUser.notes && (
+                  <div className="pt-2 border-t border-slate-800/80">
+                    <span className="text-[10px] text-slate-400 block uppercase font-mono mb-0.5">Admin Contract Notes</span>
+                    <p className="text-slate-300 italic bg-slate-900 p-2 rounded border border-slate-800">
+                      "{infoTargetUser.notes}"
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* 4. Active Modular Services */}
+              <div className="p-4 bg-slate-950 border border-slate-800 rounded space-y-2.5">
+                <div className="font-bold text-slate-200 text-xs border-b border-slate-800 pb-1.5 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sliders size={14} className="text-indigo-400" />
+                    <span>Allocated Services ({(infoTargetUser.allowedServices || []).length} Active)</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsInfoModalOpen(false);
+                      handleOpenEditModal(infoTargetUser);
+                    }}
+                    className="text-[11px] text-indigo-400 hover:underline cursor-pointer"
+                  >
+                    Edit Permissions
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {SYSTEM_SERVICES.map((srv) => {
+                    const isAllocated = (infoTargetUser.allowedServices || []).includes(srv.id);
+                    return (
+                      <div
+                        key={srv.id}
+                        className={`p-2 rounded border flex items-center justify-between ${
+                          isAllocated
+                            ? 'bg-indigo-600/10 border-indigo-500/40 text-slate-200'
+                            : 'bg-slate-900/40 border-slate-800/60 text-slate-500 opacity-60'
+                        }`}
+                      >
+                        <span className="font-medium text-xs">{srv.label}</span>
+                        {isAllocated ? (
+                          <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-1 font-mono">
+                            <Check size={12} /> ON
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-slate-500 font-mono">OFF</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer Controls */}
+            <div className="pt-3 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2 shrink-0">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    setIsInfoModalOpen(false);
+                    handleOpenActivityModal(infoTargetUser);
+                  }}
+                  className="rounded text-xs bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700"
+                >
+                  <Activity size={13} className="mr-1" /> View Audit Trail
+                </Button>
+
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    setIsInfoModalOpen(false);
+                    handleOpenPasswordModal(infoTargetUser);
+                  }}
+                  className="rounded text-xs bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700"
+                >
+                  <KeyRound size={13} className="mr-1" /> Reset Password
+                </Button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => {
+                    setIsInfoModalOpen(false);
+                    handleOpenEditModal(infoTargetUser);
+                  }}
+                  className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold"
+                >
+                  <Pencil size={13} className="mr-1" /> Edit Profile & Plan
+                </Button>
+
+                {currentUser?.id !== infoTargetUser.id && (
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => handleDeleteUser(infoTargetUser)}
+                    className="rounded text-xs"
+                  >
+                    <Trash2 size={13} className="mr-1" /> Deactivate
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── CREATE / EDIT USER MODAL ───────────────────────────────────────── */}
       {isUserModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in overflow-y-auto">
-          <div className="bg-slate-900 border border-slate-700 rounded-md w-full max-w-3xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden my-auto">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-md animate-fade-in overflow-y-auto"
+          onClick={() => setIsUserModalOpen(false)}
+        >
+          <div
+            className="bg-slate-900 border border-slate-800 rounded-md max-w-2xl w-full p-5 sm:p-6 shadow-2xl space-y-5 my-auto max-h-[92vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Header */}
-            <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/80">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3 shrink-0">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded bg-indigo-600/20 text-indigo-400 flex items-center justify-center">
+                <div className="w-8 h-8 rounded bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
                   <UserPlus size={16} />
                 </div>
                 <div>
                   <h2 className="text-base font-bold text-slate-100">
-                    {editingUser ? `Edit User: ${editingUser.name}` : 'Create New User & Allocate Services'}
+                    {editingUser ? `Edit User: ${editingUser.name}` : 'Create New User & Issue License'}
                   </h2>
-                  <p className="text-xs text-slate-400">
-                    Define login credentials (Username & Password) and choose which cargo modules & services this user can access.
+                  <p className="text-[11px] text-slate-400">
+                    Assign subscription plan, duration, modular permissions, and credentials.
                   </p>
                 </div>
               </div>
-
               <button
                 type="button"
-                className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800 transition-colors"
                 onClick={() => setIsUserModalOpen(false)}
+                className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800 cursor-pointer"
               >
                 <X size={16} />
               </button>
             </div>
 
-            {/* Form Body */}
-            <form onSubmit={handleSaveUser} className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-5">
-              {/* Section 1: Basic Profile & Credentials */}
-              <div className="bg-slate-950/70 border border-slate-800 rounded p-4 space-y-3">
-                <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+            {/* Scrollable Form Content */}
+            <form onSubmit={handleSaveUser} className="flex-1 overflow-y-auto space-y-4 pr-1 text-xs">
+              {/* 1. Profile & Credentials */}
+              <div className="p-3.5 bg-slate-950/80 border border-slate-800 rounded space-y-3">
+                <div className="font-bold text-slate-200 text-xs flex items-center gap-1.5 border-b border-slate-800 pb-1.5">
                   <User size={13} className="text-indigo-400" />
-                  <span>1. User Account & Login Credentials</span>
-                </h3>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <Input
-                    label="Full Name *"
-                    placeholder="e.g. Mayur Kadam"
-                    value={userForm.name}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setUserForm((prev) => {
-                        const updated = { ...prev, name: val };
-                        // Auto suggest username if not touched yet
-                        if (!editingUser && !prev.username && val.trim()) {
-                          updated.username = val.toLowerCase().replace(/\s+/g, '') + '52004';
-                        }
-                        return updated;
-                      });
-                    }}
-                    required
-                  />
-
-                  <Input
-                    label="Login Username (Required) *"
-                    placeholder="e.g. mayur52004"
-                    value={userForm.username}
-                    onChange={(e) => setUserForm({ ...userForm, username: e.target.value.toLowerCase().replace(/\s+/g, '') })}
-                    required
-                  />
-
-                  <Input
-                    label="Email Address (Optional)"
-                    type="email"
-                    placeholder="e.g. mayur@dgrlogistics.com"
-                    value={userForm.email}
-                    onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
-                  />
+                  <span>1. User Profile & Login Credentials</span>
                 </div>
 
-                {!editingUser && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <Input
-                      label="Initial Login Password *"
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">Full Name *</label>
+                    <input
                       type="text"
-                      placeholder="e.g. Mayur@2004"
-                      value={userForm.password}
-                      onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
+                      placeholder="e.g. Mayur Kadam"
+                      value={userForm.name}
+                      onChange={(e) => setUserForm((prev) => ({ ...prev, name: e.target.value }))}
                       required
-                    />
-
-                    <Input
-                      label="Department / Team"
-                      placeholder="e.g. Accounts & Billing"
-                      value={userForm.department}
-                      onChange={(e) => setUserForm({ ...userForm, department: e.target.value })}
+                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
                     />
                   </div>
-                )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {editingUser && (
-                    <Input
-                      label="Department / Team"
-                      placeholder="e.g. Accounts & Billing"
-                      value={userForm.department}
-                      onChange={(e) => setUserForm({ ...userForm, department: e.target.value })}
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">Login Username *</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. mayur52004 or accounts@manifest.com"
+                      value={userForm.username}
+                      onChange={(e) => setUserForm((prev) => ({ ...prev, username: e.target.value }))}
+                      required
+                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
                     />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">Email Address (Optional)</label>
+                    <input
+                      type="email"
+                      placeholder="e.g. mayur@dgrlogistics.com"
+                      value={userForm.email}
+                      onChange={(e) => setUserForm((prev) => ({ ...prev, email: e.target.value }))}
+                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+
+                  {!editingUser && (
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">Initial Password *</label>
+                      <input
+                        type="password"
+                        placeholder="•••••••• (min 6 chars)"
+                        value={userForm.password}
+                        onChange={(e) => setUserForm((prev) => ({ ...prev, password: e.target.value }))}
+                        required
+                        className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
+                      />
+                    </div>
                   )}
 
-                  <Input
-                    label="Company / Branch"
-                    placeholder="e.g. DGR GLOBAL LOGISTICS"
-                    value={userForm.company}
-                    onChange={(e) => setUserForm({ ...userForm, company: e.target.value })}
-                  />
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">Company / Agency Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. DGR GLOBAL LOGISTICS"
+                      value={userForm.company}
+                      onChange={(e) => setUserForm((prev) => ({ ...prev, company: e.target.value }))}
+                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
 
-                  <Input
-                    label="Phone Number"
-                    placeholder="e.g. 9028345261"
-                    value={userForm.phone}
-                    onChange={(e) => setUserForm({ ...userForm, phone: e.target.value })}
-                  />
-
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs text-slate-400 font-medium">User Role</label>
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">System Role</label>
                     <select
-                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
                       value={userForm.role}
-                      onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
+                      onChange={(e) => setUserForm((prev) => ({ ...prev, role: e.target.value }))}
+                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
                     >
-                      <option value="OPERATOR">OPERATOR (Standard Staff)</option>
-                      <option value="ADMIN">ADMIN (Full Superuser Access)</option>
+                      <option value="OPERATOR">OPERATOR (Standard User)</option>
+                      <option value="ADMIN">ADMIN (Full Master Control)</option>
                       <option value="VIEWER">VIEWER (Read-Only Access)</option>
                     </select>
                   </div>
                 </div>
               </div>
 
-              {/* Section 2: Service & Module Allocation */}
-              <div className="bg-slate-950/70 border border-slate-800 rounded p-4 space-y-3.5">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-2.5">
+              {/* 2. Subscription Plan & Validity Period */}
+              <div className="p-3.5 bg-slate-950/80 border border-slate-800 rounded space-y-3">
+                <div className="font-bold text-slate-200 text-xs flex items-center justify-between border-b border-slate-800 pb-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <CreditCard size={13} className="text-emerald-400" />
+                    <span>2. Subscription Plan & Validity Period</span>
+                  </div>
+                  <span className="text-[10px] font-mono text-emerald-400">
+                    Expiry Preview: {getCalculatedExpiryPreview(userForm.subscriptionDuration, userForm.customExpiresAt)}
+                  </span>
+                </div>
+
+                {/* Show Current Plan Info When Editing */}
+                {editingUser && (
+                  <div className="p-2.5 rounded bg-indigo-600/10 border border-indigo-500/30 text-indigo-300 flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <span className="text-[10px] text-slate-400 block uppercase font-mono">Current Active Plan</span>
+                      <div className="font-bold text-xs text-white">
+                        {editingUser.subscriptionPlan || 'STARTER'} •{' '}
+                        {editingUser.subscriptionExpiresAt
+                          ? `Expires: ${new Date(editingUser.subscriptionExpiresAt).toLocaleDateString('en-IN')}`
+                          : '1 Year'}
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-mono font-bold text-emerald-400">
+                      {editingUser.daysRemaining !== null ? `${editingUser.daysRemaining} days remaining` : 'Active'}
+                    </span>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-                      <Layers size={13} className="text-indigo-400" />
-                      <span>2. Service & Module Allocation Matrix</span>
-                    </h3>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
-                      Check the specific tools and sections this user will see upon login.
-                    </p>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">Subscription Plan</label>
+                    <select
+                      value={userForm.subscriptionPlan}
+                      onChange={(e) => setUserForm((prev) => ({ ...prev, subscriptionPlan: e.target.value }))}
+                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 font-bold focus:outline-none focus:border-indigo-500"
+                    >
+                      <option value="FREE_TRIAL">Free Trial (7 Days)</option>
+                      <option value="STARTER">Starter Plan</option>
+                      <option value="PROFESSIONAL">Professional Plan</option>
+                      <option value="ENTERPRISE">Enterprise Contract</option>
+                      <option value="CUSTOM">Custom Plan</option>
+                    </select>
                   </div>
 
-                  {/* Quick Preset Buttons */}
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <button
-                      type="button"
-                      className="px-2 py-1 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 rounded text-[10px] font-medium"
-                      onClick={() => applyPreset('BILLING_ONLY')}
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">Duration Preset</label>
+                    <select
+                      value={userForm.subscriptionDuration}
+                      onChange={(e) => setUserForm((prev) => ({ ...prev, subscriptionDuration: e.target.value }))}
+                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
                     >
-                      Accounts & Billing Only
-                    </button>
-                    <button
-                      type="button"
-                      className="px-2 py-1 bg-sky-600/20 hover:bg-sky-600/30 text-sky-300 border border-sky-500/30 rounded text-[10px] font-medium"
-                      onClick={() => applyPreset('FREIGHT_OPERATIONS')}
-                    >
-                      Freight Ops Only
-                    </button>
-                    <button
-                      type="button"
-                      className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[10px] font-medium"
-                      onClick={() => applyPreset('ALL')}
-                    >
-                      All Services
-                    </button>
-                    <button
-                      type="button"
-                      className="px-2 py-1 bg-slate-800 text-slate-400 hover:text-white rounded text-[10px]"
-                      onClick={() => applyPreset('CLEAR')}
-                    >
-                      Clear
-                    </button>
+                      <option value="7_DAYS">7 Days Trial</option>
+                      <option value="1_MONTH">1 Month</option>
+                      <option value="3_MONTHS">3 Months</option>
+                      <option value="6_MONTHS">6 Months</option>
+                      <option value="1_YEAR">1 Full Year</option>
+                      <option value="CUSTOM">Custom Date...</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">Max Operator Seats</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={userForm.maxSeats}
+                      onChange={(e) => setUserForm((prev) => ({ ...prev, maxSeats: e.target.value }))}
+                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100"
+                    />
                   </div>
                 </div>
 
-                {/* Services Checkbox Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                  {SYSTEM_SERVICES.map((srv) => {
-                    const isChecked = userForm.allowedServices.includes(srv.id) || userForm.role === 'ADMIN';
+                {userForm.subscriptionDuration === 'CUSTOM' && (
+                  <div className="pt-2 border-t border-slate-800 animate-fade-in">
+                    <label className="text-[10px] text-slate-400 block mb-1">Set Specific Expiry Date</label>
+                    <input
+                      type="date"
+                      value={userForm.customExpiresAt}
+                      onChange={(e) => setUserForm((prev) => ({ ...prev, customExpiresAt: e.target.value }))}
+                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100"
+                    />
+                  </div>
+                )}
+              </div>
 
+              {/* 3. Service Allocation Matrix */}
+              <div className="p-3.5 bg-slate-950/80 border border-slate-800 rounded space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                  <div className="font-bold text-slate-200 text-xs flex items-center gap-1.5">
+                    <Sliders size={13} className="text-indigo-400" />
+                    <span>3. Modular Service Permissions ({userForm.allowedServices.length} active)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[10px]">
+                    <button type="button" onClick={() => applyPreset('ALL')} className="text-indigo-400 hover:underline cursor-pointer">All</button>
+                    <span className="text-slate-600">•</span>
+                    <button type="button" onClick={() => applyPreset('BILLING_ONLY')} className="text-slate-400 hover:underline cursor-pointer">Billing</button>
+                    <span className="text-slate-600">•</span>
+                    <button type="button" onClick={() => applyPreset('CLEAR')} className="text-rose-400 hover:underline cursor-pointer">Clear</button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {SYSTEM_SERVICES.map((srv) => {
+                    const checked = userForm.allowedServices.includes(srv.id);
                     return (
-                      <div
+                      <label
                         key={srv.id}
-                        onClick={() => toggleService(srv.id)}
-                        className={`p-3 rounded border transition-all cursor-pointer flex items-start gap-3 select-none ${
-                          isChecked
-                            ? 'bg-indigo-600/10 border-indigo-500/50 shadow-sm'
-                            : 'bg-slate-900 border-slate-800 hover:border-slate-700 opacity-70'
+                        className={`p-2.5 rounded border cursor-pointer select-none transition-all flex items-start gap-2.5 ${
+                          checked
+                            ? 'bg-indigo-600/10 border-indigo-500/50 text-slate-100'
+                            : 'bg-slate-900/60 border-slate-800/80 text-slate-400 hover:border-slate-700'
                         }`}
                       >
-                        <div
-                          className={`w-4 h-4 rounded mt-0.5 border flex items-center justify-center shrink-0 transition-colors ${
-                            isChecked
-                              ? 'bg-indigo-600 border-indigo-600 text-white'
-                              : 'border-slate-600 bg-slate-950'
-                          }`}
-                        >
-                          {isChecked && <Check size={12} />}
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleService(srv.id)}
+                          className="mt-0.5 rounded border-slate-700 text-indigo-600 focus:ring-0 cursor-pointer"
+                        />
+                        <div className="space-y-0.5">
+                          <span className="font-semibold text-xs text-slate-200 block leading-tight">{srv.label}</span>
+                          <span className="text-[10px] text-slate-400 block leading-snug">{srv.description}</span>
                         </div>
-
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center justify-between gap-1">
-                            <span className="font-bold text-slate-100 text-xs">{srv.label}</span>
-                            <span className="text-[9.5px] px-1.5 py-0.2 bg-slate-800 text-slate-400 rounded">
-                              {srv.category}
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
-                            {srv.description}
-                          </p>
-                        </div>
-                      </div>
+                      </label>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-800">
+              {/* Admin Notes */}
+              <div>
+                <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                  Admin Contract Notes / Payment Reference (Optional)
+                </label>
+                <textarea
+                  rows="2"
+                  placeholder="e.g. Paid via Bank Wire Ref #99201. Annual contract for 2 billing operators."
+                  value={userForm.notes}
+                  onChange={(e) => setUserForm((prev) => ({ ...prev, notes: e.target.value }))}
+                  className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
                 <Button
-                  type="button"
                   variant="secondary"
+                  type="button"
                   onClick={() => setIsUserModalOpen(false)}
-                  className="rounded text-xs"
+                  className="rounded text-xs px-3.5 py-1.5"
                 >
                   Cancel
                 </Button>
                 <Button
-                  type="submit"
                   variant="primary"
-                  className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold"
+                  type="submit"
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs px-4 py-2 font-semibold shadow-md shadow-indigo-950/40"
                 >
-                  <Check size={14} className="mr-1 inline" />
-                  {editingUser ? 'Save User & Allocation' : 'Create User & Issue Credentials'}
+                  {editingUser ? 'Save Changes' : 'Create User & Generate Key'}
                 </Button>
               </div>
             </form>
@@ -920,94 +1583,214 @@ export default function MasterUsersPage() {
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* MODAL 2: RESET PASSWORD MODAL */}
-      {/* ========================================================================= */}
-      {isPasswordModalOpen && passwordTargetUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-slate-900 border border-slate-700 rounded-md w-full max-w-md p-5 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded bg-amber-500/20 text-amber-400 flex items-center justify-center">
-                  <KeyRound size={16} />
+      {/* ─── USER ACTIVITY & AUDIT TRAIL MODAL ──────────────────────────────── */}
+      {isActivityModalOpen && activityTargetUser && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-md animate-fade-in overflow-y-auto"
+          onClick={() => setIsActivityModalOpen(false)}
+        >
+          <div
+            className="bg-slate-900 border border-slate-800 rounded-md max-w-xl w-full p-5 shadow-2xl space-y-4 my-auto max-h-[85vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded bg-cyan-600/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                  <Activity size={16} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-100 text-sm">
-                    Set Password for {passwordTargetUser.name}
-                  </h3>
-                  <p className="text-xs text-indigo-400 font-mono">@{passwordTargetUser.username || passwordTargetUser.email}</p>
+                  <h2 className="text-sm font-bold text-slate-100">
+                    Activity & Audit Trail: {activityTargetUser.name}
+                  </h2>
+                  <p className="text-[11px] text-slate-400 font-mono">
+                    License: {activityTargetUser.licenseKey || 'N/A'} • Plan: {activityTargetUser.subscriptionPlan || 'STARTER'}
+                  </p>
                 </div>
               </div>
               <button
                 type="button"
-                className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800"
-                onClick={() => setIsPasswordModalOpen(false)}
+                onClick={() => setIsActivityModalOpen(false)}
+                className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800 cursor-pointer"
               >
                 <X size={16} />
               </button>
             </div>
 
-            <form onSubmit={handleSavePassword} className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-300 block">New Login Password *</label>
+            <div className="flex-1 overflow-y-auto space-y-2.5 pr-1 text-xs">
+              {loadingActivity ? (
+                <div className="py-8 text-center text-slate-400 font-mono">
+                  <RotateCw size={16} className="animate-spin inline mr-2 text-cyan-400" />
+                  Loading activity timeline...
+                </div>
+              ) : activityLogs.length === 0 ? (
+                <div className="p-4 bg-slate-950/70 border border-slate-800 rounded text-center text-slate-400">
+                  No activity events recorded yet. Account initialized.
+                </div>
+              ) : (
+                <div className="space-y-2 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-800">
+                  {activityLogs.map((log) => (
+                    <div key={log.id} className="relative pl-7 py-0.5">
+                      <div className="absolute left-1.5 top-2.5 w-3 h-3 rounded-full bg-cyan-500 border-2 border-slate-900" />
+                      <div className="p-2.5 bg-slate-950/80 border border-slate-800/90 rounded space-y-1 hover:border-slate-700 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-[10px] uppercase font-mono px-1.5 py-0.2 rounded bg-slate-800 text-cyan-300">
+                            {log.action}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-mono">
+                            {new Date(log.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                          </span>
+                        </div>
+                        <p className="text-slate-200 text-xs leading-relaxed">{log.description}</p>
+                        {log.performedBy && (
+                          <div className="text-[9px] text-slate-400 font-mono">By: {log.performedBy}</div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="pt-2 border-t border-slate-800 flex justify-end shrink-0">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setIsActivityModalOpen(false)}
+                className="rounded text-xs"
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── PASSWORD RESET MODAL ───────────────────────────────────────────── */}
+      {isPasswordModalOpen && passwordTargetUser && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-md animate-fade-in overflow-y-auto"
+          onClick={() => setIsPasswordModalOpen(false)}
+        >
+          <div
+            className="bg-slate-900 border border-slate-800 rounded-md max-w-sm w-full p-5 shadow-2xl space-y-4 my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <KeyRound size={16} className="text-amber-400" />
+                <h2 className="text-sm font-bold text-slate-100">Reset Login Password</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPasswordModalOpen(false)}
+                className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800 cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSavePassword} className="space-y-3.5 text-xs">
+              <p className="text-slate-300 text-xs">
+                Set a new login password for <strong className="text-white">{passwordTargetUser.name}</strong> (
+                <span className="font-mono text-indigo-400">{passwordTargetUser.username || passwordTargetUser.email}</span>):
+              </p>
+
+              <div>
+                <label className="text-[11px] font-semibold text-slate-300 block mb-1">New Password (min 6 chars)</label>
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
+                    placeholder="Enter new password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Enter new password (min. 6 characters)"
-                    className="w-full px-3 py-2 pr-20 bg-slate-950 border border-slate-800 rounded text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
                     required
+                    className="w-full pl-3 pr-8 py-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
                   />
                   <button
                     type="button"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 text-xs px-1.5 py-0.5"
                     onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white cursor-pointer"
                   >
-                    {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                    {showPassword ? <EyeOff size={13} /> : <Eye size={13} />}
                   </button>
-                </div>
-              </div>
-
-              <div className="p-3 bg-slate-950 border border-slate-800 rounded text-[11px] text-slate-400 space-y-1.5">
-                <div className="font-semibold text-slate-300">Quick Generate Password:</div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded font-mono text-[10px]"
-                    onClick={() => {
-                      const gen = 'Cargo@' + Math.floor(1000 + Math.random() * 9000);
-                      setNewPassword(gen);
-                    }}
-                  >
-                    Generate Random (Cargo@xxxx)
-                  </button>
-                  {newPassword && (
-                    <button
-                      type="button"
-                      className="px-2 py-1 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 rounded font-mono text-[10px] flex items-center gap-1"
-                      onClick={() => {
-                        navigator.clipboard.writeText(newPassword);
-                        setCopiedPassword(true);
-                        setTimeout(() => setCopiedPassword(false), 2000);
-                      }}
-                    >
-                      <Copy size={10} />
-                      <span>{copiedPassword ? 'Copied!' : 'Copy'}</span>
-                    </button>
-                  )}
                 </div>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
-                <Button type="button" variant="secondary" onClick={() => setIsPasswordModalOpen(false)} className="rounded text-xs">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  type="button"
+                  onClick={() => setIsPasswordModalOpen(false)}
+                  className="rounded text-xs"
+                >
                   Cancel
                 </Button>
-                <Button type="submit" variant="primary" className="rounded text-xs bg-amber-600 hover:bg-amber-500 text-white font-semibold">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  type="submit"
+                  className="bg-amber-600 hover:bg-amber-500 text-white rounded text-xs font-semibold"
+                >
                   Update Password
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ─── CUSTOM CONFIRMATION MODAL (NO BROWSER ALERTS) ─────────────────── */}
+      {confirmDialog.isOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-fade-in"
+          onClick={() => setConfirmDialog((prev) => ({ ...prev, isOpen: false }))}
+        >
+          <div
+            className="bg-slate-900 border border-slate-800 rounded-md max-w-sm w-full p-5 shadow-2xl space-y-4 animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                  confirmDialog.variant === 'danger'
+                    ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                    : confirmDialog.variant === 'warning'
+                    ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                    : 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
+                }`}
+              >
+                <AlertTriangle size={20} />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-100">{confirmDialog.title}</h3>
+                <p className="text-xs text-slate-400 mt-1 leading-relaxed">{confirmDialog.message}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setConfirmDialog((prev) => ({ ...prev, isOpen: false }))}
+                className="rounded text-xs px-3 py-1.5"
+              >
+                {confirmDialog.cancelText || 'Cancel'}
+              </Button>
+              <button
+                type="button"
+                onClick={confirmDialog.onConfirm}
+                className={`px-3 py-1.5 rounded text-xs font-semibold text-white transition-all shadow-md cursor-pointer ${
+                  confirmDialog.variant === 'danger'
+                    ? 'bg-rose-600 hover:bg-rose-500 shadow-rose-950/50'
+                    : confirmDialog.variant === 'warning'
+                    ? 'bg-amber-600 hover:bg-amber-500 shadow-amber-950/50'
+                    : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-950/50'
+                }`}
+              >
+                {confirmDialog.confirmText}
+              </button>
+            </div>
           </div>
         </div>
       )}

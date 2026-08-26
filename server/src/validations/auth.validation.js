@@ -17,12 +17,25 @@ export const registerSchema = z.object({
     .nullable(),
 });
 
-export const loginSchema = z.object({
-  email: z.string().optional(),
-  username: z.string().optional(),
-  identifier: z.string().optional(),
-  password: z.string().min(1, 'Password is required'),
-});
+export const loginSchema = z
+  .object({
+    email: z.string().optional(),
+    username: z.string().optional(),
+    identifier: z.string().optional(),
+    password: z.string().optional(),
+    licenseKey: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.licenseKey && data.licenseKey.trim().length > 0) return true;
+      if (data.identifier && data.identifier.trim().toUpperCase().startsWith('CRGO-')) return true;
+      return Boolean(data.password && data.password.trim().length > 0);
+    },
+    {
+      message: 'Please provide either your password or a valid License Key',
+      path: ['password'],
+    }
+  );
 
 export const refreshTokenSchema = z.object({
   refreshToken: z.string().min(1, 'Refresh token is required').optional(),

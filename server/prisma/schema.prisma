@@ -10,23 +10,49 @@ datasource db {
 // ─── AUTH ────────────────────────────────────────────
 
 model User {
-  id              String     @id @default(cuid())
-  username        String?    @unique
-  email           String?    @unique
-  passwordHash    String
-  name            String
-  company         String?
-  role            Role       @default(OPERATOR)
-  isActive        Boolean    @default(true)
-  allowedServices String[]   @default([])
-  phone           String?
-  department      String?
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  id                   String            @id @default(cuid())
+  username             String?           @unique
+  email                String?           @unique
+  passwordHash         String
+  name                 String
+  company              String?
+  role                 Role              @default(OPERATOR)
+  isActive             Boolean           @default(true)
+  allowedServices      String[]          @default([])
+  phone                String?
+  department           String?
+  licenseKey           String?           @unique
+  subscriptionPlan     String?           @default("STARTER")
+  subscriptionDuration String?           @default("1_YEAR")
+  subscriptionStartDate DateTime?        @default(now())
+  subscriptionExpiresAt DateTime?
+  subscriptionStatus   String?           @default("ACTIVE")
+  maxSeats             Int?              @default(1)
+  notes                String?
+  lastLoginAt          DateTime?
+  loginCount           Int               @default(0)
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
 
-  documents  Document[]
-  contacts   Contact[]
-  templates  Template[]
+  documents    Document[]
+  contacts     Contact[]
+  templates    Template[]
+  activityLogs UserActivityLog[]
+}
+
+model UserActivityLog {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action      String
+  description String
+  performedBy String?  @default("SYSTEM")
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
 }
 
 enum Role {

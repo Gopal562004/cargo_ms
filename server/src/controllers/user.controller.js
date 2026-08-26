@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import prisma from '../config/database.js';
 import { hashPassword } from '../services/auth.service.js';
 import { AppError } from '../middleware/error.middleware.js';
@@ -14,9 +15,76 @@ export const SYSTEM_SERVICES = [
   { id: 'MASTER_ADMIN', label: 'Master Administration & Users', category: 'Administration', description: 'Manage system users, login credentials & service allocation' },
 ];
 
+export const SUBSCRIPTION_PLANS = [
+  { id: 'FREE_TRIAL', label: 'Free Trial', defaultDuration: '7_DAYS', color: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30' },
+  { id: 'STARTER', label: 'Starter Plan', defaultDuration: '1_MONTH', color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/30' },
+  { id: 'PROFESSIONAL', label: 'Professional Plan', defaultDuration: '1_YEAR', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' },
+  { id: 'ENTERPRISE', label: 'Enterprise Plan', defaultDuration: '1_YEAR', color: 'text-purple-400 bg-purple-500/10 border-purple-500/30' },
+  { id: 'CUSTOM', label: 'Custom Contract', defaultDuration: 'CUSTOM', color: 'text-amber-400 bg-amber-500/10 border-amber-500/30' },
+];
+
+/**
+ * Generate standard unique cryptographically secure License Key
+ * e.g. CRGO-2026-A9B2-9901-X8Z1
+ */
+export function generateLicenseKey(prefix = 'CRGO', year = '2026') {
+  const seg1 = crypto.randomBytes(2).toString('hex').toUpperCase();
+  const seg2 = crypto.randomBytes(2).toString('hex').toUpperCase();
+  const seg3 = crypto.randomBytes(2).toString('hex').toUpperCase();
+  return `${prefix}-${year}-${seg1}-${seg2}-${seg3}`;
+}
+
+/**
+ * Helper to compute plan expiration date from duration preset
+ */
+export function calculateExpiryDate(durationPreset, startDate = new Date(), customDate = null) {
+  if (durationPreset === 'CUSTOM' && customDate) {
+    return new Date(customDate);
+  }
+  const date = new Date(startDate);
+  switch (durationPreset) {
+    case '7_DAYS':
+      date.setDate(date.getDate() + 7);
+      break;
+    case '1_MONTH':
+      date.setMonth(date.getMonth() + 1);
+      break;
+    case '3_MONTHS':
+      date.setMonth(date.getMonth() + 3);
+      break;
+    case '6_MONTHS':
+      date.setMonth(date.getMonth() + 6);
+      break;
+    case '1_YEAR':
+    default:
+      date.setFullYear(date.getFullYear() + 1);
+      break;
+  }
+  return date;
+}
+
+/**
+ * Helper to log an audit event for a user
+ */
+export async function logUserActivity(userId, action, description, performedBy = 'SYSTEM', metadata = null) {
+  try {
+    await prisma.userActivityLog.create({
+      data: {
+        userId,
+        action,
+        description,
+        performedBy,
+        metadata: metadata ? metadata : undefined,
+      },
+    });
+  } catch (err) {
+    console.error('Error logging user activity:', err.message);
+  }
+}
+
 /**
  * GET /api/users
- * List all users with their allocated services
+ * List all users with their allocated services, subscription info, and stats
  */
 export async function listUsers(req, res, next) {
   try {
@@ -32,25 +100,85 @@ export async function listUsers(req, res, next) {
         allowedServices: true,
         phone: true,
         department: true,
+        licenseKey: true,
+        subscriptionPlan: true,
+        subscriptionDuration: true,
+        subscriptionStartDate: true,
+        subscriptionExpiresAt: true,
+        subscriptionStatus: true,
+        maxSeats: true,
+        notes: true,
+        lastLoginAt: true,
+        loginCount: true,
         createdAt: true,
         updatedAt: true,
         _count: {
-          select: { documents: true },
+          select: { documents: true, activityLogs: true },
         },
       },
       orderBy: { createdAt: 'desc' },
     });
 
-    const formattedUsers = users.map((u) => ({
-      ...u,
-      username: u.username || (u.email ? u.email.split('@')[0] : 'user'),
-    }));
+    const now = new Date();
+
+    // Auto-backfill: Ensure every user has their own distinct, unique License Key & Expiry Date saved in DB
+    const formattedUsers = await Promise.all(
+      users.map(async (u) => {
+        let currentKey = u.licenseKey;
+        let currentExpiresAt = u.subscriptionExpiresAt;
+
+        // If user is missing license key or expiry, generate and save it permanently
+        if (!currentKey || !currentExpiresAt) {
+          currentKey = currentKey || generateLicenseKey();
+          if (!currentExpiresAt) {
+            const exp = new Date(u.createdAt || now);
+            exp.setFullYear(exp.getFullYear() + 1);
+            currentExpiresAt = exp;
+          }
+          try {
+            await prisma.user.update({
+              where: { id: u.id },
+              data: {
+                licenseKey: currentKey,
+                subscriptionExpiresAt: currentExpiresAt,
+                subscriptionPlan: u.subscriptionPlan || 'STARTER',
+                subscriptionStatus: u.isActive ? 'ACTIVE' : 'INACTIVE',
+              },
+            });
+          } catch (updateErr) {
+            console.error('Error auto-backfilling user license:', updateErr.message);
+          }
+        }
+
+        const expiresAt = currentExpiresAt ? new Date(currentExpiresAt) : null;
+        let daysRemaining = null;
+        let isExpired = false;
+
+        if (expiresAt) {
+          const diffMs = expiresAt.getTime() - now.getTime();
+          daysRemaining = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+          isExpired = daysRemaining <= 0;
+        }
+
+        return {
+          ...u,
+          username: u.username || (u.email ? u.email.split('@')[0] : 'user'),
+          licenseKey: currentKey,
+          subscriptionPlan: u.subscriptionPlan || 'STARTER',
+          subscriptionExpiresAt: currentExpiresAt,
+          subscriptionStatus: !u.isActive ? 'INACTIVE' : isExpired ? 'EXPIRED' : (u.subscriptionStatus || 'ACTIVE'),
+          daysRemaining,
+          isExpired,
+        };
+      })
+    );
 
     res.json({
       success: true,
       data: {
         users: formattedUsers,
         availableServices: SYSTEM_SERVICES,
+        availablePlans: SUBSCRIPTION_PLANS,
       },
     });
   } catch (error) {
@@ -60,11 +188,27 @@ export async function listUsers(req, res, next) {
 
 /**
  * POST /api/users
- * Create a new user with username, optional email, password and service allocation
+ * Create a new user with auto license key, subscription plan, duration and service allocation
  */
 export async function createUser(req, res, next) {
   try {
-    const { username, email, password, name, company, role, isActive, allowedServices, phone, department } = req.body;
+    const {
+      username,
+      email,
+      password,
+      name,
+      company,
+      role,
+      isActive,
+      allowedServices,
+      phone,
+      department,
+      subscriptionPlan,
+      subscriptionDuration,
+      customExpiresAt,
+      maxSeats,
+      notes,
+    } = req.body;
 
     if (!name || !name.trim()) {
       throw new AppError('Full name is required', 400);
@@ -94,11 +238,17 @@ export async function createUser(req, res, next) {
 
     const passwordHash = await hashPassword(password);
 
-    // Default services if empty: give general operations or full depending on role
+    // Default services if empty
     let services = Array.isArray(allowedServices) ? allowedServices : [];
     if (role === 'ADMIN' && services.length === 0) {
       services = SYSTEM_SERVICES.map((s) => s.id);
     }
+
+    const plan = subscriptionPlan || 'STARTER';
+    const duration = subscriptionDuration || '1_YEAR';
+    const startDate = new Date();
+    const expiresAt = calculateExpiryDate(duration, startDate, customExpiresAt);
+    const licenseKey = generateLicenseKey();
 
     const user = await prisma.user.create({
       data: {
@@ -112,6 +262,14 @@ export async function createUser(req, res, next) {
         allowedServices: services,
         phone: phone ? phone.trim() : null,
         department: department ? department.trim() : null,
+        licenseKey,
+        subscriptionPlan: plan,
+        subscriptionDuration: duration,
+        subscriptionStartDate: startDate,
+        subscriptionExpiresAt: expiresAt,
+        subscriptionStatus: 'ACTIVE',
+        maxSeats: maxSeats ? parseInt(maxSeats, 10) : 1,
+        notes: notes ? notes.trim() : null,
       },
       select: {
         id: true,
@@ -124,13 +282,31 @@ export async function createUser(req, res, next) {
         allowedServices: true,
         phone: true,
         department: true,
+        licenseKey: true,
+        subscriptionPlan: true,
+        subscriptionDuration: true,
+        subscriptionStartDate: true,
+        subscriptionExpiresAt: true,
+        subscriptionStatus: true,
+        maxSeats: true,
+        notes: true,
         createdAt: true,
       },
     });
 
+    // Record initial audit event
+    const adminName = req.user?.name || req.user?.username || 'Super Admin';
+    await logUserActivity(
+      user.id,
+      'USER_CREATED',
+      `Account created by ${adminName} on ${plan} plan with validity until ${expiresAt.toLocaleDateString('en-IN')}`,
+      adminName,
+      { plan, duration, licenseKey }
+    );
+
     res.status(201).json({
       success: true,
-      message: `User ${user.name} created successfully with Username: ${user.username}`,
+      message: `User ${user.name} created successfully with License Key: ${user.licenseKey}`,
       data: { user },
     });
   } catch (error) {
@@ -140,12 +316,28 @@ export async function createUser(req, res, next) {
 
 /**
  * PUT /api/users/:id
- * Update user details and allocated services
+ * Update user details, subscription plan, expiry, status, and allocated services
  */
 export async function updateUser(req, res, next) {
   try {
     const { id } = req.params;
-    const { username, email, name, company, role, isActive, allowedServices, phone, department } = req.body;
+    const {
+      username,
+      email,
+      name,
+      company,
+      role,
+      isActive,
+      allowedServices,
+      phone,
+      department,
+      subscriptionPlan,
+      subscriptionDuration,
+      subscriptionExpiresAt,
+      subscriptionStatus,
+      maxSeats,
+      notes,
+    } = req.body;
 
     const existing = await prisma.user.findUnique({ where: { id } });
     if (!existing) {
@@ -160,6 +352,12 @@ export async function updateUser(req, res, next) {
     if (allowedServices !== undefined) updateData.allowedServices = Array.isArray(allowedServices) ? allowedServices : [];
     if (phone !== undefined) updateData.phone = phone ? phone.trim() : null;
     if (department !== undefined) updateData.department = department ? department.trim() : null;
+    if (subscriptionPlan !== undefined) updateData.subscriptionPlan = subscriptionPlan;
+    if (subscriptionDuration !== undefined) updateData.subscriptionDuration = subscriptionDuration;
+    if (subscriptionExpiresAt !== undefined) updateData.subscriptionExpiresAt = new Date(subscriptionExpiresAt);
+    if (subscriptionStatus !== undefined) updateData.subscriptionStatus = subscriptionStatus;
+    if (maxSeats !== undefined) updateData.maxSeats = parseInt(maxSeats, 10) || 1;
+    if (notes !== undefined) updateData.notes = notes ? notes.trim() : null;
 
     if (username !== undefined && username.trim()) {
       const cleanUsername = username.toLowerCase().trim();
@@ -193,14 +391,152 @@ export async function updateUser(req, res, next) {
         allowedServices: true,
         phone: true,
         department: true,
+        licenseKey: true,
+        subscriptionPlan: true,
+        subscriptionDuration: true,
+        subscriptionStartDate: true,
+        subscriptionExpiresAt: true,
+        subscriptionStatus: true,
+        maxSeats: true,
+        notes: true,
         updatedAt: true,
       },
     });
+
+    const adminName = req.user?.name || req.user?.username || 'Super Admin';
+    await logUserActivity(
+      id,
+      'USER_UPDATED',
+      `Profile / Subscription details updated by ${adminName}`,
+      adminName,
+      { changes: Object.keys(updateData) }
+    );
 
     res.json({
       success: true,
       message: `User ${user.name} updated successfully`,
       data: { user },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * POST /api/users/:id/extend
+ * 1-Click Extend user subscription validity (+1 Month, +3 Months, +6 Months, +1 Year, or Custom)
+ */
+export async function extendSubscription(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { extensionType, customExpiresAt } = req.body; // '1_MONTH', '3_MONTHS', '6_MONTHS', '1_YEAR', 'CUSTOM'
+
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) throw new AppError('User not found', 404);
+
+    const baseDate = user.subscriptionExpiresAt && new Date(user.subscriptionExpiresAt) > new Date()
+      ? new Date(user.subscriptionExpiresAt)
+      : new Date();
+
+    const newExpiry = calculateExpiryDate(extensionType || '1_MONTH', baseDate, customExpiresAt);
+
+    const updated = await prisma.user.update({
+      where: { id },
+      data: {
+        subscriptionExpiresAt: newExpiry,
+        subscriptionStatus: 'ACTIVE',
+        isActive: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        subscriptionExpiresAt: true,
+        subscriptionStatus: true,
+        isActive: true,
+      },
+    });
+
+    const adminName = req.user?.name || req.user?.username || 'Super Admin';
+    await logUserActivity(
+      id,
+      'PLAN_EXTENDED',
+      `Subscription extended (${extensionType || 'Custom'}) to ${newExpiry.toLocaleDateString('en-IN')} by ${adminName}`,
+      adminName,
+      { extensionType, newExpiry }
+    );
+
+    res.json({
+      success: true,
+      message: `Subscription for ${user.name} extended until ${newExpiry.toLocaleDateString('en-IN')}!`,
+      data: { user: updated },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * POST /api/users/:id/regenerate-license
+ * Re-issue a new unique License Key
+ */
+export async function regenerateLicenseKey(req, res, next) {
+  try {
+    const { id } = req.params;
+
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) throw new AppError('User not found', 404);
+
+    const newLicenseKey = generateLicenseKey();
+
+    const updated = await prisma.user.update({
+      where: { id },
+      data: { licenseKey: newLicenseKey },
+      select: { id: true, name: true, licenseKey: true },
+    });
+
+    const adminName = req.user?.name || req.user?.username || 'Super Admin';
+    await logUserActivity(
+      id,
+      'LICENSE_REGENERATED',
+      `License Key re-issued: ${newLicenseKey} by ${adminName}`,
+      adminName,
+      { newLicenseKey }
+    );
+
+    res.json({
+      success: true,
+      message: `New License Key generated for ${user.name}: ${newLicenseKey}`,
+      data: { licenseKey: newLicenseKey },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * GET /api/users/:id/activity
+ * Retrieve chronological activity and audit history for a user
+ */
+export async function getUserActivityLogs(req, res, next) {
+  try {
+    const { id } = req.params;
+
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) throw new AppError('User not found', 404);
+
+    const logs = await prisma.userActivityLog.findMany({
+      where: { userId: id },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+
+    res.json({
+      success: true,
+      data: {
+        userId: id,
+        userName: user.name,
+        logs,
+      },
     });
   } catch (error) {
     next(error);
@@ -232,6 +568,14 @@ export async function updateUserPassword(req, res, next) {
       data: { passwordHash },
     });
 
+    const adminName = req.user?.name || req.user?.username || 'Super Admin';
+    await logUserActivity(
+      id,
+      'PASSWORD_RESET',
+      `Login password updated / reset by ${adminName}`,
+      adminName
+    );
+
     res.json({
       success: true,
       message: `Password updated successfully for ${existing.name}`,
@@ -243,7 +587,7 @@ export async function updateUserPassword(req, res, next) {
 
 /**
  * DELETE /api/users/:id
- * Delete a user
+ * Soft delete / deactivate user
  */
 export async function deleteUser(req, res, next) {
   try {
@@ -261,12 +605,20 @@ export async function deleteUser(req, res, next) {
     // Soft delete: Deactivate user account
     await prisma.user.update({
       where: { id },
-      data: { isActive: false },
+      data: { isActive: false, subscriptionStatus: 'INACTIVE' },
     });
+
+    const adminName = req.user?.name || req.user?.username || 'Super Admin';
+    await logUserActivity(
+      id,
+      'STATUS_CHANGED',
+      `Account suspended / deactivated by ${adminName}`,
+      adminName
+    );
 
     res.json({
       success: true,
-      message: `User ${existing.name} soft-deleted (deactivated) successfully`,
+      message: `User ${existing.name} deactivated successfully`,
     });
   } catch (error) {
     next(error);
