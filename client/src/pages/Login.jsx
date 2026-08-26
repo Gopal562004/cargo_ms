@@ -180,7 +180,7 @@ export default function Login() {
           </form>
 
           <div className="pt-2 text-[11px] font-mono text-slate-400 flex items-center justify-between border-t border-slate-800/30">
-            <span className="flex items-center gap-1"><ShieldCheck size={13} className="text-emerald-400" /> IATA Verified</span>
+            <span className="flex items-center gap-1"><ShieldCheck size={13} className="text-emerald-400" /> Secure Access</span>
             <span>256-BIT TLS</span>
           </div>
         </div>
