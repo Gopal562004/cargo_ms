@@ -59,12 +59,14 @@ import {
   DURATION_PRESETS,
 } from '../services/userService';
 import { useAuthStore } from '../store/authStore';
+import { useThemeStore } from '../store/themeStore';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import useBodyScrollLock from '../hooks/useBodyScrollLock';
 
 export default function MasterUsersPage() {
   const { user: currentUser } = useAuthStore();
+  const { theme } = useThemeStore();
 
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -186,6 +188,9 @@ export default function MasterUsersPage() {
 
   // Helper to calculate expiry date string for form preview
   const getCalculatedExpiryPreview = (duration, customDate, baseDate = new Date()) => {
+    if (duration === 'CANCELLED') {
+      return 'Immediate Expiration / Terminated';
+    }
     if (duration === 'CUSTOM' && customDate) {
       return new Date(customDate).toLocaleDateString('en-IN', { dateStyle: 'medium' });
     }
@@ -247,6 +252,7 @@ export default function MasterUsersPage() {
 
   const handleOpenEditModal = (u) => {
     setEditingUser(u);
+    const isCancelled = u.subscriptionStatus === 'CANCELLED' || u.subscriptionPlan === 'NO_ACTIVE_PLAN';
     setUserForm({
       name: u.name || '',
       username: u.username || '',
@@ -257,10 +263,10 @@ export default function MasterUsersPage() {
       phone: u.phone || '',
       role: u.role || 'OPERATOR',
       isActive: u.isActive !== undefined ? u.isActive : true,
-      subscriptionPlan: u.subscriptionPlan || 'STARTER',
-      subscriptionDuration: u.subscriptionDuration || '1_YEAR',
+      subscriptionPlan: isCancelled ? 'STARTER' : (u.subscriptionPlan || 'STARTER'),
+      subscriptionDuration: isCancelled ? '1_MONTH' : (u.subscriptionDuration || '1_YEAR'),
       customExpiresAt: u.subscriptionExpiresAt ? new Date(u.subscriptionExpiresAt).toISOString().split('T')[0] : '',
-      subscriptionStatus: u.subscriptionStatus || 'ACTIVE',
+      subscriptionStatus: 'ACTIVE',
       maxSeats: u.maxSeats || 1,
       notes: u.notes || '',
       allowedServices: Array.isArray(u.allowedServices) ? u.allowedServices : [],
@@ -333,6 +339,26 @@ Please keep your credentials secure.`;
           loadUsersData();
         } catch (err) {
           showNotification(err.response?.data?.message || err.message || 'Error extending plan', true);
+        }
+      },
+    });
+  };
+
+  const handleQuickCancelSubscription = (u) => {
+    promptConfirm({
+      title: `Cancel Subscription: ${u.name}`,
+      message: `Are you sure you want to cancel the subscription for ${u.name}? Their plan will be immediately terminated and marked as Expired.`,
+      confirmText: 'Yes, Cancel Subscription',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await updateUser(u.id, {
+            subscriptionDuration: 'CANCELLED',
+          });
+          showNotification(`Subscription for ${u.name} has been cancelled.`);
+          loadUsersData();
+        } catch (err) {
+          showNotification(err.response?.data?.message || err.message || 'Error cancelling plan', true);
         }
       },
     });
@@ -1158,6 +1184,20 @@ Please keep your credentials secure.`;
                     <div className="text-[10px] text-slate-400">Adds 365 days</div>
                   </button>
                 </div>
+
+                <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                  <span className="text-[11px] text-slate-400">Terminate plan before natural expiration?</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsInfoModalOpen(false);
+                      handleQuickCancelSubscription(infoTargetUser);
+                    }}
+                    className="px-2.5 py-1 text-xs rounded font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500 hover:text-white transition-colors cursor-pointer"
+                  >
+                    🚫 Cancel & Expire Plan
+                  </button>
+                </div>
               </div>
 
               {/* 3. Company, Contact & Quotas */}
@@ -1302,20 +1342,32 @@ Please keep your credentials secure.`;
           onClick={() => setIsUserModalOpen(false)}
         >
           <div
-            className="bg-slate-900 border border-slate-800 rounded-md max-w-2xl w-full p-5 sm:p-6 shadow-2xl space-y-5 my-auto max-h-[92vh] flex flex-col"
+            className={`rounded-lg max-w-2xl w-full p-5 sm:p-6 shadow-2xl space-y-5 my-auto max-h-[92vh] flex flex-col border ${
+              theme === 'light'
+                ? 'bg-white border-slate-200 text-slate-900'
+                : 'bg-slate-900 border-slate-800 text-slate-100'
+            }`}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3 shrink-0">
+            <div className={`flex items-center justify-between border-b pb-3 shrink-0 ${
+              theme === 'light' ? 'border-slate-200' : 'border-slate-800'
+            }`}>
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                <div className={`w-8 h-8 rounded flex items-center justify-center border ${
+                  theme === 'light'
+                    ? 'bg-indigo-50 border-indigo-200 text-indigo-600'
+                    : 'bg-indigo-600/20 border-indigo-500/30 text-indigo-400'
+                }`}>
                   <UserPlus size={16} />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-slate-100">
+                  <h2 className={`text-base font-bold tracking-tight ${
+                    theme === 'light' ? 'text-slate-900' : 'text-slate-100'
+                  }`}>
                     {editingUser ? `Edit User: ${editingUser.name}` : 'Create New User & Issue License'}
                   </h2>
-                  <p className="text-[11px] text-slate-400">
+                  <p className={`text-[11px] ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>
                     Assign subscription plan, duration, modular permissions, and credentials.
                   </p>
                 </div>
@@ -1323,7 +1375,9 @@ Please keep your credentials secure.`;
               <button
                 type="button"
                 onClick={() => setIsUserModalOpen(false)}
-                className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800 cursor-pointer"
+                className={`p-1.5 rounded transition-colors cursor-pointer ${
+                  theme === 'light' ? 'text-slate-400 hover:text-slate-700 hover:bg-slate-100' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
               >
                 <X size={16} />
               </button>
@@ -1332,79 +1386,107 @@ Please keep your credentials secure.`;
             {/* Scrollable Form Content */}
             <form onSubmit={handleSaveUser} className="flex-1 overflow-y-auto space-y-4 pr-1 text-xs">
               {/* 1. Profile & Credentials */}
-              <div className="p-3.5 bg-slate-950/80 border border-slate-800 rounded space-y-3">
-                <div className="font-bold text-slate-200 text-xs flex items-center gap-1.5 border-b border-slate-800 pb-1.5">
-                  <User size={13} className="text-indigo-400" />
+              <div className={`p-3.5 rounded-lg border space-y-3 ${
+                theme === 'light' ? 'bg-slate-50/70 border-slate-200 shadow-xs' : 'bg-slate-950/80 border-slate-800'
+              }`}>
+                <div className={`font-bold text-xs flex items-center gap-1.5 border-b pb-1.5 ${
+                  theme === 'light' ? 'text-slate-800 border-slate-200' : 'text-slate-200 border-slate-800'
+                }`}>
+                  <User size={13} className={theme === 'light' ? 'text-indigo-600' : 'text-indigo-400'} />
                   <span>1. User Profile & Login Credentials</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">Full Name *</label>
+                    <label className={`text-[11px] font-semibold block mb-1 ${theme === 'light' ? 'text-slate-700' : 'text-slate-300'}`}>Full Name *</label>
                     <input
                       type="text"
                       placeholder="e.g. Mayur Kadam"
                       value={userForm.name}
                       onChange={(e) => setUserForm((prev) => ({ ...prev, name: e.target.value }))}
                       required
-                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
+                      className={`w-full px-3 py-1.5 rounded text-xs transition-colors focus:outline-none ${
+                        theme === 'light'
+                          ? 'bg-white border border-slate-300 text-slate-900 focus:border-indigo-600 shadow-xs'
+                          : 'bg-slate-900 border border-slate-800 text-slate-100 focus:border-indigo-500'
+                      }`}
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">Login Username *</label>
+                    <label className={`text-[11px] font-semibold block mb-1 ${theme === 'light' ? 'text-slate-700' : 'text-slate-300'}`}>Login Username *</label>
                     <input
                       type="text"
                       placeholder="e.g. mayur52004 or accounts@manifest.com"
                       value={userForm.username}
                       onChange={(e) => setUserForm((prev) => ({ ...prev, username: e.target.value }))}
                       required
-                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
+                      className={`w-full px-3 py-1.5 rounded text-xs font-mono transition-colors focus:outline-none ${
+                        theme === 'light'
+                          ? 'bg-white border border-slate-300 text-slate-900 focus:border-indigo-600 shadow-xs'
+                          : 'bg-slate-900 border border-slate-800 text-slate-100 focus:border-indigo-500'
+                      }`}
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">Email Address (Optional)</label>
+                    <label className={`text-[11px] font-semibold block mb-1 ${theme === 'light' ? 'text-slate-700' : 'text-slate-300'}`}>Email Address (Optional)</label>
                     <input
                       type="email"
                       placeholder="e.g. mayur@dgrlogistics.com"
                       value={userForm.email}
                       onChange={(e) => setUserForm((prev) => ({ ...prev, email: e.target.value }))}
-                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
+                      className={`w-full px-3 py-1.5 rounded text-xs font-mono transition-colors focus:outline-none ${
+                        theme === 'light'
+                          ? 'bg-white border border-slate-300 text-slate-900 focus:border-indigo-600 shadow-xs'
+                          : 'bg-slate-900 border border-slate-800 text-slate-100 focus:border-indigo-500'
+                      }`}
                     />
                   </div>
 
                   {!editingUser && (
                     <div>
-                      <label className="text-[11px] font-semibold text-slate-300 block mb-1">Initial Password *</label>
+                      <label className={`text-[11px] font-semibold block mb-1 ${theme === 'light' ? 'text-slate-700' : 'text-slate-300'}`}>Initial Password *</label>
                       <input
                         type="password"
                         placeholder="•••••••• (min 6 chars)"
                         value={userForm.password}
                         onChange={(e) => setUserForm((prev) => ({ ...prev, password: e.target.value }))}
                         required
-                        className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500"
+                        className={`w-full px-3 py-1.5 rounded text-xs font-mono transition-colors focus:outline-none ${
+                          theme === 'light'
+                            ? 'bg-white border border-slate-300 text-slate-900 focus:border-indigo-600 shadow-xs'
+                            : 'bg-slate-900 border border-slate-800 text-slate-100 focus:border-indigo-500'
+                        }`}
                       />
                     </div>
                   )}
 
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">Company / Agency Name</label>
+                    <label className={`text-[11px] font-semibold block mb-1 ${theme === 'light' ? 'text-slate-700' : 'text-slate-300'}`}>Company / Agency Name</label>
                     <input
                       type="text"
                       placeholder="e.g. DGR GLOBAL LOGISTICS"
                       value={userForm.company}
                       onChange={(e) => setUserForm((prev) => ({ ...prev, company: e.target.value }))}
-                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
+                      className={`w-full px-3 py-1.5 rounded text-xs transition-colors focus:outline-none ${
+                        theme === 'light'
+                          ? 'bg-white border border-slate-300 text-slate-900 focus:border-indigo-600 shadow-xs'
+                          : 'bg-slate-900 border border-slate-800 text-slate-100 focus:border-indigo-500'
+                      }`}
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">System Role</label>
+                    <label className={`text-[11px] font-semibold block mb-1 ${theme === 'light' ? 'text-slate-700' : 'text-slate-300'}`}>System Role</label>
                     <select
                       value={userForm.role}
                       onChange={(e) => setUserForm((prev) => ({ ...prev, role: e.target.value }))}
-                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
+                      className={`w-full px-3 py-1.5 rounded text-xs transition-colors focus:outline-none ${
+                        theme === 'light'
+                          ? 'bg-white border border-slate-300 text-slate-900 focus:border-indigo-600 shadow-xs'
+                          : 'bg-slate-900 border border-slate-800 text-slate-100 focus:border-indigo-500'
+                      }`}
                     >
                       <option value="OPERATOR">OPERATOR (Standard User)</option>
                       <option value="ADMIN">ADMIN (Full Master Control)</option>
@@ -1415,42 +1497,114 @@ Please keep your credentials secure.`;
               </div>
 
               {/* 2. Subscription Plan & Validity Period */}
-              <div className="p-3.5 bg-slate-950/80 border border-slate-800 rounded space-y-3">
-                <div className="font-bold text-slate-200 text-xs flex items-center justify-between border-b border-slate-800 pb-1.5">
+              <div className={`p-3.5 rounded-lg border space-y-3 ${
+                theme === 'light' ? 'bg-slate-50/70 border-slate-200 shadow-xs' : 'bg-slate-950/80 border-slate-800'
+              }`}>
+                <div className={`font-bold text-xs flex items-center justify-between border-b pb-1.5 ${
+                  theme === 'light' ? 'text-slate-800 border-slate-200' : 'text-slate-200 border-slate-800'
+                }`}>
                   <div className="flex items-center gap-1.5">
-                    <CreditCard size={13} className="text-emerald-400" />
+                    <CreditCard size={13} className={theme === 'light' ? 'text-emerald-600' : 'text-emerald-400'} />
                     <span>2. Subscription Plan & Validity Period</span>
                   </div>
-                  <span className="text-[10px] font-mono text-emerald-400">
+                  <span className={`text-[10px] font-mono font-semibold ${theme === 'light' ? 'text-emerald-700' : 'text-emerald-400'}`}>
                     Expiry Preview: {getCalculatedExpiryPreview(userForm.subscriptionDuration, userForm.customExpiresAt)}
                   </span>
                 </div>
 
                 {/* Show Current Plan Info When Editing */}
                 {editingUser && (
-                  <div className="p-2.5 rounded bg-indigo-600/10 border border-indigo-500/30 text-indigo-300 flex items-center justify-between">
+                  <div className={`p-2.5 rounded-lg border flex items-center justify-between ${
+                    editingUser.subscriptionStatus === 'CANCELLED' || editingUser.subscriptionPlan === 'NO_ACTIVE_PLAN'
+                      ? theme === 'light' ? 'bg-rose-50 border-rose-200 text-rose-900' : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                      : theme === 'light'
+                      ? 'bg-indigo-50 border-indigo-200 text-indigo-900'
+                      : 'bg-indigo-600/10 border-indigo-500/30 text-indigo-300'
+                  }`}>
                     <div className="space-y-0.5">
-                      <span className="text-[10px] text-slate-400 block uppercase font-mono">Current Active Plan</span>
-                      <div className="font-bold text-xs text-white">
-                        {editingUser.subscriptionPlan || 'STARTER'} •{' '}
-                        {editingUser.subscriptionExpiresAt
-                          ? `Expires: ${new Date(editingUser.subscriptionExpiresAt).toLocaleDateString('en-IN')}`
-                          : '1 Year'}
+                      <span className={`text-[10px] block uppercase font-mono ${
+                        editingUser.subscriptionStatus === 'CANCELLED' || editingUser.subscriptionPlan === 'NO_ACTIVE_PLAN'
+                          ? 'text-rose-600 font-semibold'
+                          : theme === 'light' ? 'text-indigo-600 font-semibold' : 'text-slate-400'
+                      }`}>
+                        Current Plan Status
+                      </span>
+                      <div className={`font-bold text-xs ${
+                        editingUser.subscriptionStatus === 'CANCELLED' || editingUser.subscriptionPlan === 'NO_ACTIVE_PLAN'
+                          ? 'text-rose-600'
+                          : theme === 'light' ? 'text-slate-900' : 'text-white'
+                      }`}>
+                        {editingUser.subscriptionStatus === 'CANCELLED' || editingUser.subscriptionPlan === 'NO_ACTIVE_PLAN'
+                          ? 'No Active Plan (Cancelled / Expired)'
+                          : `${editingUser.subscriptionPlan || 'STARTER'} • ${
+                              editingUser.subscriptionExpiresAt
+                                ? `Expires: ${new Date(editingUser.subscriptionExpiresAt).toLocaleDateString('en-IN')}`
+                                : '1 Year'
+                            }`}
                       </div>
                     </div>
-                    <span className="text-[10px] font-mono font-bold text-emerald-400">
-                      {editingUser.daysRemaining !== null ? `${editingUser.daysRemaining} days remaining` : 'Active'}
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] font-mono font-bold ${
+                        userForm.subscriptionDuration === 'CANCELLED'
+                          ? 'text-rose-600'
+                          : editingUser.subscriptionStatus === 'CANCELLED' || editingUser.subscriptionPlan === 'NO_ACTIVE_PLAN'
+                          ? 'text-rose-500'
+                          : editingUser.isExpired
+                          ? 'text-rose-500'
+                          : theme === 'light' ? 'text-emerald-700' : 'text-emerald-400'
+                      }`}>
+                        {userForm.subscriptionDuration === 'CANCELLED'
+                          ? 'Will Cancel & Expire'
+                          : editingUser.subscriptionStatus === 'CANCELLED' || editingUser.subscriptionPlan === 'NO_ACTIVE_PLAN'
+                          ? 'Cancelled'
+                          : editingUser.daysRemaining !== null ? `${editingUser.daysRemaining} days remaining` : 'Active'}
+                      </span>
+                      {userForm.subscriptionDuration !== 'CANCELLED' && editingUser.subscriptionStatus !== 'CANCELLED' && editingUser.subscriptionPlan !== 'NO_ACTIVE_PLAN' && (
+                        <button
+                          type="button"
+                          onClick={() => setUserForm((prev) => ({ ...prev, subscriptionDuration: 'CANCELLED' }))}
+                          className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/15 text-rose-600 border border-rose-500/30 hover:bg-rose-500 hover:text-white transition-colors cursor-pointer"
+                          title="Cancel / Terminate subscription"
+                        >
+                          Cancel Plan
+                        </button>
+                      )}
+                      {userForm.subscriptionDuration === 'CANCELLED' && (
+                        <button
+                          type="button"
+                          onClick={() => setUserForm((prev) => ({ ...prev, subscriptionDuration: '1_MONTH' }))}
+                          className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/15 text-indigo-600 border border-indigo-500/30 hover:bg-indigo-500 hover:text-white transition-colors cursor-pointer"
+                        >
+                          Revert Cancel
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Cancel Warning Banner */}
+                {userForm.subscriptionDuration === 'CANCELLED' && (
+                  <div className={`p-2.5 rounded border text-xs flex items-center gap-2 animate-fade-in ${
+                    theme === 'light' ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-rose-500/15 border-rose-500/30 text-rose-300'
+                  }`}>
+                    <AlertTriangle size={15} className="shrink-0 text-rose-600" />
+                    <span>
+                      <strong>Plan Cancellation:</strong> Saving changes will immediately cancel and expire this user's subscription.
                     </span>
                   </div>
                 )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">Subscription Plan</label>
+                    <label className={`text-[11px] font-semibold block mb-1 ${theme === 'light' ? 'text-slate-700' : 'text-slate-300'}`}>Subscription Plan</label>
                     <select
                       value={userForm.subscriptionPlan}
                       onChange={(e) => setUserForm((prev) => ({ ...prev, subscriptionPlan: e.target.value }))}
-                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 font-bold focus:outline-none focus:border-indigo-500"
+                      className={`w-full px-3 py-1.5 rounded text-xs font-bold transition-colors focus:outline-none ${
+                        theme === 'light'
+                          ? 'bg-white border border-slate-300 text-slate-900 focus:border-indigo-600 shadow-xs'
+                          : 'bg-slate-900 border border-slate-800 text-slate-100 focus:border-indigo-500'
+                      }`}
                     >
                       <option value="FREE_TRIAL">Free Trial (7 Days)</option>
                       <option value="STARTER">Starter Plan</option>
@@ -1461,11 +1615,15 @@ Please keep your credentials secure.`;
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">Duration Preset</label>
+                    <label className={`text-[11px] font-semibold block mb-1 ${theme === 'light' ? 'text-slate-700' : 'text-slate-300'}`}>Duration Preset</label>
                     <select
                       value={userForm.subscriptionDuration}
                       onChange={(e) => setUserForm((prev) => ({ ...prev, subscriptionDuration: e.target.value }))}
-                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
+                      className={`w-full px-3 py-1.5 rounded text-xs transition-colors focus:outline-none ${
+                        theme === 'light'
+                          ? 'bg-white border border-slate-300 text-slate-900 focus:border-indigo-600 shadow-xs'
+                          : 'bg-slate-900 border border-slate-800 text-slate-100 focus:border-indigo-500'
+                      }`}
                     >
                       <option value="7_DAYS">7 Days Trial</option>
                       <option value="1_MONTH">1 Month</option>
@@ -1473,48 +1631,63 @@ Please keep your credentials secure.`;
                       <option value="6_MONTHS">6 Months</option>
                       <option value="1_YEAR">1 Full Year</option>
                       <option value="CUSTOM">Custom Date...</option>
+                      <option value="CANCELLED" className="text-rose-600 font-bold">🚫 Cancel / Terminate Plan Now</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-300 block mb-1">Max Operator Seats</label>
+                    <label className={`text-[11px] font-semibold block mb-1 ${theme === 'light' ? 'text-slate-700' : 'text-slate-300'}`}>Max Operator Seats</label>
                     <input
                       type="number"
                       min="1"
                       max="100"
                       value={userForm.maxSeats}
                       onChange={(e) => setUserForm((prev) => ({ ...prev, maxSeats: e.target.value }))}
-                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100"
+                      className={`w-full px-3 py-1.5 rounded text-xs transition-colors focus:outline-none ${
+                        theme === 'light'
+                          ? 'bg-white border border-slate-300 text-slate-900 focus:border-indigo-600 shadow-xs'
+                          : 'bg-slate-900 border border-slate-800 text-slate-100'
+                      }`}
                     />
                   </div>
                 </div>
 
                 {userForm.subscriptionDuration === 'CUSTOM' && (
-                  <div className="pt-2 border-t border-slate-800 animate-fade-in">
-                    <label className="text-[10px] text-slate-400 block mb-1">Set Specific Expiry Date</label>
+                  <div className={`pt-2 border-t animate-fade-in ${theme === 'light' ? 'border-slate-200' : 'border-slate-800'}`}>
+                    <label className={`text-[10px] block mb-1 ${theme === 'light' ? 'text-slate-600' : 'text-slate-400'}`}>Set Specific Expiry Date</label>
                     <input
                       type="date"
                       value={userForm.customExpiresAt}
                       onChange={(e) => setUserForm((prev) => ({ ...prev, customExpiresAt: e.target.value }))}
-                      className="w-full px-3 py-1.5 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100"
+                      className={`w-full px-3 py-1.5 rounded text-xs transition-colors focus:outline-none ${
+                        theme === 'light'
+                          ? 'bg-white border border-slate-300 text-slate-900'
+                          : 'bg-slate-900 border border-slate-800 text-slate-100'
+                      }`}
                     />
                   </div>
                 )}
               </div>
 
               {/* 3. Service Allocation Matrix */}
-              <div className="p-3.5 bg-slate-950/80 border border-slate-800 rounded space-y-3">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
-                  <div className="font-bold text-slate-200 text-xs flex items-center gap-1.5">
-                    <Sliders size={13} className="text-indigo-400" />
+              <div className={`p-3.5 rounded-lg border space-y-3 ${
+                theme === 'light' ? 'bg-slate-50/70 border-slate-200 shadow-xs' : 'bg-slate-950/80 border-slate-800'
+              }`}>
+                <div className={`flex items-center justify-between border-b pb-1.5 ${
+                  theme === 'light' ? 'border-slate-200' : 'border-slate-800'
+                }`}>
+                  <div className={`font-bold text-xs flex items-center gap-1.5 ${
+                    theme === 'light' ? 'text-slate-800' : 'text-slate-200'
+                  }`}>
+                    <Sliders size={13} className={theme === 'light' ? 'text-indigo-600' : 'text-indigo-400'} />
                     <span>3. Modular Service Permissions ({userForm.allowedServices.length} active)</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-[10px]">
-                    <button type="button" onClick={() => applyPreset('ALL')} className="text-indigo-400 hover:underline cursor-pointer">All</button>
-                    <span className="text-slate-600">•</span>
-                    <button type="button" onClick={() => applyPreset('BILLING_ONLY')} className="text-slate-400 hover:underline cursor-pointer">Billing</button>
-                    <span className="text-slate-600">•</span>
-                    <button type="button" onClick={() => applyPreset('CLEAR')} className="text-rose-400 hover:underline cursor-pointer">Clear</button>
+                    <button type="button" onClick={() => applyPreset('ALL')} className="text-indigo-600 dark:text-indigo-400 font-medium hover:underline cursor-pointer">All</button>
+                    <span className="text-slate-400">•</span>
+                    <button type="button" onClick={() => applyPreset('BILLING_ONLY')} className="text-slate-600 dark:text-slate-400 font-medium hover:underline cursor-pointer">Billing</button>
+                    <span className="text-slate-400">•</span>
+                    <button type="button" onClick={() => applyPreset('CLEAR')} className="text-rose-600 dark:text-rose-400 font-medium hover:underline cursor-pointer">Clear</button>
                   </div>
                 </div>
 
@@ -1524,9 +1697,13 @@ Please keep your credentials secure.`;
                     return (
                       <label
                         key={srv.id}
-                        className={`p-2.5 rounded border cursor-pointer select-none transition-all flex items-start gap-2.5 ${
+                        className={`p-2.5 rounded-lg border cursor-pointer select-none transition-all flex items-start gap-2.5 ${
                           checked
-                            ? 'bg-indigo-600/10 border-indigo-500/50 text-slate-100'
+                            ? theme === 'light'
+                              ? 'bg-indigo-50/80 border-indigo-300 text-slate-900 shadow-xs'
+                              : 'bg-indigo-600/10 border-indigo-500/50 text-slate-100'
+                            : theme === 'light'
+                            ? 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
                             : 'bg-slate-900/60 border-slate-800/80 text-slate-400 hover:border-slate-700'
                         }`}
                       >
@@ -1534,11 +1711,17 @@ Please keep your credentials secure.`;
                           type="checkbox"
                           checked={checked}
                           onChange={() => toggleService(srv.id)}
-                          className="mt-0.5 rounded border-slate-700 text-indigo-600 focus:ring-0 cursor-pointer"
+                          className="mt-0.5 rounded border-slate-400 text-indigo-600 focus:ring-0 cursor-pointer"
                         />
                         <div className="space-y-0.5">
-                          <span className="font-semibold text-xs text-slate-200 block leading-tight">{srv.label}</span>
-                          <span className="text-[10px] text-slate-400 block leading-snug">{srv.description}</span>
+                          <span className={`font-semibold text-xs block leading-tight ${
+                            checked
+                              ? theme === 'light' ? 'text-indigo-950' : 'text-slate-100'
+                              : theme === 'light' ? 'text-slate-700' : 'text-slate-300'
+                          }`}>{srv.label}</span>
+                          <span className={`text-[10px] block leading-snug ${
+                            theme === 'light' ? 'text-slate-500' : 'text-slate-400'
+                          }`}>{srv.description}</span>
                         </div>
                       </label>
                     );
@@ -1548,7 +1731,7 @@ Please keep your credentials secure.`;
 
               {/* Admin Notes */}
               <div>
-                <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                <label className={`text-[11px] font-semibold block mb-1 ${theme === 'light' ? 'text-slate-700' : 'text-slate-300'}`}>
                   Admin Contract Notes / Payment Reference (Optional)
                 </label>
                 <textarea
@@ -1556,17 +1739,25 @@ Please keep your credentials secure.`;
                   placeholder="e.g. Paid via Bank Wire Ref #99201. Annual contract for 2 billing operators."
                   value={userForm.notes}
                   onChange={(e) => setUserForm((prev) => ({ ...prev, notes: e.target.value }))}
-                  className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                  className={`w-full p-2.5 rounded text-xs transition-colors focus:outline-none ${
+                    theme === 'light'
+                      ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-400 focus:border-indigo-600 shadow-xs'
+                      : 'bg-slate-950 border border-slate-800 text-slate-100 placeholder-slate-500 focus:border-indigo-500'
+                  }`}
                 />
               </div>
 
               {/* Modal Footer */}
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+              <div className={`flex items-center justify-end gap-2 pt-3 border-t ${theme === 'light' ? 'border-slate-200' : 'border-slate-800'}`}>
                 <Button
                   variant="secondary"
                   type="button"
                   onClick={() => setIsUserModalOpen(false)}
-                  className="rounded text-xs px-3.5 py-1.5"
+                  className={`rounded text-xs px-3.5 py-1.5 ${
+                    theme === 'light'
+                      ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+                      : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                  }`}
                 >
                   Cancel
                 </Button>
@@ -1590,27 +1781,44 @@ Please keep your credentials secure.`;
           onClick={() => setIsActivityModalOpen(false)}
         >
           <div
-            className="bg-slate-900 border border-slate-800 rounded-md max-w-xl w-full p-5 shadow-2xl space-y-4 my-auto max-h-[85vh] flex flex-col"
+            className={`rounded-lg max-w-xl w-full p-5 shadow-2xl space-y-4 my-auto max-h-[85vh] flex flex-col border ${
+              theme === 'light'
+                ? 'bg-white border-slate-200 text-slate-900'
+                : 'bg-slate-900 border-slate-800 text-slate-100'
+            }`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3 shrink-0">
+            <div className={`flex items-center justify-between border-b pb-3 shrink-0 ${
+              theme === 'light' ? 'border-slate-200' : 'border-slate-800'
+            }`}>
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded bg-cyan-600/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                <div className={`w-8 h-8 rounded flex items-center justify-center border ${
+                  theme === 'light'
+                    ? 'bg-indigo-50 border-indigo-200 text-indigo-600'
+                    : 'bg-indigo-600/20 border-indigo-500/30 text-indigo-400'
+                }`}>
                   <Activity size={16} />
                 </div>
                 <div>
-                  <h2 className="text-sm font-bold text-slate-100">
+                  <h2 className={`text-sm font-bold tracking-tight ${
+                    theme === 'light' ? 'text-slate-900' : 'text-slate-100'
+                  }`}>
                     Activity & Audit Trail: {activityTargetUser.name}
                   </h2>
-                  <p className="text-[11px] text-slate-400 font-mono">
-                    License: {activityTargetUser.licenseKey || 'N/A'} • Plan: {activityTargetUser.subscriptionPlan || 'STARTER'}
+                  <p className={`text-[11px] font-mono ${
+                    theme === 'light' ? 'text-slate-500' : 'text-slate-400'
+                  }`}>
+                    License: <span className="font-semibold">{activityTargetUser.licenseKey || 'N/A'}</span> • Plan:{' '}
+                    <span className="font-semibold text-indigo-500">{activityTargetUser.subscriptionPlan || 'STARTER'}</span>
                   </p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setIsActivityModalOpen(false)}
-                className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800 cursor-pointer"
+                className={`p-1.5 rounded transition-colors cursor-pointer ${
+                  theme === 'light' ? 'text-slate-400 hover:text-slate-700 hover:bg-slate-100' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
               >
                 <X size={16} />
               </button>
@@ -1618,45 +1826,119 @@ Please keep your credentials secure.`;
 
             <div className="flex-1 overflow-y-auto space-y-2.5 pr-1 text-xs">
               {loadingActivity ? (
-                <div className="py-8 text-center text-slate-400 font-mono">
-                  <RotateCw size={16} className="animate-spin inline mr-2 text-cyan-400" />
+                <div className={`py-8 text-center font-mono ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>
+                  <RotateCw size={16} className={`animate-spin inline mr-2 ${theme === 'light' ? 'text-indigo-600' : 'text-indigo-400'}`} />
                   Loading activity timeline...
                 </div>
               ) : activityLogs.length === 0 ? (
-                <div className="p-4 bg-slate-950/70 border border-slate-800 rounded text-center text-slate-400">
+                <div className={`p-6 rounded-lg text-center border ${
+                  theme === 'light'
+                    ? 'bg-slate-50 border-slate-200 text-slate-600'
+                    : 'bg-slate-950/70 border-slate-800 text-slate-400'
+                }`}>
                   No activity events recorded yet. Account initialized.
                 </div>
               ) : (
-                <div className="space-y-2 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-800">
-                  {activityLogs.map((log) => (
-                    <div key={log.id} className="relative pl-7 py-0.5">
-                      <div className="absolute left-1.5 top-2.5 w-3 h-3 rounded-full bg-cyan-500 border-2 border-slate-900" />
-                      <div className="p-2.5 bg-slate-950/80 border border-slate-800/90 rounded space-y-1 hover:border-slate-700 transition-colors">
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-[10px] uppercase font-mono px-1.5 py-0.2 rounded bg-slate-800 text-cyan-300">
-                            {log.action}
-                          </span>
-                          <span className="text-[10px] text-slate-400 font-mono">
-                            {new Date(log.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
-                          </span>
+                <div className={`space-y-2.5 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 ${
+                  theme === 'light' ? 'before:bg-slate-200' : 'before:bg-slate-800'
+                }`}>
+                  {activityLogs.map((log) => {
+                    const isLight = theme === 'light';
+                    let badgeClass = isLight ? 'bg-slate-100 text-slate-700 border-slate-200' : 'bg-slate-800 text-slate-300 border-slate-700';
+                    let dotClass = 'bg-slate-400';
+                    let label = log.action;
+
+                    switch (log.action) {
+                      case 'LOGIN':
+                        badgeClass = isLight ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30';
+                        dotClass = 'bg-emerald-500';
+                        label = 'Login Session';
+                        break;
+                      case 'LOGIN_FAILED':
+                        badgeClass = isLight ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-rose-500/15 text-rose-300 border-rose-500/30';
+                        dotClass = 'bg-rose-500';
+                        label = 'Login Failed';
+                        break;
+                      case 'PLAN_EXTENDED':
+                      case 'SUBSCRIPTION_EXTENDED':
+                        badgeClass = isLight ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-purple-500/20 text-purple-300 border-purple-500/40';
+                        dotClass = 'bg-purple-500';
+                        label = 'Plan Extended';
+                        break;
+                      case 'LICENSE_REGENERATED':
+                        badgeClass = isLight ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+                        dotClass = 'bg-amber-500';
+                        label = 'Key Regenerated';
+                        break;
+                      case 'PASSWORD_RESET':
+                      case 'PASSWORD_CHANGED':
+                        badgeClass = isLight ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-blue-500/20 text-blue-300 border-blue-500/40';
+                        dotClass = 'bg-blue-500';
+                        label = 'Password Changed';
+                        break;
+                      case 'USER_CREATED':
+                        badgeClass = isLight ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40';
+                        dotClass = 'bg-indigo-500';
+                        label = 'User Created';
+                        break;
+                      case 'USER_UPDATED':
+                        badgeClass = isLight ? 'bg-cyan-50 text-cyan-700 border-cyan-200' : 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40';
+                        dotClass = 'bg-cyan-500';
+                        label = 'User Updated';
+                        break;
+                      default:
+                        break;
+                    }
+
+                    return (
+                      <div key={log.id} className="relative pl-7 py-0.5">
+                        <div className={`absolute left-1.5 top-3 w-3 h-3 rounded-full border-2 ${dotClass} ${
+                          theme === 'light' ? 'border-white' : 'border-slate-900'
+                        }`} />
+                        <div className={`p-3 rounded-lg border space-y-1.5 transition-all ${
+                          theme === 'light'
+                            ? 'bg-slate-50/70 border-slate-200 shadow-xs hover:border-indigo-300 hover:bg-indigo-50/20'
+                            : 'bg-slate-950/80 border-slate-800/90 hover:border-slate-700'
+                        }`}>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className={`font-bold text-[10px] font-mono px-2 py-0.5 rounded border tracking-wide uppercase ${badgeClass}`}>
+                              {label}
+                            </span>
+                            <span className={`text-[10px] font-mono ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>
+                              {new Date(log.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                            </span>
+                          </div>
+                          <p className={`text-xs leading-relaxed ${theme === 'light' ? 'text-slate-800' : 'text-slate-200'}`}>
+                            {log.description}
+                          </p>
+                          {log.performedBy && (
+                            <div className={`text-[10px] font-mono flex items-center gap-1 ${
+                              theme === 'light' ? 'text-slate-500' : 'text-slate-400'
+                            }`}>
+                              <span>By:</span>
+                              <span className={`font-semibold ${theme === 'light' ? 'text-slate-700' : 'text-slate-300'}`}>
+                                {log.performedBy}
+                              </span>
+                            </div>
+                          )}
                         </div>
-                        <p className="text-slate-200 text-xs leading-relaxed">{log.description}</p>
-                        {log.performedBy && (
-                          <div className="text-[9px] text-slate-400 font-mono">By: {log.performedBy}</div>
-                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
 
-            <div className="pt-2 border-t border-slate-800 flex justify-end shrink-0">
+            <div className={`pt-3 border-t flex justify-end shrink-0 ${theme === 'light' ? 'border-slate-200' : 'border-slate-800'}`}>
               <Button
                 variant="secondary"
                 size="sm"
                 onClick={() => setIsActivityModalOpen(false)}
-                className="rounded text-xs"
+                className={`rounded text-xs ${
+                  theme === 'light'
+                    ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+                    : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                }`}
               >
                 Close
               </Button>

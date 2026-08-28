@@ -9,7 +9,7 @@ import { useThemeStore } from './store/themeStore';
 
 function App() {
   const checkAuth = useAuthStore((s) => s.checkAuth);
-  const initTheme = useThemeStore((s) => s.initTheme);
+  const { theme, initTheme } = useThemeStore();
 
   useEffect(() => {
     initTheme();
@@ -21,7 +21,7 @@ function App() {
       <RouterProvider router={router} />
       <ToastContainer
         position="top-right"
-        autoClose={4000}
+        autoClose={3500}
         hideProgressBar={false}
         newestOnTop
         closeOnClick
@@ -29,7 +29,7 @@ function App() {
         pauseOnFocusLoss
         draggable
         pauseOnHover
-        theme="dark"
+        theme={theme === 'light' ? 'light' : 'dark'}
       />
     </ToastProvider>
   );

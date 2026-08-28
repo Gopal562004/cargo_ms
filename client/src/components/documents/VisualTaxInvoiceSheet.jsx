@@ -578,152 +578,161 @@ export default function VisualTaxInvoiceSheet({
                 </tr>
               </thead>
               <tbody>
-                {items.map((item, idx) => {
-                  const qty = parseFloat(item.qty) || 0;
-                  const price = parseFloat(item.price) || 0;
-                  const taxable = qty * price;
-                  const cgstR = parseFloat(item.cgstRate) || 0;
-                  const sgstR = parseFloat(item.sgstRate) || 0;
-                  const igstR = parseFloat(item.igstRate) || 0;
+                {items.length === 0 ? (
+                  <tr>
+                    <td colSpan={isInterState ? 8 : 10} className="p-4 text-center text-slate-400 text-[10.5px] italic bg-slate-50/50 border-b border-slate-300">
+                      No line items added yet. Click <button type="button" onClick={handleAddItem} className="text-indigo-600 font-bold hover:underline mx-1 cursor-pointer">+ Add Line Item</button> or select from the 1-Click Fast-Add items above.
+                    </td>
+                  </tr>
+                ) : (
+                  items.map((item, idx) => {
+                    const qty = parseFloat(item.qty) || 0;
+                    const price = parseFloat(item.price) || 0;
+                    const taxable = qty * price;
+                    const cgstR = parseFloat(item.cgstRate) || 0;
+                    const sgstR = parseFloat(item.sgstRate) || 0;
+                    const igstR = parseFloat(item.igstRate) || 0;
 
-                  const cgstAmt = (taxable * cgstR) / 100;
-                  const sgstAmt = (taxable * sgstR) / 100;
-                  const igstAmt = (taxable * igstR) / 100;
-                  const lineTotal = taxable + cgstAmt + sgstAmt + igstAmt;
+                    const cgstAmt = (taxable * cgstR) / 100;
+                    const sgstAmt = (taxable * sgstR) / 100;
+                    const igstAmt = (taxable * igstR) / 100;
+                    const lineTotal = taxable + cgstAmt + sgstAmt + igstAmt;
 
-                  return (
-                    <tr key={idx} className="border-b border-slate-300 group hover:bg-indigo-50/30">
-                      <td className="p-1 border-r border-black text-center font-semibold">{idx + 1}.</td>
+                    return (
+                      <tr key={idx} className="border-b border-slate-300 group hover:bg-indigo-50/30">
+                        <td className="p-1 border-r border-black text-center font-semibold">{idx + 1}.</td>
 
-                      <td className="p-1 border-r border-black space-y-0.5">
-                        <input
-                          type="text"
-                          value={item.description}
-                          onChange={(e) => handleItemChange(idx, 'description', e.target.value)}
-                          placeholder="e.g. UN APPROVED BOX X3"
-                          className="w-full font-medium bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
-                        />
-                        <input
-                          type="text"
-                          value={item.subText || ''}
-                          onChange={(e) => handleItemChange(idx, 'subText', e.target.value)}
-                          placeholder="+ Sub-text (e.g. UN 3465/6.1/III)"
-                          className="w-full text-[9px] italic text-slate-600 bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
-                        />
-                      </td>
-
-                      <td className="p-1 border-r border-black text-center">
-                        <input
-                          type="text"
-                          value={item.hsnCode}
-                          onChange={(e) => handleItemChange(idx, 'hsnCode', e.target.value)}
-                          className="w-full text-center bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400 font-mono"
-                        />
-                      </td>
-
-                      <td className="p-1 border-r border-black">
-                        <div className="flex items-center gap-0.5">
+                        <td className="p-1 border-r border-black space-y-0.5">
                           <input
-                            type="number"
-                            step="any"
-                            value={item.qty}
-                            onChange={(e) => handleItemChange(idx, 'qty', e.target.value)}
-                            className="w-10 text-center font-semibold bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
+                            type="text"
+                            value={item.description}
+                            onChange={(e) => handleItemChange(idx, 'description', e.target.value)}
+                            placeholder="e.g. UN APPROVED BOX X3"
+                            className="w-full font-medium bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
                           />
                           <input
                             type="text"
-                            value={item.unit}
-                            onChange={(e) => handleItemChange(idx, 'unit', e.target.value)}
-                            className="w-7 text-center text-[9px] bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
+                            value={item.subText || ''}
+                            onChange={(e) => handleItemChange(idx, 'subText', e.target.value)}
+                            placeholder="+ Sub-text (e.g. UN 3465/6.1/III)"
+                            className="w-full text-[9px] italic text-slate-600 bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
                           />
-                        </div>
-                      </td>
+                        </td>
 
-                      <td className="p-1 border-r border-black text-right">
-                        <input
-                          type="number"
-                          step="any"
-                          value={item.price}
-                          onChange={(e) => handleItemChange(idx, 'price', e.target.value)}
-                          className="w-14 text-right font-semibold bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
-                        />
-                      </td>
+                        <td className="p-1 border-r border-black text-center">
+                          <input
+                            type="text"
+                            value={item.hsnCode}
+                            onChange={(e) => handleItemChange(idx, 'hsnCode', e.target.value)}
+                            placeholder="48191010"
+                            className="w-full text-center bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400 font-mono placeholder:text-slate-400"
+                          />
+                        </td>
 
-                      {isInterState ? (
-                        <>
-                          <td className="p-1 border-r border-black text-center font-medium">
-                            <select
-                              value={item.gstRate}
-                              onChange={(e) => handleItemChange(idx, 'gstRate', e.target.value)}
-                              className="text-[9.5px] bg-transparent outline-none cursor-pointer"
-                            >
-                              <option value="0">0%</option>
-                              <option value="5">5%</option>
-                              <option value="12">12%</option>
-                              <option value="18">18%</option>
-                              <option value="28">28%</option>
-                            </select>
-                          </td>
-                          <td className="p-1 border-r border-black text-right font-mono text-[9.5px]">
-                            {igstAmt > 0 ? igstAmt.toFixed(2) : '-'}
-                          </td>
-                        </>
-                      ) : (
-                        <>
-                          <td className="p-1 border-r border-black text-center font-medium">
-                            <select
-                              value={item.gstRate}
-                              onChange={(e) => handleItemChange(idx, 'gstRate', e.target.value)}
-                              className="text-[9.5px] bg-transparent outline-none cursor-pointer"
-                            >
-                              <option value="0">0%</option>
-                              <option value="5">2.5%</option>
-                              <option value="12">6%</option>
-                              <option value="18">9%</option>
-                              <option value="28">14%</option>
-                            </select>
-                          </td>
-                          <td className="p-1 border-r border-black text-right font-mono text-[9.5px]">
-                            {cgstAmt > 0 ? cgstAmt.toFixed(2) : '-'}
-                          </td>
-                          <td className="p-1 border-r border-black text-center font-medium">
-                            <select
-                              value={item.gstRate}
-                              onChange={(e) => handleItemChange(idx, 'gstRate', e.target.value)}
-                              className="text-[9.5px] bg-transparent outline-none cursor-pointer"
-                            >
-                              <option value="0">0%</option>
-                              <option value="5">2.5%</option>
-                              <option value="12">6%</option>
-                              <option value="18">9%</option>
-                              <option value="28">14%</option>
-                            </select>
-                          </td>
-                          <td className="p-1 border-r border-black text-right font-mono text-[9.5px]">
-                            {sgstAmt > 0 ? sgstAmt.toFixed(2) : '-'}
-                          </td>
-                        </>
-                      )}
+                        <td className="p-1 border-r border-black">
+                          <div className="flex items-center gap-0.5">
+                            <input
+                              type="number"
+                              step="any"
+                              value={item.qty}
+                              onChange={(e) => handleItemChange(idx, 'qty', e.target.value)}
+                              placeholder="1"
+                              className="w-10 text-center font-semibold bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
+                            />
+                            <input
+                              type="text"
+                              value={item.unit}
+                              onChange={(e) => handleItemChange(idx, 'unit', e.target.value)}
+                              className="w-7 text-center text-[9px] bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
+                            />
+                          </div>
+                        </td>
 
-                      <td className="p-1 text-right font-bold font-mono text-[10px]">
-                        {lineTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </td>
+                        <td className="p-1 border-r border-black text-right">
+                          <input
+                            type="number"
+                            step="any"
+                            value={item.price}
+                            onChange={(e) => handleItemChange(idx, 'price', e.target.value)}
+                            placeholder="0.00"
+                            className="w-14 text-right font-semibold bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400 placeholder:text-slate-400"
+                          />
+                        </td>
 
-                      <td className="p-1 text-center no-print">
-                        {items.length > 1 && (
+                        {isInterState ? (
+                          <>
+                            <td className="p-1 border-r border-black text-center font-medium">
+                              <select
+                                value={item.gstRate}
+                                onChange={(e) => handleItemChange(idx, 'gstRate', e.target.value)}
+                                className="text-[9.5px] bg-transparent outline-none cursor-pointer"
+                              >
+                                <option value="0">0%</option>
+                                <option value="5">5%</option>
+                                <option value="12">12%</option>
+                                <option value="18">18%</option>
+                                <option value="28">28%</option>
+                              </select>
+                            </td>
+                            <td className="p-1 border-r border-black text-right font-mono text-[9.5px]">
+                              {igstAmt > 0 ? igstAmt.toFixed(2) : '-'}
+                            </td>
+                          </>
+                        ) : (
+                          <>
+                            <td className="p-1 border-r border-black text-center font-medium">
+                              <select
+                                value={item.gstRate}
+                                onChange={(e) => handleItemChange(idx, 'gstRate', e.target.value)}
+                                className="text-[9.5px] bg-transparent outline-none cursor-pointer"
+                              >
+                                <option value="0">0%</option>
+                                <option value="5">2.5%</option>
+                                <option value="12">6%</option>
+                                <option value="18">9%</option>
+                                <option value="28">14%</option>
+                              </select>
+                            </td>
+                            <td className="p-1 border-r border-black text-right font-mono text-[9.5px]">
+                              {cgstAmt > 0 ? cgstAmt.toFixed(2) : '-'}
+                            </td>
+                            <td className="p-1 border-r border-black text-center font-medium">
+                              <select
+                                value={item.gstRate}
+                                onChange={(e) => handleItemChange(idx, 'gstRate', e.target.value)}
+                                className="text-[9.5px] bg-transparent outline-none cursor-pointer"
+                              >
+                                <option value="0">0%</option>
+                                <option value="5">2.5%</option>
+                                <option value="12">6%</option>
+                                <option value="18">9%</option>
+                                <option value="28">14%</option>
+                              </select>
+                            </td>
+                            <td className="p-1 border-r border-black text-right font-mono text-[9.5px]">
+                              {sgstAmt > 0 ? sgstAmt.toFixed(2) : '-'}
+                            </td>
+                          </>
+                        )}
+
+                        <td className="p-1 text-right font-bold font-mono text-[10px]">
+                          {lineTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+
+                        <td className="p-1 text-center no-print">
                           <button
                             type="button"
                             onClick={() => handleRemoveItem(idx)}
-                            className="text-slate-400 hover:text-rose-600 text-xs font-bold transition-colors p-0.5"
+                            className="text-slate-400 hover:text-rose-600 text-xs font-bold transition-colors p-0.5 cursor-pointer"
                             title="Remove row"
                           >
                             <X size={13} />
                           </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
 

@@ -74,6 +74,11 @@ export default function DocumentEditorPage() {
   }
 
   if (documentType === 'TAX_INVOICE') {
+    // If it's a purchase bill (invoiceKind === 'PURCHASE'), redirect to the dedicated Purchase Bills module
+    if (formData?.invoiceKind === 'PURCHASE' || currentDocument?.data?.invoiceKind === 'PURCHASE') {
+      return <Navigate to="/billing/purchases" replace />;
+    }
+
     return (
       <TaxInvoiceEditor
         key={id || 'new-tax-invoice'}

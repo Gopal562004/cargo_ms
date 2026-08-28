@@ -38,6 +38,9 @@ import {
   User,
   Phone,
   Truck,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
   MapPin,
 } from 'lucide-react';
 import { useDocumentStore } from '../store/documentStore';
@@ -46,6 +49,10 @@ import { deleteDocument, parseInvoiceDocument } from '../services/documentServic
 import { getSavedVendors, saveVendor } from '../services/billingProfileService';
 import Button from '../components/ui/Button';
 import Pagination from '../components/ui/Pagination';
+import ConfirmDialog from '../components/ui/ConfirmDialog';
+import { useAuthStore } from '../store/authStore';
+import { useThemeStore } from '../store/themeStore';
+import { isSubscriptionExpired } from '../utils/permissions';
 import useBodyScrollLock from '../hooks/useBodyScrollLock';
 
 export const INDIAN_GST_STATES = {
@@ -194,6 +201,8 @@ function getIndianStateFromGstin(gstin) {
 export default function PurchaseBillsPage() {
   const navigate = useNavigate();
   const { documents, fetchDocuments, createDocument, updateDocument, isLoading } = useDocumentStore();
+  const { user } = useAuthStore();
+  const isExpired = isSubscriptionExpired(user);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -244,6 +253,19 @@ export default function PurchaseBillsPage() {
     appliedFilters.startDate !== '',
     appliedFilters.endDate !== '',
   ].filter(Boolean).length;
+
+  const [sortBy, setSortBy] = useState('date');
+  const [sortOrder, setSortOrder] = useState('desc');
+
+  const handleSort = (column) => {
+    if (sortBy === column) {
+      setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortBy(column);
+      setSortOrder(column === 'date' || column === 'taxable' || column === 'grandTotal' ? 'desc' : 'asc');
+    }
+    setCurrentPage(1);
+  };
 
   const handleSearchChange = (e) => {
     const val = e.target.value;
@@ -478,8 +500,64 @@ export default function PurchaseBillsPage() {
   const pendingAmount = pendingBills.reduce((acc, d) => acc + (parseFloat(d.data?.grandTotal) || 0), 0);
   const paidAmount = paidBills.reduce((acc, d) => acc + (parseFloat(d.data?.grandTotal) || 0), 0);
 
-  // Paginate filtered results
-  const paginatedBills = filteredBills.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  // Sort filtered results
+  const sortedBills = [...filteredBills].sort((a, b) => {
+    let aVal, bVal;
+    if (sortBy === 'voucher') {
+      aVal = (a.data?.billNumber || a.data?.voucherNumber || a.documentNumber || '').toLowerCase();
+      bVal = (b.data?.billNumber || b.data?.voucherNumber || b.documentNumber || '').toLowerCase();
+      return sortOrder === 'asc' ? aVal.localeCompare(bVal, undefined, { numeric: true }) : bVal.localeCompare(aVal, undefined, { numeric: true });
+    } else if (sortBy === 'vendor') {
+      aVal = (a.data?.vendorName || '').toLowerCase();
+      bVal = (b.data?.vendorName || '').toLowerCase();
+      return sortOrder === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+    } else if (sortBy === 'date') {
+      aVal = new Date(a.data?.billDate || a.createdAt || 0).getTime();
+      bVal = new Date(b.data?.billDate || b.createdAt || 0).getTime();
+      return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
+    } else if (sortBy === 'taxable') {
+      aVal = parseFloat(a.data?.taxableAmount) || 0;
+      bVal = parseFloat(b.data?.taxableAmount) || 0;
+      return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
+    } else if (sortBy === 'grandTotal') {
+      aVal = parseFloat(a.data?.grandTotal) || 0;
+      bVal = parseFloat(b.data?.grandTotal) || 0;
+      return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
+    } else if (sortBy === 'status') {
+      aVal = (a.status || '').toLowerCase();
+      bVal = (b.status || '').toLowerCase();
+      return sortOrder === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+    }
+    return 0;
+  });
+
+  // Paginate sorted results
+  const paginatedBills = sortedBills.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  // Robust Voucher Generator that finds highest existing sequence to prevent collisions on deletion
+  const getNextPurchaseVoucherNumber = (existingBills = []) => {
+    const currentYear = new Date().getFullYear().toString().slice(-2);
+    const nextYear = (parseInt(currentYear, 10) + 1).toString();
+    const fyPrefix = `PB/${currentYear}-${nextYear}/`;
+
+    let maxSeq = 0;
+    if (Array.isArray(existingBills)) {
+      for (const b of existingBills) {
+        const isCancelled = b.status === 'CANCELLED' || b.data?.isDeleted === true;
+        if (isCancelled) continue;
+        const vNo = b.data?.voucherNumber || b.data?.billNumber || b.documentNumber || '';
+        const match = vNo.match(/PB\/(?:\d{2}|\d{4})-(?:\d{2}|\d{4})\/(\d+)/i) || vNo.match(/PB\/.*?(\d+)/i);
+        if (match) {
+          const seq = parseInt(match[1], 10);
+          if (!isNaN(seq) && seq > maxSeq) {
+            maxSeq = seq;
+          }
+        }
+      }
+    }
+    const nextSeq = (maxSeq + 1).toString().padStart(4, '0');
+    return `${fyPrefix}${nextSeq}`;
+  };
 
   // Form Handlers
   const handleOpenCreateModal = () => {
@@ -493,9 +571,7 @@ export default function PurchaseBillsPage() {
     setSaveVendorToTemplatesChecked(false);
     loadVendors();
 
-    const currentYear = new Date().getFullYear().toString().slice(-2);
-    const nextYear = (parseInt(currentYear, 10) + 1).toString();
-    const defaultVoucherNo = `PB/${currentYear}-${nextYear}/${(purchaseBills.length + 1).toString().padStart(4, '0')}`;
+    const defaultVoucherNo = getNextPurchaseVoucherNumber(purchaseBills);
 
     setFormData({
       voucherNumber: defaultVoucherNo,
@@ -621,9 +697,7 @@ export default function PurchaseBillsPage() {
   };
 
   const handleResetForm = () => {
-    const currentYear = new Date().getFullYear().toString().slice(-2);
-    const nextYear = (parseInt(currentYear, 10) + 1).toString();
-    const defaultVoucherNo = `PB/${currentYear}-${nextYear}/${(purchaseBills.length + 1).toString().padStart(4, '0')}`;
+    const defaultVoucherNo = getNextPurchaseVoucherNumber(purchaseBills);
 
     setFormData({
       voucherNumber: defaultVoucherNo,
@@ -851,6 +925,10 @@ export default function PurchaseBillsPage() {
 
   const handleSaveBill = async (e) => {
     e.preventDefault();
+    if (isExpired) {
+      alert('Subscription Expired: Your subscription has expired. Creating and saving purchase bills is locked. Please contact your administrator to renew.');
+      return;
+    }
     if (!formData.vendorName.trim()) {
       alert('Please enter a vendor name.');
       return;
@@ -1059,14 +1137,21 @@ export default function PurchaseBillsPage() {
     fetchDocuments({ documentType: 'TAX_INVOICE', limit: 100, sortBy: 'createdAt', sortOrder: 'desc' });
   };
 
-  const handleDeleteBill = async (docId) => {
-    if (window.confirm('Are you sure you want to delete this Purchase Bill?')) {
-      try {
-        await deleteDocument(docId);
-        fetchDocuments({ documentType: 'TAX_INVOICE', limit: 100, sortBy: 'createdAt', sortOrder: 'desc' });
-      } catch (err) {
-        alert('Failed to delete purchase bill: ' + err.message);
-      }
+  const [deleteTargetBill, setDeleteTargetBill] = useState(null);
+  const [isDeletingBill, setIsDeletingBill] = useState(false);
+
+  const handleConfirmDeleteBill = async () => {
+    if (!deleteTargetBill) return;
+    setIsDeletingBill(true);
+    try {
+      await deleteDocument(deleteTargetBill.id);
+      setSuccessMessage(`Purchase Bill #${deleteTargetBill.data?.billNumber || deleteTargetBill.documentNumber || ''} deleted successfully.`);
+      fetchDocuments({ documentType: 'TAX_INVOICE', limit: 100, sortBy: 'createdAt', sortOrder: 'desc' });
+      setDeleteTargetBill(null);
+    } catch (err) {
+      alert('Failed to delete purchase bill: ' + err.message);
+    } finally {
+      setIsDeletingBill(false);
     }
   };
 
@@ -1356,14 +1441,92 @@ export default function PurchaseBillsPage() {
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-slate-800 bg-slate-950/50 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
-                  <th className="py-3 px-3 whitespace-nowrap">Voucher / Bill #</th>
-                  <th className="py-3 px-3 min-w-[130px] max-w-[200px]">Vendor / Supplier</th>
+                  <th
+                    className="py-3 px-3 whitespace-nowrap cursor-pointer select-none hover:text-white transition-colors"
+                    onClick={() => handleSort('voucher')}
+                    title="Click to sort by Voucher / Bill #"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>Voucher / Bill #</span>
+                      {sortBy === 'voucher' ? (
+                        sortOrder === 'asc' ? <ArrowUp size={11} className="text-indigo-400" /> : <ArrowDown size={11} className="text-indigo-400" />
+                      ) : (
+                        <ArrowUpDown size={10} className="text-slate-600 hover:text-slate-400" />
+                      )}
+                    </div>
+                  </th>
+                  <th
+                    className="py-3 px-3 min-w-[130px] max-w-[200px] cursor-pointer select-none hover:text-white transition-colors"
+                    onClick={() => handleSort('vendor')}
+                    title="Click to sort by Vendor"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>Vendor / Supplier</span>
+                      {sortBy === 'vendor' ? (
+                        sortOrder === 'asc' ? <ArrowUp size={11} className="text-indigo-400" /> : <ArrowDown size={11} className="text-indigo-400" />
+                      ) : (
+                        <ArrowUpDown size={10} className="text-slate-600 hover:text-slate-400" />
+                      )}
+                    </div>
+                  </th>
                   <th className="py-3 px-3 whitespace-nowrap">Category & SAC</th>
-                  <th className="py-3 px-3 whitespace-nowrap">Bill Date</th>
-                  <th className="py-3 px-3 text-right whitespace-nowrap">Taxable (₹)</th>
+                  <th
+                    className="py-3 px-3 whitespace-nowrap cursor-pointer select-none hover:text-white transition-colors"
+                    onClick={() => handleSort('date')}
+                    title="Click to sort by Bill Date"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>Bill Date</span>
+                      {sortBy === 'date' ? (
+                        sortOrder === 'asc' ? <ArrowUp size={11} className="text-indigo-400" /> : <ArrowDown size={11} className="text-indigo-400" />
+                      ) : (
+                        <ArrowUpDown size={10} className="text-slate-600 hover:text-slate-400" />
+                      )}
+                    </div>
+                  </th>
+                  <th
+                    className="py-3 px-3 text-right whitespace-nowrap cursor-pointer select-none hover:text-white transition-colors"
+                    onClick={() => handleSort('taxable')}
+                    title="Click to sort by Taxable Amount"
+                  >
+                    <div className="flex items-center justify-end gap-1.5">
+                      <span>Taxable (₹)</span>
+                      {sortBy === 'taxable' ? (
+                        sortOrder === 'asc' ? <ArrowUp size={11} className="text-indigo-400" /> : <ArrowDown size={11} className="text-indigo-400" />
+                      ) : (
+                        <ArrowUpDown size={10} className="text-slate-600 hover:text-slate-400" />
+                      )}
+                    </div>
+                  </th>
                   <th className="py-3 px-3 text-right whitespace-nowrap">GST Breakdown</th>
-                  <th className="py-3 px-3 text-right whitespace-nowrap">Grand Total (₹)</th>
-                  <th className="py-3 px-3 text-center whitespace-nowrap">Status</th>
+                  <th
+                    className="py-3 px-3 text-right whitespace-nowrap cursor-pointer select-none hover:text-white transition-colors"
+                    onClick={() => handleSort('grandTotal')}
+                    title="Click to sort by Grand Total"
+                  >
+                    <div className="flex items-center justify-end gap-1.5">
+                      <span>Grand Total (₹)</span>
+                      {sortBy === 'grandTotal' ? (
+                        sortOrder === 'asc' ? <ArrowUp size={11} className="text-indigo-400" /> : <ArrowDown size={11} className="text-indigo-400" />
+                      ) : (
+                        <ArrowUpDown size={10} className="text-slate-600 hover:text-slate-400" />
+                      )}
+                    </div>
+                  </th>
+                  <th
+                    className="py-3 px-3 text-center whitespace-nowrap cursor-pointer select-none hover:text-white transition-colors"
+                    onClick={() => handleSort('status')}
+                    title="Click to sort by Status"
+                  >
+                    <div className="flex items-center justify-center gap-1.5">
+                      <span>Status</span>
+                      {sortBy === 'status' ? (
+                        sortOrder === 'asc' ? <ArrowUp size={11} className="text-indigo-400" /> : <ArrowDown size={11} className="text-indigo-400" />
+                      ) : (
+                        <ArrowUpDown size={10} className="text-slate-600 hover:text-slate-400" />
+                      )}
+                    </div>
+                  </th>
                   <th className="py-3 px-3 text-right whitespace-nowrap shrink-0">Actions</th>
                 </tr>
               </thead>
@@ -1548,9 +1711,9 @@ export default function PurchaseBillsPage() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => handleDeleteBill(doc.id)}
-                            className="p-1 text-slate-400 hover:text-rose-400 rounded hover:bg-rose-500/10 transition-colors"
-                            title="Delete"
+                            onClick={() => setDeleteTargetBill(doc)}
+                            className="p-1 text-slate-400 hover:text-rose-400 rounded hover:bg-rose-500/10 transition-colors cursor-pointer"
+                            title="Delete Purchase Bill"
                           >
                             <Trash2 size={14} />
                           </button>
@@ -2927,6 +3090,17 @@ export default function PurchaseBillsPage() {
           </div>
         );
       })()}
+      {/* Custom Delete Confirmation Modal */}
+      <ConfirmDialog
+        isOpen={Boolean(deleteTargetBill)}
+        onClose={() => setDeleteTargetBill(null)}
+        onConfirm={handleConfirmDeleteBill}
+        title="Delete Purchase Bill"
+        message={`Are you sure you want to permanently delete Purchase Bill #${deleteTargetBill?.data?.billNumber || deleteTargetBill?.documentNumber || ''} from ${deleteTargetBill?.data?.vendorName || 'Vendor'}? This action cannot be undone.`}
+        confirmText="Delete Bill"
+        variant="danger"
+        isLoading={isDeletingBill}
+      />
     </div>
   );
 }

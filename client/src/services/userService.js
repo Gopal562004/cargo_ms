@@ -38,16 +38,16 @@ export const SYSTEM_SERVICES = [
   },
   {
     id: 'BILLING_TEMPLATES',
-    label: 'Billing Templates & Directory',
+    label: 'Invoice Templates & Item Presets',
     category: 'Billing & Accounting',
-    description: 'Saved invoice presets, Customer directory & Delivery sites',
+    description: 'Saved invoice templates, cargo item presets & numbering series',
     color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
   },
   {
     id: 'CONTACTS_DIRECTORY',
-    label: 'Contacts & Directory',
-    category: 'Management',
-    description: 'Shippers, consignees, airline agents, and carriers directory',
+    label: 'Customer & Party Directory',
+    category: 'Billing & Accounting',
+    description: 'Customer companies, buyer/consignee GSTIN, addresses & contacts',
     color: 'text-teal-400 bg-teal-500/10 border-teal-500/30',
   },
   {

@@ -352,10 +352,52 @@ export async function updateUser(req, res, next) {
     if (allowedServices !== undefined) updateData.allowedServices = Array.isArray(allowedServices) ? allowedServices : [];
     if (phone !== undefined) updateData.phone = phone ? phone.trim() : null;
     if (department !== undefined) updateData.department = department ? department.trim() : null;
-    if (subscriptionPlan !== undefined) updateData.subscriptionPlan = subscriptionPlan;
-    if (subscriptionDuration !== undefined) updateData.subscriptionDuration = subscriptionDuration;
-    if (subscriptionExpiresAt !== undefined) updateData.subscriptionExpiresAt = new Date(subscriptionExpiresAt);
-    if (subscriptionStatus !== undefined) updateData.subscriptionStatus = subscriptionStatus;
+    const adminName = req.user?.name || req.user?.username || 'Super Admin';
+    let isCancelling = false;
+    let isAssigningNew = false;
+
+    if (subscriptionDuration !== undefined) {
+      updateData.subscriptionDuration = subscriptionDuration;
+      if (subscriptionDuration === 'CANCELLED') {
+        isCancelling = true;
+        updateData.subscriptionPlan = 'NO_ACTIVE_PLAN';
+        updateData.subscriptionExpiresAt = new Date(Date.now() - 1000);
+        updateData.subscriptionStatus = 'CANCELLED';
+      } else if (subscriptionDuration === 'CUSTOM' && (customExpiresAt || subscriptionExpiresAt)) {
+        updateData.subscriptionExpiresAt = new Date(customExpiresAt || subscriptionExpiresAt);
+        updateData.subscriptionStatus = 'ACTIVE';
+        if (existing.subscriptionStatus === 'CANCELLED' || !existing.subscriptionExpiresAt || new Date(existing.subscriptionExpiresAt) < new Date()) {
+          isAssigningNew = true;
+        }
+      } else if (subscriptionDuration !== 'CUSTOM') {
+        updateData.subscriptionExpiresAt = calculateExpiryDate(subscriptionDuration, new Date());
+        updateData.subscriptionStatus = 'ACTIVE';
+        if (existing.subscriptionStatus === 'CANCELLED' || !existing.subscriptionExpiresAt || new Date(existing.subscriptionExpiresAt) < new Date()) {
+          isAssigningNew = true;
+        }
+      }
+    } else if (subscriptionExpiresAt !== undefined) {
+      updateData.subscriptionExpiresAt = new Date(subscriptionExpiresAt);
+    } else if (customExpiresAt) {
+      updateData.subscriptionExpiresAt = new Date(customExpiresAt);
+    }
+
+    if (subscriptionPlan !== undefined && subscriptionDuration !== 'CANCELLED') {
+      updateData.subscriptionPlan = subscriptionPlan;
+      if (subscriptionPlan !== 'NO_ACTIVE_PLAN') {
+        updateData.subscriptionStatus = 'ACTIVE';
+      }
+    }
+
+    if (subscriptionDuration !== 'CANCELLED') {
+      const finalExpiry = updateData.subscriptionExpiresAt || existing.subscriptionExpiresAt;
+      if (finalExpiry && new Date(finalExpiry) > new Date()) {
+        updateData.subscriptionStatus = 'ACTIVE';
+      }
+    } else {
+      updateData.subscriptionStatus = 'CANCELLED';
+    }
+
     if (maxSeats !== undefined) updateData.maxSeats = parseInt(maxSeats, 10) || 1;
     if (notes !== undefined) updateData.notes = notes ? notes.trim() : null;
 
@@ -403,14 +445,32 @@ export async function updateUser(req, res, next) {
       },
     });
 
-    const adminName = req.user?.name || req.user?.username || 'Super Admin';
-    await logUserActivity(
-      id,
-      'USER_UPDATED',
-      `Profile / Subscription details updated by ${adminName}`,
-      adminName,
-      { changes: Object.keys(updateData) }
-    );
+    // Detailed activity logging
+    if (isCancelling) {
+      await logUserActivity(
+        id,
+        'SUBSCRIPTION_CANCELLED',
+        `Subscription plan (${existing.subscriptionPlan || 'Active Plan'}) was completely cancelled & revoked by ${adminName}.`,
+        adminName,
+        { previousPlan: existing.subscriptionPlan, previousExpiry: existing.subscriptionExpiresAt }
+      );
+    } else if (isAssigningNew) {
+      await logUserActivity(
+        id,
+        'SUBSCRIPTION_ASSIGNED',
+        `Assigned new subscription plan (${updateData.subscriptionPlan || existing.subscriptionPlan || 'STARTER'}) with duration ${subscriptionDuration} by ${adminName}.`,
+        adminName,
+        { newPlan: updateData.subscriptionPlan || existing.subscriptionPlan, newExpiry: updateData.subscriptionExpiresAt }
+      );
+    } else {
+      await logUserActivity(
+        id,
+        'USER_UPDATED',
+        `Profile / Subscription details updated by ${adminName}`,
+        adminName,
+        { changes: Object.keys(updateData) }
+      );
+    }
 
     res.json({
       success: true,

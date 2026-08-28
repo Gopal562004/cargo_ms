@@ -638,3 +638,54 @@ nav,
   -ms-user-select: none !important;
   user-select: none !important;
 }
+
+/* ========================================================
+   TOASTIFY NOTIFICATIONS THEME STYLING
+   ======================================================== */
+.Toastify__toast-container--top-right {
+  top: 1.25rem !important;
+  right: 1.25rem !important;
+  z-index: 99999 !important;
+}
+
+.Toastify__toast {
+  border-radius: 0.75rem !important;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+  font-size: 0.8125rem !important;
+  line-height: 1.35rem !important;
+  padding: 0.875rem 1rem !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35), 0 8px 10px -6px rgba(0, 0, 0, 0.25) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+
+/* Dark Theme Toasts */
+html:not(.light) .Toastify__toast-theme--dark {
+  background-color: rgba(15, 23, 42, 0.95) !important;
+  border: 1px solid rgba(51, 65, 85, 0.8) !important;
+  color: #f1f5f9 !important;
+}
+
+/* Light Theme Toasts */
+html.light .Toastify__toast-theme--light {
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04) !important;
+}
+
+.Toastify__toast--success {
+  border-left: 4px solid #10b981 !important;
+}
+
+.Toastify__toast--error {
+  border-left: 4px solid #ef4444 !important;
+}
+
+.Toastify__toast--warning {
+  border-left: 4px solid #f59e0b !important;
+}
+
+.Toastify__toast--info {
+  border-left: 4px solid #6366f1 !important;
+}

@@ -36,15 +36,15 @@ export const SYSTEM_SERVICES = [
   },
   {
     id: 'BILLING_TEMPLATES',
-    label: 'Billing Templates & Directory',
+    label: 'Invoice Templates & Item Presets',
     category: 'Billing & Accounting',
-    description: 'Saved invoice presets, Customer directory & Delivery sites',
+    description: 'Saved invoice templates, cargo item presets & numbering series',
   },
   {
     id: 'CONTACTS_DIRECTORY',
-    label: 'Contacts & Directory',
-    category: 'Management',
-    description: 'Shippers, consignees, airline agents, and carriers directory',
+    label: 'Customer & Party Directory',
+    category: 'Billing & Accounting',
+    description: 'Customer companies, buyer/consignee GSTIN, addresses & contacts',
   },
   {
     id: 'TEMPLATES_MANAGEMENT',
@@ -87,20 +87,20 @@ export const DOCUMENT_TYPE_SERVICE_MAP = {
 
   // Billing & Accounting
   TAX_INVOICE: 'SALES_BILLING',
-  PROFORMA_INVOICE: 'SALES_BILLING',
 
-  // Commercial / Logistics
-  BOOKING: ['SALES_BILLING', 'AIR_FREIGHT', 'SEA_FREIGHT'],
-  WAREHOUSE_RECEIPT: ['SALES_BILLING', 'AIR_FREIGHT', 'SEA_FREIGHT'],
-  DOCK_RECEIPT: ['SALES_BILLING', 'AIR_FREIGHT', 'SEA_FREIGHT'],
-  CERTIFICATE_OF_ORIGIN: ['SALES_BILLING', 'AIR_FREIGHT', 'SEA_FREIGHT'],
-  DELIVERY_ORDER: ['SALES_BILLING', 'AIR_FREIGHT', 'SEA_FREIGHT'],
-  DELIVERY_NOTE: ['SALES_BILLING', 'AIR_FREIGHT', 'SEA_FREIGHT'],
-  FCR: ['SALES_BILLING', 'AIR_FREIGHT', 'SEA_FREIGHT'],
-  CMR: ['SALES_BILLING', 'AIR_FREIGHT', 'SEA_FREIGHT'],
-  ARRIVAL_NOTICE: ['SALES_BILLING', 'AIR_FREIGHT', 'SEA_FREIGHT'],
-  SECURITY_DECLARATION: ['SALES_BILLING', 'AIR_FREIGHT', 'SEA_FREIGHT'],
-  LETTER: ['SALES_BILLING', 'AIR_FREIGHT', 'SEA_FREIGHT'],
+  // Commercial / Freight Operations Logistics
+  PROFORMA_INVOICE: ['AIR_FREIGHT', 'SEA_FREIGHT'],
+  BOOKING: ['AIR_FREIGHT', 'SEA_FREIGHT'],
+  WAREHOUSE_RECEIPT: ['AIR_FREIGHT', 'SEA_FREIGHT'],
+  DOCK_RECEIPT: ['AIR_FREIGHT', 'SEA_FREIGHT'],
+  CERTIFICATE_OF_ORIGIN: ['AIR_FREIGHT', 'SEA_FREIGHT'],
+  DELIVERY_ORDER: ['AIR_FREIGHT', 'SEA_FREIGHT'],
+  DELIVERY_NOTE: ['AIR_FREIGHT', 'SEA_FREIGHT'],
+  FCR: ['AIR_FREIGHT', 'SEA_FREIGHT'],
+  CMR: ['AIR_FREIGHT', 'SEA_FREIGHT'],
+  ARRIVAL_NOTICE: ['AIR_FREIGHT', 'SEA_FREIGHT'],
+  SECURITY_DECLARATION: ['AIR_FREIGHT', 'SEA_FREIGHT'],
+  LETTER: ['AIR_FREIGHT', 'SEA_FREIGHT'],
 };
 
 /**
@@ -130,6 +130,26 @@ export function isDocumentTypeAllowed(user, docType) {
   if (!requiredService) return true; // Generic document type fallback
 
   return hasServiceAccess(user, requiredService);
+}
+
+/**
+ * Check whether user's subscription has expired or been cancelled.
+ */
+export function isSubscriptionExpired(user) {
+  if (!user) return false;
+  if (user.role === 'ADMIN') return false;
+  if (user.subscriptionPlan === 'NO_ACTIVE_PLAN') return true;
+  if (!user.subscriptionExpiresAt) return false;
+  return new Date(user.subscriptionExpiresAt).getTime() < Date.now();
+}
+
+/**
+ * Check whether user can create or edit documents.
+ */
+export function canCreateOrEditDocuments(user) {
+  if (!user) return false;
+  if (user.role === 'ADMIN') return true;
+  return !isSubscriptionExpired(user);
 }
 
 /**

@@ -1,18 +1,29 @@
 import React from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import { useAuthStore } from '../../store/authStore';
+import { useThemeStore } from '../../store/themeStore';
+import { isSubscriptionExpired } from '../../utils/permissions';
 import { Clock, AlertTriangle } from 'lucide-react';
+import SubscriptionExpiredLockout from '../ui/SubscriptionExpiredLockout';
 
 /**
  * Main application layout styled with Tailwind CSS.
  */
 export default function AppLayout() {
   const { user } = useAuthStore();
+  const { theme } = useThemeStore();
+  const location = useLocation();
 
   const expiryInfo = React.useMemo(() => {
-    if (!user || !user.subscriptionExpiresAt) return null;
+    if (!user || user.role === 'ADMIN') return null;
+    if (user.subscriptionStatus === 'CANCELLED' || user.subscriptionPlan === 'NO_ACTIVE_PLAN') {
+      const expDate = user.subscriptionExpiresAt ? new Date(user.subscriptionExpiresAt).toLocaleDateString('en-IN') : 'Recently';
+      return { isExpired: true, daysRemaining: 0, dateStr: expDate };
+    }
+    if (!user.subscriptionExpiresAt) return null;
+
     const expiresAt = new Date(user.subscriptionExpiresAt);
     const now = new Date();
     const diffMs = expiresAt.getTime() - now.getTime();
@@ -27,8 +38,11 @@ export default function AppLayout() {
     return null;
   }, [user]);
 
+  const isExpired = Boolean(expiryInfo?.isExpired);
+  const isSettingsPage = location.pathname === '/settings';
+
   return (
-    <div className="flex min-h-screen bg-slate-950 text-slate-100">
+    <div className={`flex min-h-screen transition-colors ${theme === 'light' ? 'bg-slate-100 text-slate-900' : 'bg-slate-950 text-slate-100'}`}>
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <Header />
@@ -38,7 +52,11 @@ export default function AppLayout() {
           <div
             className={`px-4 py-2 text-xs font-medium flex items-center justify-between border-b shrink-0 ${
               expiryInfo.isExpired
-                ? 'bg-rose-500/15 border-rose-500/30 text-rose-300'
+                ? theme === 'light'
+                  ? 'bg-rose-50 border-rose-200 text-rose-700'
+                  : 'bg-rose-500/15 border-rose-500/30 text-rose-300'
+                : theme === 'light'
+                ? 'bg-amber-50 border-amber-200 text-amber-800'
                 : 'bg-amber-500/15 border-amber-500/30 text-amber-300'
             }`}
           >
@@ -52,13 +70,17 @@ export default function AppLayout() {
                     } (on ${expiryInfo.dateStr}).`}
               </span>
             </div>
-            <span className="font-mono text-[11px] font-bold">License: {user.licenseKey || 'Standard'}</span>
+            <span className="font-mono text-[11px] font-bold">License: {user?.licenseKey || 'Standard'}</span>
           </div>
         )}
 
         <main className="flex-1 p-4 sm:p-6 overflow-y-auto">
           <div className="w-full max-w-[1920px] mx-auto">
-            <Outlet />
+            {isExpired && !isSettingsPage ? (
+              <SubscriptionExpiredLockout actionName="access operations and commercial tools" />
+            ) : (
+              <Outlet />
+            )}
           </div>
         </main>
       </div>

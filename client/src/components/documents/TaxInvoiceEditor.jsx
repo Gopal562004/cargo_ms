@@ -29,7 +29,9 @@ import {
   User,
 } from 'lucide-react';
 import { useDocumentStore } from '../../store/documentStore';
+import { useAuthStore } from '../../store/authStore';
 import { downloadDocumentPDF, printDocumentPDF } from '../../services/documentService';
+import { isSubscriptionExpired } from '../../utils/permissions';
 import {
   getSavedBillingProfiles,
   syncOnlineTemplates,
@@ -277,6 +279,8 @@ function formatINR(val) {
 export default function TaxInvoiceEditor({ documentId, initialData, currentDocument, onSaved, onCancel, isEmbedded }) {
   const navigate = useNavigate();
   const { documents, createDocument, updateDocument, clearCurrent } = useDocumentStore();
+  const { user } = useAuthStore();
+  const isExpired = isSubscriptionExpired(user);
 
   const isEdit = !!documentId;
   const [loading, setLoading] = useState(false);
@@ -328,9 +332,9 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
         const defaultProfile = savedProfiles && savedProfiles.length > 0 ? savedProfiles[0] : null;
         const { formData: mergedForm, items: mergedItems } = profileToEditorState(defaultProfile, loadedData, documents);
         setFormData(mergedForm);
-        if (Array.isArray(loadedData.items) && loadedData.items.length > 0) {
+        if (Array.isArray(loadedData.items)) {
           setItems(loadedData.items);
-        } else if (mergedItems && mergedItems.length > 0) {
+        } else if (Array.isArray(mergedItems)) {
           setItems(mergedItems);
         }
       }
@@ -450,7 +454,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
       termsAndConditions: profile.termsAndConditions || prev.termsAndConditions,
     }));
 
-    if (Array.isArray(profile.items) && profile.items.length > 0) {
+    if (Array.isArray(profile.items)) {
       setItems(applyTaxTypeToItems(taxType, profile.items));
     }
   };
@@ -656,7 +660,6 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
   };
 
   const removeItem = (index) => {
-    if (items.length <= 1) return;
     setItems((prev) => prev.filter((_, i) => i !== index).map((it, i) => ({ ...it, sn: i + 1 })));
   };
 
@@ -717,6 +720,10 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
   };
 
   const handleSave = async () => {
+    if (isExpired) {
+      alert(`Subscription Expired: Your plan has expired or been cancelled. Creating and saving documents is locked. Please contact your administrator to renew.`);
+      return;
+    }
     setLoading(true);
     try {
       const payloadData = {
@@ -763,6 +770,10 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
   };
 
   const handleSaveAndPrint = async () => {
+    if (isExpired) {
+      alert(`Subscription Expired: Your plan has expired or been cancelled. Creating and saving documents is locked. Please contact your administrator to renew.`);
+      return;
+    }
     setLoading(true);
     try {
       const payloadData = {
@@ -879,10 +890,16 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
           <Button
             variant="primary"
             loading={loading}
+            disabled={isExpired}
             onClick={handleSaveAndPrint}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded text-xs shadow-sm"
+            className={`${
+              isExpired
+                ? 'opacity-50 cursor-not-allowed bg-slate-700 text-slate-400'
+                : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+            } font-bold rounded text-xs shadow-sm`}
+            title={isExpired ? 'Subscription Expired - Document creation is locked' : 'Save and print tax invoice'}
           >
-            <Printer size={14} className="mr-1.5 inline" /> Save & Print Bill
+            <Printer size={14} className="mr-1.5 inline" /> {isExpired ? 'Save Locked (Expired)' : 'Save & Print Bill'}
           </Button>
 
           {isEdit && (
@@ -905,7 +922,14 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
             </>
           )}
 
-          <Button variant="secondary" onClick={handleSave} loading={loading} className="rounded text-xs">
+          <Button
+            variant="secondary"
+            onClick={handleSave}
+            loading={loading}
+            disabled={isExpired}
+            className={`rounded text-xs ${isExpired ? 'opacity-50 cursor-not-allowed text-slate-500' : ''}`}
+            title={isExpired ? 'Subscription Expired' : ''}
+          >
             <Save size={13} className="mr-1 inline" /> {isEdit ? 'Save Changes' : 'Save as Draft'}
           </Button>
 

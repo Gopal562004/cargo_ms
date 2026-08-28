@@ -585,7 +585,7 @@ export function profileToEditorState(profile, overrideData = {}, existingDocumen
     termsAndConditions: profile.termsAndConditions || '',
   };
 
-  let finalItems;
+  let finalItems = [];
   if (Array.isArray(overrideData?.items) && overrideData.items.length > 0) {
     finalItems = overrideData.items;
   } else if (Array.isArray(profile.items) && profile.items.length > 0) {
@@ -596,9 +596,9 @@ export function profileToEditorState(profile, overrideData = {}, existingDocumen
         description: it.description || '',
         subText: it.subText || '',
         hsnCode: it.hsnCode || '',
-        qty: it.qty !== undefined ? it.qty : 1,
+        qty: it.qty !== undefined && it.qty !== '' ? it.qty : 1,
         unit: it.unit || 'Pcs',
-        price: it.price !== undefined ? it.price : 0,
+        price: it.price !== undefined && it.price !== '' ? it.price : 0,
         gstRate,
         cgstRate: taxType === 'INTRA_STATE' ? gstRate / 2 : 0,
         sgstRate: taxType === 'INTRA_STATE' ? gstRate / 2 : 0,
@@ -606,8 +606,21 @@ export function profileToEditorState(profile, overrideData = {}, existingDocumen
       };
     });
   } else {
+    // 1 clean blank row ready for input with empty fields
     finalItems = [
-      { sn: 1, description: '', subText: '', hsnCode: '998319', qty: 1, unit: 'Pcs', price: 0, gstRate: 18, cgstRate: 9, sgstRate: 9, igstRate: 0 }
+      {
+        sn: 1,
+        description: '',
+        subText: '',
+        hsnCode: '',
+        qty: 1,
+        unit: 'Pcs',
+        price: 0,
+        gstRate: 5,
+        cgstRate: taxType === 'INTRA_STATE' ? 2.5 : 0,
+        sgstRate: taxType === 'INTRA_STATE' ? 2.5 : 0,
+        igstRate: taxType === 'INTRA_STATE' ? 0 : 5,
+      },
     ];
   }
 

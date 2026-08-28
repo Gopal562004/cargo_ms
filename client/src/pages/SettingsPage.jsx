@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Settings,
@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import { useFinancialYearStore } from '../store/financialYearStore';
 import { useAuthStore } from '../store/authStore';
+import { useThemeStore } from '../store/themeStore';
 import { SYSTEM_SERVICES } from '../services/userService';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
@@ -44,7 +45,8 @@ import useBodyScrollLock from '../hooks/useBodyScrollLock';
 
 export default function SettingsPage() {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user, checkAuth } = useAuthStore();
+  const { theme } = useThemeStore();
   const {
     activeFY,
     financialYears,
@@ -60,6 +62,10 @@ export default function SettingsPage() {
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [copiedKey, setCopiedKey] = useState(false);
   const [showLicenseKey, setShowLicenseKey] = useState(false);
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
 
   // Edit/Add FY Form State
   const [modalForm, setModalForm] = useState({
@@ -175,13 +181,19 @@ export default function SettingsPage() {
 
   // Remaining days calculation for user
   const expiryInfo = React.useMemo(() => {
-    if (!user || !user.subscriptionExpiresAt) return null;
+    if (!user || !user.subscriptionExpiresAt) {
+      return {
+        dateStr: 'Active (Unlimited)',
+        daysRemaining: 365,
+        isExpired: false,
+      };
+    }
     const expiresAt = new Date(user.subscriptionExpiresAt);
     const now = new Date();
     const diffMs = expiresAt.getTime() - now.getTime();
     const daysRemaining = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
     return {
-      dateStr: expiresAt.toLocaleDateString('en-IN', { dateStyle: 'medium' }),
+      dateStr: expiresAt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
       daysRemaining: Math.max(0, daysRemaining),
       isExpired: daysRemaining <= 0,
     };
@@ -256,57 +268,81 @@ export default function SettingsPage() {
       {/* ─── SECTION 1: USER IDENTITY & SUBSCRIPTION OVERVIEW ───────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Left Card: User Profile Information */}
-        <div className="p-5 bg-slate-900/80 border border-slate-800 rounded space-y-4 shadow-sm lg:col-span-1">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <div className="flex items-center gap-2 font-bold text-slate-100 text-sm">
-              <User size={16} className="text-indigo-400" />
+        <div className={`p-5 rounded-md space-y-4 border transition-all ${
+          theme === 'light' ? 'bg-white border-slate-200 shadow-xs' : 'bg-slate-900/80 border-slate-800 shadow-sm'
+        } lg:col-span-1`}>
+          <div className={`flex items-center justify-between border-b pb-3 ${
+            theme === 'light' ? 'border-slate-100' : 'border-slate-800'
+          }`}>
+            <div className={`flex items-center gap-2 font-bold text-sm ${
+              theme === 'light' ? 'text-slate-900' : 'text-slate-100'
+            }`}>
+              <User size={16} className={theme === 'light' ? 'text-indigo-600' : 'text-indigo-400'} />
               <span>Operator Profile</span>
             </div>
-            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
+            <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${
+              theme === 'light' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
+            }`}>
               {user?.role || 'OPERATOR'}
             </span>
           </div>
 
           <div className="space-y-3 text-xs">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center font-bold text-lg text-indigo-400 font-mono">
+              <div className={`w-12 h-12 rounded-md border flex items-center justify-center font-bold text-lg font-mono shrink-0 ${
+                theme === 'light'
+                  ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
+                  : 'bg-indigo-600/20 border-indigo-500/30 text-indigo-400'
+              }`}>
                 {user?.name?.charAt(0) || 'U'}
               </div>
-              <div className="space-y-0.5">
-                <div className="font-bold text-slate-100 text-sm">{user?.name || 'Operator'}</div>
-                <div className="text-[11px] font-mono text-indigo-400">@{user?.username || user?.email}</div>
+              <div className="space-y-0.5 min-w-0">
+                <div className={`font-bold text-sm truncate ${
+                  theme === 'light' ? 'text-slate-900' : 'text-slate-100'
+                }`}>{user?.name || 'Operator'}</div>
+                <div className={`text-[11px] font-mono truncate ${
+                  theme === 'light' ? 'text-indigo-600 font-medium' : 'text-indigo-400'
+                }`}>
+                  {user?.username
+                    ? (user.username.startsWith('@') ? user.username : `@${user.username}`)
+                    : (user?.email ? `@${user.email.split('@')[0]}` : '@operator')}
+                </div>
               </div>
             </div>
 
-            <div className="pt-2 border-t border-slate-800/80 space-y-2 text-xs">
-              <div className="flex items-center justify-between text-slate-400">
+            <div className={`pt-2 border-t space-y-2 text-xs ${
+              theme === 'light' ? 'border-slate-100' : 'border-slate-800/80'
+            }`}>
+              <div className="flex items-center justify-between text-slate-500">
                 <span className="flex items-center gap-1.5"><Building size={13} /> Company</span>
-                <span className="font-medium text-slate-200">{user?.company || 'DGR GLOBAL LOGISTICS'}</span>
+                <span className={`font-medium ${theme === 'light' ? 'text-slate-800' : 'text-slate-200'}`}>{user?.company || 'DGR GLOBAL LOGISTICS'}</span>
               </div>
 
-              <div className="flex items-center justify-between text-slate-400">
+              <div className="flex items-center justify-between text-slate-500">
                 <span className="flex items-center gap-1.5"><Briefcase size={13} /> Department</span>
-                <span className="font-medium text-slate-200">{user?.department || 'Operations'}</span>
+                <span className={`font-medium ${theme === 'light' ? 'text-slate-800' : 'text-slate-200'}`}>{user?.department || 'Operations'}</span>
               </div>
 
               {user?.email && (
-                <div className="flex items-center justify-between text-slate-400">
+                <div className="flex items-center justify-between text-slate-500">
                   <span className="flex items-center gap-1.5"><Mail size={13} /> Email</span>
-                  <span className="font-mono text-slate-200 truncate max-w-[160px]">{user.email}</span>
+                  <span className={`font-mono truncate max-w-[160px] ${theme === 'light' ? 'text-slate-800' : 'text-slate-200'}`}>{user.email}</span>
                 </div>
               )}
 
               {user?.phone && (
-                <div className="flex items-center justify-between text-slate-400">
+                <div className="flex items-center justify-between text-slate-500">
                   <span className="flex items-center gap-1.5"><Phone size={13} /> Phone</span>
-                  <span className="font-mono text-slate-200">{user.phone}</span>
+                  <span className={`font-mono ${theme === 'light' ? 'text-slate-800' : 'text-slate-200'}`}>{user.phone}</span>
                 </div>
               )}
             </div>
 
-            <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
+            <div className={`pt-2 border-t flex items-center justify-between ${
+              theme === 'light' ? 'border-slate-100' : 'border-slate-800/80'
+            }`}>
               <span className="text-[11px] text-slate-400 font-mono">Status:</span>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-mono">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 font-mono">
                 <CheckCircle2 size={11} /> ACTIVE
               </span>
             </div>
@@ -314,7 +350,9 @@ export default function SettingsPage() {
         </div>
 
         {/* Right Card: Subscription, License & Active Modules */}
-        <div className="p-5 bg-slate-900/80 border border-slate-800 rounded space-y-4 shadow-sm lg:col-span-2 flex flex-col justify-between">
+        <div className={`p-5 rounded-md space-y-4 border transition-all ${
+          theme === 'light' ? 'bg-white border-slate-200 shadow-xs' : 'bg-slate-900/80 border-slate-800 shadow-sm'
+        } lg:col-span-2 flex flex-col justify-between`}>
           <div className="space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2 font-bold text-slate-100 text-sm">
@@ -387,7 +425,7 @@ export default function SettingsPage() {
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {SYSTEM_SERVICES.slice(0, 6).map((srv) => {
+                {SYSTEM_SERVICES.map((srv) => {
                   const isEnabled = !user?.allowedServices?.length || user.allowedServices.includes(srv.id) || user.role === 'ADMIN';
                   return (
                     <div

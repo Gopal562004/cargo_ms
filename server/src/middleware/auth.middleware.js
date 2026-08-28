@@ -1,3 +1,4 @@
+import prisma from '../config/database.js';
 import { verifyAccessToken } from '../services/auth.service.js';
 import { AppError } from './error.middleware.js';
 
@@ -29,12 +30,6 @@ export function authenticate(req, _res, next) {
 /**
  * Role-based access control middleware.
  * Must be used AFTER authenticate middleware.
- *
- * @param  {...string} roles - Allowed roles (e.g., 'ADMIN', 'OPERATOR').
- * @returns {Function} Express middleware.
- *
- * @example
- * router.delete('/users/:id', authenticate, requireRole('ADMIN'), controller.delete);
  */
 export function requireRole(...roles) {
   return (req, _res, next) => {
@@ -49,3 +44,49 @@ export function requireRole(...roles) {
     next();
   };
 }
+
+/**
+ * Active Subscription guard middleware.
+ * Allows ADMIN unrestricted access; checks that non-admin operators have an active, non-expired subscription.
+ */
+export async function requireActiveSubscription(req, _res, next) {
+  try {
+    if (!req.user) {
+      return next(new AppError('Authentication required', 401));
+    }
+
+    // Master ADMIN has unlimited bypass access
+    if (req.user.role === 'ADMIN') {
+      return next();
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        id: true,
+        isActive: true,
+        subscriptionStatus: true,
+        subscriptionExpiresAt: true,
+        subscriptionPlan: true,
+      },
+    });
+
+    if (!user || user.isActive === false) {
+      return next(new AppError('Your account has been suspended or deactivated. Contact your administrator.', 403));
+    }
+
+    if (user.subscriptionStatus === 'CANCELLED' || user.subscriptionPlan === 'NO_ACTIVE_PLAN') {
+      return next(new AppError('Your subscription plan has been cancelled. Please renew your plan to create or edit documents.', 403));
+    }
+
+    if (user.subscriptionExpiresAt && new Date(user.subscriptionExpiresAt) < new Date()) {
+      const expiryDate = new Date(user.subscriptionExpiresAt).toLocaleDateString('en-IN');
+      return next(new AppError(`Your subscription expired on ${expiryDate}. Please contact your administrator to renew your license.`, 403));
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+}
+

@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
-import { hasServiceAccess } from '../../utils/permissions';
+import { hasServiceAccess, isSubscriptionExpired } from '../../utils/permissions';
+import BrandLogo from '../ui/BrandLogo';
 import {
   LayoutDashboard,
   Plus,
@@ -60,8 +61,7 @@ const NAV_SECTIONS = [
       { path: '/billing', label: 'Sales Invoices (Revenue)', icon: Receipt, serviceKey: 'SALES_BILLING' },
       { path: '/billing/purchases', label: 'Purchase Bills (Expenses/DGD)', icon: ShoppingBag, serviceKey: 'PURCHASE_BILLS' },
       { path: '/billing/ledgers', label: 'Accounting Ledgers (Tally)', icon: BookOpen, serviceKey: 'SALES_BILLING' },
-      { path: '/billing/new', label: 'Create New Bill', icon: Printer, serviceKey: 'SALES_BILLING' },
-      { path: '/billing/templates', label: 'Saved Templates & Parties', icon: Bookmark, serviceKey: 'BILLING_TEMPLATES' },
+      { path: '/billing/templates', label: 'Invoice Templates & Presets', icon: Bookmark, serviceKey: 'BILLING_TEMPLATES' },
     ],
   },
   {
@@ -90,12 +90,11 @@ const NAV_SECTIONS = [
     ],
   },
   {
-    title: 'Management',
-    serviceKey: 'CONTACTS_DIRECTORY',
+    title: 'Operations Management',
+    serviceKey: 'TEMPLATES_MANAGEMENT',
     items: [
-      { path: '/documents?category=OTHER', label: 'Other Documents', icon: Folder },
-      { path: '/contacts', label: 'Directory', icon: Users, serviceKey: 'CONTACTS_DIRECTORY' },
-      { path: '/templates', label: 'Templates', icon: LayoutTemplate, serviceKey: 'TEMPLATES_MANAGEMENT' },
+      { path: '/documents?category=OTHER', label: 'Commercial Cargo Docs', icon: Folder, serviceKey: ['AIR_FREIGHT', 'SEA_FREIGHT'] },
+      { path: '/templates', label: 'Standard Document Templates', icon: LayoutTemplate, serviceKey: 'TEMPLATES_MANAGEMENT' },
     ],
   },
 ];
@@ -104,6 +103,7 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const { user, logout } = useAuthStore();
   const { theme, toggleTheme } = useThemeStore();
+  const isExpired = isSubscriptionExpired(user);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -152,25 +152,7 @@ export default function Sidebar() {
             }`}
         >
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-8 h-8 rounded bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-sm font-bold">
-              <Package size={18} />
-            </div>
-            {!collapsed && (
-              <div className="flex flex-col truncate">
-                <span
-                  className={`font-semibold text-sm tracking-wider uppercase leading-tight ${theme === 'light' ? 'text-slate-900' : 'text-slate-100'
-                    }`}
-                >
-                  Cargo<span className="text-indigo-600">Hub</span>
-                </span>
-                <span
-                  className={`text-[10px] font-mono uppercase tracking-widest ${theme === 'light' ? 'text-slate-400' : 'text-slate-500'
-                    }`}
-                >
-                  Logistics OS
-                </span>
-              </div>
-            )}
+            <BrandLogo size="sm" showText={!collapsed} subtitle="Logistics OS" />
           </div>
 
           <button
@@ -237,7 +219,14 @@ export default function Sidebar() {
                       />
 
                       {!collapsed ? (
-                        <span className="truncate">{item.label}</span>
+                        <div className="flex items-center justify-between w-full min-w-0">
+                          <span className="truncate">{item.label}</span>
+                          {isExpired && item.path !== '/settings' && item.path !== '/master/users' && (
+                            <span className="px-1.5 py-0.2 text-[9px] font-mono rounded bg-rose-500/15 text-rose-500 font-bold border border-rose-500/30">
+                              Locked
+                            </span>
+                          )}
+                        </div>
                       ) : (
                         /* Collapsed Hover Tooltip */
                         <div
@@ -246,7 +235,7 @@ export default function Sidebar() {
                               : 'bg-slate-800 text-slate-100'
                             }`}
                         >
-                          {item.label}
+                          {item.label} {isExpired && item.path !== '/settings' && item.path !== '/master/users' ? '(Locked - Expired)' : ''}
                         </div>
                       )}
                     </NavLink>

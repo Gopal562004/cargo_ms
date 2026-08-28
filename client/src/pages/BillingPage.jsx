@@ -25,6 +25,9 @@ import {
   Layers,
   ArrowRight,
   BookOpen,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
 import { useDocumentStore } from '../store/documentStore';
 import { useFinancialYearStore, filterDocumentsByFY } from '../store/financialYearStore';
@@ -33,6 +36,7 @@ import InvoiceDetailModal from '../components/documents/InvoiceDetailModal';
 import BillingTemplateManagerModal from '../components/documents/BillingTemplateManagerModal';
 import BillingExportModal from '../components/documents/BillingExportModal';
 import PdfPreviewModal from '../components/ui/PdfPreviewModal';
+import ConfirmDialog from '../components/ui/ConfirmDialog';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import Input from '../components/ui/Input';
@@ -53,9 +57,21 @@ export default function BillingPage() {
     navigate('/documents/new/TAX_INVOICE');
   };
 
-  // Pagination state
+  // Pagination & Sorting state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [sortBy, setSortBy] = useState('date');
+  const [sortOrder, setSortOrder] = useState('desc');
+
+  const handleSort = (column) => {
+    if (sortBy === column) {
+      setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortBy(column);
+      setSortOrder(column === 'date' || column === 'amount' ? 'desc' : 'asc');
+    }
+    setCurrentPage(1);
+  };
 
   // Filter input states (staged until Applied)
   const [search, setSearch] = useState('');
@@ -413,9 +429,48 @@ export default function BillingPage() {
     document.body.removeChild(link);
   };
 
-  // Pagination slicing
+  // Sorting & Pagination slicing
+  const sortedInvoices = [...filteredInvoices].sort((a, b) => {
+    let aVal, bVal;
+    if (sortBy === 'invoiceNumber') {
+      aVal = (a.documentNumber || a.data?.invoiceNumber || '').toLowerCase();
+      bVal = (b.documentNumber || b.data?.invoiceNumber || '').toLowerCase();
+      return sortOrder === 'asc' ? aVal.localeCompare(bVal, undefined, { numeric: true }) : bVal.localeCompare(aVal, undefined, { numeric: true });
+    } else if (sortBy === 'date') {
+      const parseDate = (d) => {
+        if (d.data?.invoiceDate) {
+          const parts = d.data.invoiceDate.split('/');
+          if (parts.length === 3) {
+            return new Date(parts[2], parts[1] - 1, parts[0]).getTime();
+          }
+        }
+        return new Date(d.createdAt || 0).getTime();
+      };
+      aVal = parseDate(a);
+      bVal = parseDate(b);
+      return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
+    } else if (sortBy === 'buyer') {
+      aVal = (a.data?.buyerName || '').toLowerCase();
+      bVal = (b.data?.buyerName || '').toLowerCase();
+      return sortOrder === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+    } else if (sortBy === 'shipper') {
+      aVal = (a.data?.consigneeName || a.data?.shipperName || '').toLowerCase();
+      bVal = (b.data?.consigneeName || b.data?.shipperName || '').toLowerCase();
+      return sortOrder === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+    } else if (sortBy === 'amount') {
+      aVal = parseFloat(a.data?.grandTotal) || 0;
+      bVal = parseFloat(b.data?.grandTotal) || 0;
+      return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
+    } else if (sortBy === 'status') {
+      aVal = (a.status || '').toLowerCase();
+      bVal = (b.status || '').toLowerCase();
+      return sortOrder === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+    }
+    return 0;
+  });
+
   const startIndex = (currentPage - 1) * pageSize;
-  const paginatedInvoices = filteredInvoices.slice(startIndex, startIndex + pageSize);
+  const paginatedInvoices = sortedInvoices.slice(startIndex, startIndex + pageSize);
 
   const handlePrint = async (docId) => {
     setPrintingId(docId);
@@ -440,14 +495,21 @@ export default function BillingPage() {
     }
   };
 
-  const handleDelete = async (docId) => {
-    if (window.confirm('Are you sure you want to delete this Tax Invoice?')) {
-      try {
-        await deleteDocument(docId);
-        fetchDocuments({ documentType: 'TAX_INVOICE', limit: 100, sortBy: 'createdAt', sortOrder: 'desc' });
-      } catch (err) {
-        alert('Failed to delete invoice: ' + err.message);
-      }
+  const [deleteTargetDoc, setDeleteTargetDoc] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTargetDoc) return;
+    setIsDeleting(true);
+    try {
+      await deleteDocument(deleteTargetDoc.id);
+      setSuccessMessage(`Tax Invoice #${deleteTargetDoc.documentNumber || deleteTargetDoc.data?.invoiceNumber || ''} deleted successfully.`);
+      fetchDocuments({ documentType: 'TAX_INVOICE', limit: 100, sortBy: 'createdAt', sortOrder: 'desc' });
+      setDeleteTargetDoc(null);
+    } catch (err) {
+      alert('Failed to delete invoice: ' + err.message);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -899,14 +961,92 @@ export default function BillingPage() {
             <table className="w-full text-xs text-left border-collapse">
               <thead className="bg-slate-950/50 text-slate-400 font-semibold border-b border-slate-800 text-[11px]">
                 <tr>
-                  <th className="py-3 px-3 whitespace-nowrap">Invoice #</th>
-                  <th className="py-3 px-3 whitespace-nowrap">Date</th>
-                  <th className="py-3 px-3 min-w-[130px] max-w-[200px]">Billed To (Buyer)</th>
-                  <th className="py-3 px-3 min-w-[130px] max-w-[200px]">Shipper / Destination</th>
+                  <th
+                    className="py-3 px-3 whitespace-nowrap cursor-pointer select-none hover:text-white transition-colors"
+                    onClick={() => handleSort('invoiceNumber')}
+                    title="Click to sort by Invoice #"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>Invoice #</span>
+                      {sortBy === 'invoiceNumber' ? (
+                        sortOrder === 'asc' ? <ArrowUp size={12} className="text-indigo-400" /> : <ArrowDown size={12} className="text-indigo-400" />
+                      ) : (
+                        <ArrowUpDown size={11} className="text-slate-600 hover:text-slate-400" />
+                      )}
+                    </div>
+                  </th>
+                  <th
+                    className="py-3 px-3 whitespace-nowrap cursor-pointer select-none hover:text-white transition-colors"
+                    onClick={() => handleSort('date')}
+                    title="Click to sort by Date"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>Date</span>
+                      {sortBy === 'date' ? (
+                        sortOrder === 'asc' ? <ArrowUp size={12} className="text-indigo-400" /> : <ArrowDown size={12} className="text-indigo-400" />
+                      ) : (
+                        <ArrowUpDown size={11} className="text-slate-600 hover:text-slate-400" />
+                      )}
+                    </div>
+                  </th>
+                  <th
+                    className="py-3 px-3 min-w-[130px] max-w-[200px] cursor-pointer select-none hover:text-white transition-colors"
+                    onClick={() => handleSort('buyer')}
+                    title="Click to sort by Buyer Name"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>Billed To (Buyer)</span>
+                      {sortBy === 'buyer' ? (
+                        sortOrder === 'asc' ? <ArrowUp size={12} className="text-indigo-400" /> : <ArrowDown size={12} className="text-indigo-400" />
+                      ) : (
+                        <ArrowUpDown size={11} className="text-slate-600 hover:text-slate-400" />
+                      )}
+                    </div>
+                  </th>
+                  <th
+                    className="py-3 px-3 min-w-[130px] max-w-[200px] cursor-pointer select-none hover:text-white transition-colors"
+                    onClick={() => handleSort('shipper')}
+                    title="Click to sort by Destination"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>Shipper / Destination</span>
+                      {sortBy === 'shipper' ? (
+                        sortOrder === 'asc' ? <ArrowUp size={12} className="text-indigo-400" /> : <ArrowDown size={12} className="text-indigo-400" />
+                      ) : (
+                        <ArrowUpDown size={11} className="text-slate-600 hover:text-slate-400" />
+                      )}
+                    </div>
+                  </th>
                   <th className="py-3 px-3 min-w-[140px] max-w-[220px]">Products / Items</th>
                   <th className="py-3 px-3 whitespace-nowrap">AWB / Ref</th>
-                  <th className="py-3 px-3 text-right whitespace-nowrap">Amount (₹)</th>
-                  <th className="py-3 px-3 text-center whitespace-nowrap">Status</th>
+                  <th
+                    className="py-3 px-3 text-right whitespace-nowrap cursor-pointer select-none hover:text-white transition-colors"
+                    onClick={() => handleSort('amount')}
+                    title="Click to sort by Amount"
+                  >
+                    <div className="flex items-center justify-end gap-1.5">
+                      <span>Amount (₹)</span>
+                      {sortBy === 'amount' ? (
+                        sortOrder === 'asc' ? <ArrowUp size={12} className="text-indigo-400" /> : <ArrowDown size={12} className="text-indigo-400" />
+                      ) : (
+                        <ArrowUpDown size={11} className="text-slate-600 hover:text-slate-400" />
+                      )}
+                    </div>
+                  </th>
+                  <th
+                    className="py-3 px-3 text-center whitespace-nowrap cursor-pointer select-none hover:text-white transition-colors"
+                    onClick={() => handleSort('status')}
+                    title="Click to sort by Status"
+                  >
+                    <div className="flex items-center justify-center gap-1.5">
+                      <span>Status</span>
+                      {sortBy === 'status' ? (
+                        sortOrder === 'asc' ? <ArrowUp size={12} className="text-indigo-400" /> : <ArrowDown size={12} className="text-indigo-400" />
+                      ) : (
+                        <ArrowUpDown size={11} className="text-slate-600 hover:text-slate-400" />
+                      )}
+                    </div>
+                  </th>
                   <th className="py-3 px-3 text-right whitespace-nowrap shrink-0">Actions</th>
                 </tr>
               </thead>
@@ -1027,8 +1167,8 @@ export default function BillingPage() {
                           {/* Delete */}
                           <button
                             type="button"
-                            className="p-1 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition-colors"
-                            onClick={() => handleDelete(doc.id)}
+                            className="p-1 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition-colors cursor-pointer"
+                            onClick={() => setDeleteTargetDoc(doc)}
                             title="Delete Invoice"
                           >
                             <Trash2 size={14} />
@@ -1101,6 +1241,17 @@ export default function BillingPage() {
           financialYears={financialYears}
         />
       )}
+      {/* Custom Delete Confirmation Modal */}
+      <ConfirmDialog
+        isOpen={Boolean(deleteTargetDoc)}
+        onClose={() => setDeleteTargetDoc(null)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Tax Invoice"
+        message={`Are you sure you want to permanently delete Tax Invoice #${deleteTargetDoc?.documentNumber || deleteTargetDoc?.data?.invoiceNumber || ''}? This action cannot be undone.`}
+        confirmText="Delete Invoice"
+        variant="danger"
+        isLoading={isDeleting}
+      />
     </div>
   );
 }
