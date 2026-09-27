@@ -25,6 +25,7 @@ export default function DownloadModal({ isOpen, onClose }) {
   const [activeTab, setActiveTab] = useState('windows');
   const [downloadingOS, setDownloadingOS] = useState(null);
   const [downloadError, setDownloadError] = useState(null);
+  const [releaseUrl, setReleaseUrl] = useState('https://github.com/Gopal562004/cargo_ms/releases');
 
   useEffect(() => {
     if (!isOpen) return;
@@ -60,8 +61,11 @@ export default function DownloadModal({ isOpen, onClose }) {
         const errorData = await res.json().catch(() => ({}));
         setDownloadError(
           errorData.message ||
-            `Installer binary (${filename}) is currently being packaged. Please wait a moment.`
+            `Cloud web host does not store 240MB executables. Please download from GitHub Releases.`
         );
+        if (errorData.githubReleaseUrl || errorData.releasePageUrl) {
+          setReleaseUrl(errorData.githubReleaseUrl || errorData.releasePageUrl);
+        }
       }
     } catch (err) {
       // Fallback
@@ -128,15 +132,29 @@ export default function DownloadModal({ isOpen, onClose }) {
           </div>
         </div>
 
-        {/* Dynamic Status / Compilation Notice */}
+        {/* Dynamic Status / Release Download Notice */}
         {downloadError && (
-          <div className="mx-6 mt-4 p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-200 text-xs font-mono flex items-start gap-2.5">
-            <WifiOff size={16} className="text-amber-400 shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <span className="font-bold">{downloadError}</span>
-              <p className="text-[11px] text-amber-300/80">
-                The standalone Windows installer is packaging into dist-electron/. Once complete, click download again to save the genuine installer.
-              </p>
+          <div className="mx-6 mt-4 p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-200 text-xs font-mono space-y-3 shrink-0">
+            <div className="flex items-start gap-2.5">
+              <WifiOff size={16} className="text-amber-400 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <span className="font-bold block">{downloadError}</span>
+                <p className="text-[11px] text-amber-300/80 leading-relaxed">
+                  Web hosts (Vercel & Render) cannot store large 240MB executables. Desktop installers are hosted securely on GitHub Releases for fast download.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 pt-1">
+              <a
+                href={releaseUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-colors shadow-md shadow-indigo-600/30 cursor-pointer"
+              >
+                <Download size={13} />
+                <span>Open Download in GitHub Releases</span>
+                <ExternalLink size={12} />
+              </a>
             </div>
           </div>
         )}
@@ -382,6 +400,22 @@ export default function DownloadModal({ isOpen, onClose }) {
               </p>
             </div>
           </div>
+        </div>
+
+        {/* Modal Footer / Release Link */}
+        <div className={`p-4 border-t flex items-center justify-between text-xs shrink-0 ${isDark ? 'border-slate-800 bg-slate-950/70 text-slate-400' : 'border-slate-100 bg-slate-50 text-slate-600'}`}>
+          <div className="text-[11px] font-mono">
+            CargoMS Desktop v1.0.0 · Production Release
+          </div>
+          <a
+            href="https://github.com/Gopal562004/cargo_ms/releases"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-indigo-400 hover:text-indigo-300 font-mono font-bold transition-colors cursor-pointer"
+          >
+            <span>All GitHub Releases</span>
+            <ExternalLink size={12} />
+          </a>
         </div>
       </div>
     </div>

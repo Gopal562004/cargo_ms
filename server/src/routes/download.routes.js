@@ -124,16 +124,26 @@ router.get('/desktop', (req, res) => {
     }
   }
 
-  // If binary is not yet compiled on this machine, return 404 so browsers don't save JSON as an .exe
+  // Fallback: If binary is not on this server (e.g. hosted on Render), redirect to GitHub Release asset
+  const githubReleaseBase = process.env.DESKTOP_DOWNLOAD_URL || 'https://github.com/Gopal562004/cargo_ms/releases/download/v1.0.0';
+  const githubReleaseUrl = `${githubReleaseBase}/${filename}`;
+  const releasePageUrl = 'https://github.com/Gopal562004/cargo_ms/releases';
+
+  // If redirect query or environment variable is set, directly redirect to GitHub Releases
+  if (req.query.redirect === 'true') {
+    return res.redirect(githubReleaseUrl);
+  }
+
   return res.status(404).json({
     success: false,
-    message: `Installer binary "${filename}" is currently compiling or not yet generated.`,
+    message: `Installer binary "${filename}" is not stored on this cloud server. Please download directly from the official GitHub Release.`,
+    githubReleaseUrl,
+    releasePageUrl,
     downloadDetails: {
       file: filename,
       os,
       version: '1.0.0',
-      instruction: 'To build the standalone installer on your system, run: npm run electron:build:win',
-      buildOutputsDirectory: 'dist-electron/',
+      instruction: 'Upload your compiled binaries from dist-electron/ to GitHub Releases under tag v1.0.0.',
     },
   });
 });
