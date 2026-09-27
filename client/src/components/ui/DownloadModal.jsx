@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Download,
   X,
@@ -25,7 +26,16 @@ export default function DownloadModal({ isOpen, onClose }) {
   const [downloadingOS, setDownloadingOS] = useState(null);
   const [downloadError, setDownloadError] = useState(null);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  if (!isOpen || typeof document === 'undefined') return null;
 
   const handleDownload = async (os, filename) => {
     setDownloadingOS(os);
@@ -63,17 +73,21 @@ export default function DownloadModal({ isOpen, onClose }) {
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in select-none">
+  const modalContent = (
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-sm animate-fade-in select-none overflow-y-auto"
+      onClick={onClose}
+    >
       <div
-        className={`w-full max-w-2xl rounded-2xl border shadow-2xl overflow-hidden transition-all ${
+        className={`relative w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl border shadow-2xl overflow-hidden transition-all my-auto ${
           isDark
             ? 'bg-[#0b101c] border-slate-800 text-slate-100 shadow-indigo-950/20'
             : 'bg-white border-slate-200 text-slate-900 shadow-slate-400/20'
         }`}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className={`p-6 border-b flex items-center justify-between ${isDark ? 'border-slate-800/80 bg-slate-950/40' : 'border-slate-100 bg-slate-50/60'}`}>
+        <div className={`shrink-0 p-6 border-b flex items-center justify-between ${isDark ? 'border-slate-800/80 bg-slate-950/40' : 'border-slate-100 bg-slate-50/60'}`}>
           <div className="flex items-center gap-3.5">
             <BrandLogo size="md" showText={false} />
             <div>
@@ -99,7 +113,7 @@ export default function DownloadModal({ isOpen, onClose }) {
         </div>
 
         {/* Feature Highlights Grid */}
-        <div className={`grid grid-cols-3 gap-2 p-4 border-b text-xs font-mono ${isDark ? 'border-slate-800/60 bg-slate-900/30' : 'border-slate-100 bg-slate-50/40'}`}>
+        <div className={`shrink-0 grid grid-cols-3 gap-2 p-4 border-b text-xs font-mono ${isDark ? 'border-slate-800/60 bg-slate-900/30' : 'border-slate-100 bg-slate-50/40'}`}>
           <div className="flex items-center gap-2 text-slate-300">
             <WifiOff size={15} className="text-amber-400 shrink-0" />
             <span className="truncate">30-Day Offline Lease</span>
@@ -127,8 +141,8 @@ export default function DownloadModal({ isOpen, onClose }) {
           </div>
         )}
 
-        {/* OS Platform Tabs */}
-        <div className="p-6 space-y-6">
+        {/* OS Platform Tabs & Content (Scrollable if height is constrained) */}
+        <div className="p-6 space-y-6 overflow-y-auto">
           <div className="grid grid-cols-3 gap-2 p-1 bg-slate-950/70 border border-slate-800/80 rounded-xl text-xs font-mono">
             <button
               type="button"
@@ -372,4 +386,6 @@ export default function DownloadModal({ isOpen, onClose }) {
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }
