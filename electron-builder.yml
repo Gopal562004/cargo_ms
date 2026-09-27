@@ -1,0 +1,59 @@
+appId: com.cargoms.desktop
+productName: CargoMS Desktop
+publish:
+  provider: github
+  owner: Gopal562004
+  repo: cargo_ms
+  releaseType: release
+directories:
+  output: dist-electron
+
+files:
+  - "electron/**/*"
+  - "client/dist/**/*"
+  - "server/src/**/*"
+  - "server/prisma/**/*"
+  - "server/template/**/*"
+  - "server/package.json"
+  - "server/node_modules/**/*"
+  - "!server/node_modules/.cache"
+  - "!**/node_modules/.package-lock.json"
+
+extraResources:
+  - from: "server"
+    to: "server"
+    filter:
+      - "src/**/*"
+      - "prisma/**/*"
+      - "template/**/*"
+      - "package.json"
+      - "node_modules/**/*"
+      - "!node_modules/.cache/**"
+      - "!.env"
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+  icon: assets/icon.ico
+
+mac:
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+  icon: assets/icon.png
+  category: public.app-category.business
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: CargoMS Desktop
+  deleteAppDataOnUninstall: false

@@ -7,7 +7,17 @@ import { drawExactFedExAwbFace, drawExactAwbReverse } from '../common/awbDrawHel
 export function generateExactFedExIataAWBPDF(document) {
   return new Promise(async (resolve, reject) => {
     try {
-      const doc = new PDFDocument({ size: 'A4', margin: 0 });
+      const rawNum = document.documentNumber || document.data?.awbNumber || 'Air_Waybill';
+      const safeTitle = String(rawNum).replace(/[/\\?%*:|"<>]/g, '_').trim();
+      const doc = new PDFDocument({
+        size: 'A4',
+        margin: 0,
+        info: {
+          Title: safeTitle,
+          Author: document.data?.carrierName || 'CargoMS',
+          Subject: `Air Waybill ${rawNum}`,
+        },
+      });
       const chunks = [];
 
       doc.on('data', (chunk) => chunks.push(chunk));

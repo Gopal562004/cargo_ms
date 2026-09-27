@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import prisma from '../config/database.js';
 import { hashPassword } from '../services/auth.service.js';
 import { AppError } from '../middleware/error.middleware.js';
+import { hydrateUser, hydrateUsers, hydrateActivityLogs, stringifyAllowedServices, stringifyJsonField } from '../utils/sqlite-helpers.js';
 
 export const SYSTEM_SERVICES = [
   { id: 'AIR_FREIGHT', label: 'Air Freight & Air Waybills', category: 'Operations', description: 'Create and manage MAWB, HAWB, Manifests, DGD' },
@@ -74,7 +75,7 @@ export async function logUserActivity(userId, action, description, performedBy =
         action,
         description,
         performedBy,
-        metadata: metadata ? metadata : undefined,
+        metadata: metadata ? stringifyJsonField(metadata) : undefined,
       },
     });
   } catch (err) {
@@ -124,25 +125,25 @@ export async function listUsers(req, res, next) {
     // Auto-backfill: Ensure every user has their own distinct, unique License Key & Expiry Date saved in DB
     const formattedUsers = await Promise.all(
       users.map(async (u) => {
-        let currentKey = u.licenseKey;
-        let currentExpiresAt = u.subscriptionExpiresAt;
+        const hydrated = hydrateUser(u);
+        let currentKey = hydrated.licenseKey;
+        let currentExpiresAt = hydrated.subscriptionExpiresAt;
 
-        // If user is missing license key or expiry, generate and save it permanently
         if (!currentKey || !currentExpiresAt) {
           currentKey = currentKey || generateLicenseKey();
           if (!currentExpiresAt) {
-            const exp = new Date(u.createdAt || now);
+            const exp = new Date(hydrated.createdAt || now);
             exp.setFullYear(exp.getFullYear() + 1);
             currentExpiresAt = exp;
           }
           try {
             await prisma.user.update({
-              where: { id: u.id },
+              where: { id: hydrated.id },
               data: {
                 licenseKey: currentKey,
                 subscriptionExpiresAt: currentExpiresAt,
-                subscriptionPlan: u.subscriptionPlan || 'STARTER',
-                subscriptionStatus: u.isActive ? 'ACTIVE' : 'INACTIVE',
+                subscriptionPlan: hydrated.subscriptionPlan || 'STARTER',
+                subscriptionStatus: hydrated.isActive ? 'ACTIVE' : 'INACTIVE',
               },
             });
           } catch (updateErr) {
@@ -161,12 +162,12 @@ export async function listUsers(req, res, next) {
         }
 
         return {
-          ...u,
-          username: u.username || (u.email ? u.email.split('@')[0] : 'user'),
+          ...hydrated,
+          username: hydrated.username || (hydrated.email ? hydrated.email.split('@')[0] : 'user'),
           licenseKey: currentKey,
-          subscriptionPlan: u.subscriptionPlan || 'STARTER',
+          subscriptionPlan: hydrated.subscriptionPlan || 'STARTER',
           subscriptionExpiresAt: currentExpiresAt,
-          subscriptionStatus: !u.isActive ? 'INACTIVE' : isExpired ? 'EXPIRED' : (u.subscriptionStatus || 'ACTIVE'),
+          subscriptionStatus: !hydrated.isActive ? 'INACTIVE' : isExpired ? 'EXPIRED' : (hydrated.subscriptionStatus || 'ACTIVE'),
           daysRemaining,
           isExpired,
         };
@@ -259,7 +260,7 @@ export async function createUser(req, res, next) {
         company: company ? company.trim() : null,
         role: role || 'OPERATOR',
         isActive: isActive !== undefined ? Boolean(isActive) : true,
-        allowedServices: services,
+        allowedServices: stringifyAllowedServices(services),
         phone: phone ? phone.trim() : null,
         department: department ? department.trim() : null,
         licenseKey,
@@ -349,7 +350,7 @@ export async function updateUser(req, res, next) {
     if (company !== undefined) updateData.company = company ? company.trim() : null;
     if (role !== undefined) updateData.role = role;
     if (isActive !== undefined) updateData.isActive = Boolean(isActive);
-    if (allowedServices !== undefined) updateData.allowedServices = Array.isArray(allowedServices) ? allowedServices : [];
+    if (allowedServices !== undefined) updateData.allowedServices = stringifyAllowedServices(Array.isArray(allowedServices) ? allowedServices : []);
     if (phone !== undefined) updateData.phone = phone ? phone.trim() : null;
     if (department !== undefined) updateData.department = department ? department.trim() : null;
     const adminName = req.user?.name || req.user?.username || 'Super Admin';

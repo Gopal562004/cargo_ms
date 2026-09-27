@@ -1,0 +1,276 @@
+// ─── DESKTOP (SQLite) SCHEMA ─────────────────────────
+// This schema is used ONLY for the Electron desktop application.
+// The web/cloud version uses schema.prisma (PostgreSQL).
+//
+// Key differences from PostgreSQL schema:
+//   - provider = "sqlite" (no server needed, single .db file)
+//   - String[] arrays → String (JSON serialized)
+//   - Json fields → String (JSON serialized)
+//   - Decimal → Float (SQLite has no decimal type)
+//   - No @db.Decimal annotations
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/desktop-client"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DESKTOP_DATABASE_URL")
+}
+
+// ─── AUTH ────────────────────────────────────────────
+
+model User {
+  id                   String            @id @default(cuid())
+  username             String?           @unique
+  email                String?           @unique
+  passwordHash         String
+  name                 String
+  company              String?
+  role                 Role              @default(OPERATOR)
+  isActive             Boolean           @default(true)
+  allowedServices      String            @default("[]")
+  phone                String?
+  department           String?
+  licenseKey           String?           @unique
+  subscriptionPlan     String?           @default("STARTER")
+  subscriptionDuration String?           @default("1_YEAR")
+  subscriptionStartDate DateTime?        @default(now())
+  subscriptionExpiresAt DateTime?
+  subscriptionStatus   String?           @default("ACTIVE")
+  maxSeats             Int?              @default(1)
+  notes                String?
+  lastLoginAt          DateTime?
+  loginCount           Int               @default(0)
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  documents    Document[]
+  contacts     Contact[]
+  templates    Template[]
+  activityLogs UserActivityLog[]
+  deviceSeats  DeviceSeat[]
+}
+
+model UserActivityLog {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action      String
+  description String
+  performedBy String?  @default("SYSTEM")
+  metadata    String?
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+enum Role {
+  ADMIN
+  OPERATOR
+  VIEWER
+}
+
+// ─── DEVICE SEATS (License Hardware Binding) ─────────
+
+model DeviceSeat {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  machineId    String
+  deviceName   String?
+  osPlatform   String?
+  ipAddress    String?
+  isActive     Boolean  @default(true)
+  firstSeenAt  DateTime @default(now())
+  lastActiveAt DateTime @default(now())
+
+  @@unique([userId, machineId])
+  @@index([machineId])
+}
+
+// ─── DOCUMENT ENGINE ─────────────────────────────────
+
+model Document {
+  id             String           @id @default(cuid())
+  documentNumber String?
+  documentType   DocumentType
+  category       DocumentCategory
+  status         DocumentStatus   @default(DRAFT)
+  version        Int              @default(1)
+  title          String?
+
+  data String @default("{}")
+
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  statusHistory StatusHistory[]
+  packages      Package[]
+
+  @@index([documentType])
+  @@index([status])
+  @@index([documentNumber])
+  @@index([createdById])
+  @@index([category])
+}
+
+enum DocumentType {
+  MAWB
+  HAWB
+  MANIFEST
+  DGD
+  LABEL
+  CARGO_POUCH_LABEL
+  CSD
+  FWB
+  FHL
+  XFWB
+  XFZB
+  FFR
+  HAWB_FHL
+  BILL_OF_LADING
+  BOL_MANIFEST
+  IMO_DGD
+  SOLAS_VGM
+  BOOKING
+  TAX_INVOICE
+  PROFORMA_INVOICE
+  WAREHOUSE_RECEIPT
+  DOCK_RECEIPT
+  CERTIFICATE_OF_ORIGIN
+  DELIVERY_ORDER
+  DELIVERY_NOTE
+  FCR
+  CMR
+  ARRIVAL_NOTICE
+  SECURITY_DECLARATION
+  LETTER
+}
+
+enum DocumentCategory {
+  AIR_FREIGHT
+  SEA_FREIGHT
+  EDI
+  OTHER
+}
+
+enum DocumentStatus {
+  DRAFT
+  VALIDATED
+  ISSUED
+  BOOKED
+  DEPARTED
+  IN_TRANSIT
+  ARRIVED
+  DELIVERED
+  CANCELLED
+  COMPLETED
+}
+
+// ─── PACKAGES ────────────────────────────────────────
+
+model Package {
+  id            String   @id @default(cuid())
+  documentId    String
+  document      Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  pieceNumber   Int
+  length        Float?
+  width         Float?
+  height        Float?
+  dimensionUnit String   @default("CM")
+  weight        Float    @default(0)
+  weightUnit    String   @default("KG")
+  description   String?
+  marks         String?
+  hazClass      String?
+  unNumber      String?
+  createdAt     DateTime @default(now())
+}
+
+// ─── STATUS HISTORY ──────────────────────────────────
+
+model StatusHistory {
+  id         String         @id @default(cuid())
+  documentId String
+  document   Document       @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  status     DocumentStatus
+  note       String?
+  changedBy  String?
+  changedAt  DateTime       @default(now())
+}
+
+// ─── CONTACTS / ADDRESS BOOK ─────────────────────────
+
+model Contact {
+  id            String      @id @default(cuid())
+  type          ContactType
+  name          String
+  company       String?
+  address       String?
+  city          String?
+  state         String?
+  country       String?
+  postalCode    String?
+  phone         String?
+  email         String?
+  fax           String?
+  iataCode      String?
+  accountNumber String?
+  taxId         String?
+  notes         String?
+
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([type])
+  @@index([name])
+  @@index([createdById])
+}
+
+enum ContactType {
+  SHIPPER
+  CONSIGNEE
+  AGENT
+  CARRIER
+  BROKER
+  NOTIFY_PARTY
+  WAREHOUSE
+  OTHER
+}
+
+// ─── TEMPLATES ───────────────────────────────────────
+
+model Template {
+  id           String       @id @default(cuid())
+  name         String
+  description  String?
+  documentType DocumentType
+  data         String       @default("{}")
+  isDefault    Boolean      @default(false)
+
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([documentType])
+  @@index([createdById])
+}
+
+// ─── APP CONFIG (Local Settings Store) ───────────────
+
+model AppConfig {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+
+  @@index([key])
+}

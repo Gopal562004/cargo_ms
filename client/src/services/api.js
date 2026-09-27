@@ -1,8 +1,15 @@
 import axios from 'axios';
 
-let rawUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-rawUrl = rawUrl.replace(/\/+$/, '');
-const API_BASE_URL = rawUrl.endsWith('/api') ? rawUrl : `${rawUrl}/api`;
+export function getApiBaseUrl() {
+  if (typeof window !== 'undefined' && window.__ELECTRON_API_URL__) {
+    return window.__ELECTRON_API_URL__;
+  }
+  let rawUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  rawUrl = rawUrl.replace(/\/+$/, '');
+  return rawUrl.endsWith('/api') ? rawUrl : `${rawUrl}/api`;
+}
+
+const API_BASE_URL = getApiBaseUrl();
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -15,6 +22,10 @@ const api = axios.create({
 // ─── Request interceptor: attach JWT ──────────────────
 
 api.interceptors.request.use((config) => {
+  const currentBase = getApiBaseUrl();
+  if (currentBase && (!config.baseURL || config.baseURL.includes('localhost:5000'))) {
+    config.baseURL = currentBase;
+  }
   const token = localStorage.getItem('accessToken');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -56,8 +67,9 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
+        const refreshBase = getApiBaseUrl();
         const res = await axios.post(
-          `${API_BASE_URL}/auth/refresh`,
+          `${refreshBase}/auth/refresh`,
           {},
           { withCredentials: true }
         );
@@ -69,7 +81,11 @@ api.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError, null);
         localStorage.removeItem('accessToken');
-        window.location.href = '/login';
+        if (window.electronAPI || window.location.hash) {
+          window.location.hash = '#/login';
+        } else {
+          window.location.href = '/login';
+        }
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

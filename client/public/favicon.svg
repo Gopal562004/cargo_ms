@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Rounded Indigo Brand Box -->
+  <rect width="64" height="64" rx="14" fill="#4f46e5" />
+  <rect x="0.5" y="0.5" width="63" height="63" rx="13.5" stroke="#6366f1" stroke-opacity="0.4" />
+  
+  <!-- Crisp Package Isometric Box Icon -->
+  <g transform="translate(14, 14)" stroke="white" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- Lucide Package paths scaled to 36x36 -->
+    <!-- Top Cube face -->
+    <path d="M18 3.5 L32.5 11 L18 18.5 L3.5 11 Z" />
+    <!-- Left face bottom edge -->
+    <path d="M3.5 11 L3.5 25 L18 32.5 L18 18.5" />
+    <!-- Right face bottom edge -->
+    <path d="M32.5 11 L32.5 25 L18 32.5" />
+    <!-- Box top fold seam -->
+    <path d="M10.75 7.25 L25.25 14.75" />
+  </g>
+</svg>

@@ -35,10 +35,10 @@ export async function getAllContacts(req, res, next) {
       ...(type && { type }),
       ...(search && {
         OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { company: { contains: search, mode: 'insensitive' } },
-          { email: { contains: search, mode: 'insensitive' } },
-          { city: { contains: search, mode: 'insensitive' } },
+          { name: { contains: search, ...(process.env.ELECTRON_EMBEDDED === 'true' ? {} : { mode: 'insensitive' }) } },
+          { company: { contains: search, ...(process.env.ELECTRON_EMBEDDED === 'true' ? {} : { mode: 'insensitive' }) } },
+          { email: { contains: search, ...(process.env.ELECTRON_EMBEDDED === 'true' ? {} : { mode: 'insensitive' }) } },
+          { city: { contains: search, ...(process.env.ELECTRON_EMBEDDED === 'true' ? {} : { mode: 'insensitive' }) } },
         ],
       }),
     };

@@ -158,10 +158,24 @@ export async function downloadPDF(req, res, next) {
     const document = await documentService.getDocumentById(req.params.id, req.user.id);
     const pdfBuffer = await generateDocumentPDF(document);
 
+    // Auto-save locally in organized folders (non-blocking)
+    import('../services/localStorage.service.js')
+      .then(({ saveDocumentLocally }) => {
+        const companyName = req.user?.companyName || req.user?.company || 'MyCompany';
+        return saveDocumentLocally(document, pdfBuffer, companyName);
+      })
+      .catch((err) => {
+        console.warn('[LocalStorage] Auto-save skipped/failed:', err.message);
+      });
+
+    const rawDocNumber = document.documentNumber || document.data?.invoiceNumber || document.id;
+    // Replace forward slashes and invalid filename characters with '_' so browsers don't strip the filename
+    const safeDocNumber = String(rawDocNumber).replace(/[/\\?%*:|"<>]/g, '_').trim();
+
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(
       'Content-Disposition',
-      `inline; filename="${document.documentNumber || document.id}.pdf"`
+      `inline; filename="${safeDocNumber}.pdf"; filename*=UTF-8''${encodeURIComponent(safeDocNumber)}.pdf`
     );
     res.send(pdfBuffer);
   } catch (error) {

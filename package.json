@@ -1,0 +1,118 @@
+{
+  "name": "cargoms-desktop",
+  "version": "1.0.0",
+  "description": "CargoMS Desktop - Enterprise Cargo Document Management & Billing Software",
+  "main": "electron/main.cjs",
+  "private": true,
+  "scripts": {
+    "client:install": "npm install --prefix client",
+    "server:install": "npm install --prefix server",
+    "install:all": "npm run client:install && npm run server:install",
+    "client:build": "npm run build --prefix client",
+    "server:generate": "node -e \"if (!require('fs').existsSync('server/node_modules/.prisma/desktop-client/index.js')) { require('child_process').execSync('npm run db:generate:desktop --prefix server', { stdio: 'inherit' }); } else { console.log('✅ Desktop Prisma client ready.'); }\"",
+    "server:db:push": "npm run db:push:desktop --prefix server",
+    "prebuild": "npm run client:build && npm run server:generate",
+    "electron:dev": "concurrently -k \"npm run dev --prefix client\" \"wait-on tcp:5173 && electron .\"",
+    "electron:build": "npm run prebuild && electron-builder",
+    "electron:build:win": "npm run prebuild && electron-builder --win",
+    "electron:build:mac": "npm run prebuild && electron-builder --mac",
+    "electron:build:dir": "npm run prebuild && electron-builder --dir",
+    "electron:release": "npm run prebuild && electron-builder --win --publish always",
+    "start": "electron ."
+  },
+  "build": {
+    "appId": "com.cargoms.desktop",
+    "productName": "CargoMS Desktop",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "electron/**/*",
+      "client/dist/**/*",
+      "server/src/**/*",
+      "server/prisma/**/*",
+      "server/template/**/*",
+      "server/package.json",
+      "server/node_modules/**/*",
+      "!server/node_modules/.cache",
+      "!**/node_modules/.package-lock.json"
+    ],
+    "extraResources": [
+      {
+        "from": "server",
+        "to": "server",
+        "filter": [
+          "src/**/*",
+          "prisma/**/*",
+          "template/**/*",
+          "package.json",
+          "node_modules/**/*",
+          "!node_modules/.cache/**",
+          "!.env"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.icns",
+      "category": "public.app-category.business"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "CargoMS Desktop",
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico"
+    },
+    "dmg": {
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    }
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "electron": "^35.1.0",
+    "electron-builder": "^26.0.0",
+    "wait-on": "^8.0.0"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
+  }
+}

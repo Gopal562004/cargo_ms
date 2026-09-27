@@ -34,18 +34,34 @@ import {
   Sliders,
   ExternalLink,
   ChevronRight,
+  HardDrive,
+  FolderOpen,
+  FolderSync,
+  RotateCw,
+  CloudDownload,
+  FileDown,
 } from 'lucide-react';
 import { useFinancialYearStore } from '../store/financialYearStore';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 import { SYSTEM_SERVICES } from '../services/userService';
+import {
+  getStorageConfig,
+  updateStorageConfig,
+  getStorageStats,
+} from '../services/storageService';
+import {
+  getLicenseStatus,
+  activateLicense,
+} from '../services/licenseService';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import useBodyScrollLock from '../hooks/useBodyScrollLock';
+import ImportExportModal from '../components/migration/ImportExportModal';
 
 export default function SettingsPage() {
   const navigate = useNavigate();
-  const { user, checkAuth } = useAuthStore();
+  const { user, checkAuth, syncWithCloud } = useAuthStore();
   const { theme } = useThemeStore();
   const {
     activeFY,
@@ -63,8 +79,47 @@ export default function SettingsPage() {
   const [copiedKey, setCopiedKey] = useState(false);
   const [showLicenseKey, setShowLicenseKey] = useState(false);
 
+  // Local Storage & Desktop State
+  const [storagePath, setStoragePath] = useState('');
+  const [storageStats, setStorageStats] = useState(null);
+  const [licenseData, setLicenseData] = useState(null);
+  const [desktopLoading, setDesktopLoading] = useState(false);
+  const [newLicenseKey, setNewLicenseKey] = useState('');
+  const [showKeyInput, setShowKeyInput] = useState(false);
+  const [showMigrationModal, setShowMigrationModal] = useState(false);
+  const [migrationModalTab, setMigrationModalTab] = useState('cloud');
+
+  // Desktop Auto-Updater State
+  const [appVersion, setAppVersion] = useState('1.0.0');
+  const [updaterStatus, setUpdaterStatus] = useState(null);
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+
   useEffect(() => {
     checkAuth();
+    getStorageConfig()
+      .then((res) => setStoragePath(res.storagePath || res.data?.storagePath || ''))
+      .catch(() => {});
+    getStorageStats()
+      .then((res) => setStorageStats(res.data || res))
+      .catch(() => {});
+    getLicenseStatus()
+      .then((res) => setLicenseData(res.data || res))
+      .catch(() => {});
+
+    // Listen to desktop electron updater events
+    if (window.electronAPI) {
+      window.electronAPI.getVersion?.().then((v) => {
+        if (v) setAppVersion(v);
+      }).catch(() => {});
+
+      const unsubscribe = window.electronAPI.onUpdaterStatus?.((data) => {
+        setUpdaterStatus(data);
+      });
+
+      return () => {
+        if (typeof unsubscribe === 'function') unsubscribe();
+      };
+    }
   }, []);
 
   // Edit/Add FY Form State
@@ -177,6 +232,108 @@ export default function SettingsPage() {
   const handleSelectActive = (fyCode) => {
     setActiveFY(fyCode);
     showNotification(`Active Financial Year switched to FY ${fyCode}! Invoices and serial numbering now use FY ${fyCode}.`);
+  };
+
+  const handleChangeStorageFolder = async () => {
+    if (window.electronAPI?.selectFolder) {
+      try {
+        const selected = await window.electronAPI.selectFolder();
+        if (selected) {
+          await updateStorageConfig(selected);
+          setStoragePath(selected);
+          showNotification(`Local storage folder changed to: ${selected}`);
+          const stats = await getStorageStats();
+          setStorageStats(stats.data || stats);
+        }
+      } catch (err) {
+        showNotification(err.message, true);
+      }
+    } else {
+      const manual = window.prompt('Enter local storage directory path:', storagePath);
+      if (manual && manual.trim()) {
+        try {
+          await updateStorageConfig(manual.trim());
+          setStoragePath(manual.trim());
+          showNotification(`Local storage folder set to: ${manual.trim()}`);
+          const stats = await getStorageStats();
+          setStorageStats(stats.data || stats);
+        } catch (err) {
+          showNotification(err.message, true);
+        }
+      }
+    }
+  };
+
+  const handleOpenStorageFolder = async () => {
+    if (window.electronAPI?.showInFolder) {
+      await window.electronAPI.showInFolder(storagePath);
+    } else if (window.electronAPI?.openFile) {
+      await window.electronAPI.openFile(storagePath);
+    }
+  };
+
+  const handleCheckUpdates = async () => {
+    if (!window.electronAPI?.checkForUpdates) return;
+    setIsCheckingUpdate(true);
+    try {
+      const res = await window.electronAPI.checkForUpdates();
+      if (res?.isDev) {
+        showNotification(res.message);
+      } else if (res?.error) {
+        showNotification(`Update check: ${res.error}`, true);
+      } else {
+        showNotification('Checking for updates on GitHub Releases...');
+      }
+    } catch (err) {
+      showNotification(err.message, true);
+    } finally {
+      setIsCheckingUpdate(false);
+    }
+  };
+
+  const handleRestartAndInstall = () => {
+    if (window.electronAPI?.quitAndInstall) {
+      window.electronAPI.quitAndInstall();
+    }
+  };
+
+  const handleActivateNewKey = async (e) => {
+    e.preventDefault();
+    if (!newLicenseKey.trim()) return;
+    setDesktopLoading(true);
+    try {
+      const machine = (typeof window !== 'undefined' && window.electronAPI?.isElectron) ? 'Desktop Client' : 'Web Browser Session';
+      await activateLicense(newLicenseKey.trim(), machine);
+      showNotification('Enterprise License Key activated successfully!');
+      setShowKeyInput(false);
+      setNewLicenseKey('');
+      const updated = await getLicenseStatus();
+      setLicenseData(updated.data || updated);
+      checkAuth();
+    } catch (err) {
+      showNotification(err.message || 'License activation failed', true);
+    } finally {
+      setDesktopLoading(false);
+    }
+  };
+
+  const [syncingSubscription, setSyncingSubscription] = useState(false);
+
+  const handleSyncSubscription = async () => {
+    setSyncingSubscription(true);
+    try {
+      const res = await syncWithCloud();
+      if (res?.synced) {
+        showNotification('Subscription plan & services synchronized with website!');
+      } else {
+        showNotification(res?.message || 'Offline mode: Using cached 30-day lease');
+      }
+      await checkAuth();
+    } catch (err) {
+      showNotification(err.message || 'Sync failed. Unable to reach website.', true);
+    } finally {
+      setSyncingSubscription(false);
+    }
   };
 
   // Remaining days calculation for user
@@ -359,9 +516,21 @@ export default function SettingsPage() {
                 <CreditCard size={16} className="text-emerald-400" />
                 <span>Subscription Plan & License Status</span>
               </div>
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                {user?.subscriptionPlan || 'STARTER PLAN'}
-              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleSyncSubscription}
+                  disabled={syncingSubscription}
+                  className="px-2.5 py-1 rounded text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                  title="Check website for subscription and module changes"
+                >
+                  <RotateCw size={12} className={syncingSubscription ? 'animate-spin text-indigo-400' : 'text-slate-400'} />
+                  <span>{syncingSubscription ? 'Syncing...' : 'Sync with Website'}</span>
+                </button>
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                  {user?.subscriptionPlan || 'STARTER PLAN'}
+                </span>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
@@ -582,6 +751,357 @@ export default function SettingsPage() {
         </div>
       </div>
 
+      {/* ─── SECTION: LOCAL ARCHIVE STORAGE & DESKTOP ENGINE (Desktop Only) ─ */}
+      {typeof window !== 'undefined' && window.electronAPI?.isElectron && (
+      <div
+        className={`p-5 rounded-md border transition-all ${
+          theme === 'light' ? 'bg-white border-slate-200 shadow-xs' : 'bg-slate-900/80 border-slate-800 shadow-sm'
+        }`}
+      >
+        <div className={`flex items-center justify-between border-b pb-3 mb-4 ${
+          theme === 'light' ? 'border-slate-100' : 'border-slate-800'
+        }`}>
+          <div className="flex items-center gap-2">
+            <div className={`p-1.5 rounded ${theme === 'light' ? 'bg-sky-50 text-sky-600' : 'bg-sky-500/15 text-sky-400'}`}>
+              <HardDrive size={18} />
+            </div>
+            <div>
+              <h2 className={`font-bold text-sm ${theme === 'light' ? 'text-slate-900' : 'text-slate-100'}`}>
+                Local Storage & Desktop Engine
+              </h2>
+              <p className="text-[11px] text-slate-400">
+                Configure auto-save directory on your PC and inspect device seat offline authorization.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => navigate('/archive')}
+              className="text-xs"
+            >
+              <ExternalLink size={13} className="mr-1 inline" />
+              Open Local Archive
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 text-xs">
+          {/* Left Column: Local Folder Path */}
+          <div className="space-y-3">
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                Active Local Storage Root
+              </label>
+              <div className={`font-mono text-xs p-2.5 rounded border select-all truncate ${
+                theme === 'light' ? 'bg-slate-50 border-slate-200 text-slate-800' : 'bg-slate-950 border-slate-800 text-slate-200'
+              }`}>
+                {storagePath || 'Resolving local directory...'}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleChangeStorageFolder}
+                className="text-xs flex items-center gap-1.5"
+              >
+                <FolderSync size={14} />
+                Change Folder...
+              </Button>
+
+              {storagePath && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleOpenStorageFolder}
+                  className="text-xs flex items-center gap-1.5"
+                >
+                  <FolderOpen size={14} />
+                  Open in Explorer
+                </Button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-4 pt-1">
+              <div className="text-[11px] text-slate-400">
+                Local Docs: <strong className={theme === 'light' ? 'text-slate-700' : 'text-slate-200'}>{storageStats?.totalFiles ?? '0'}</strong>
+              </div>
+              <div className="text-[11px] text-slate-400">
+                Disk Usage: <strong className={theme === 'light' ? 'text-slate-700' : 'text-slate-200'}>{storageStats?.totalSizeFormatted ?? '0 KB'}</strong>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Device Seat & Offline Lease */}
+          <div className="space-y-3">
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                Device Seat Authorization & Lease
+              </label>
+              <div className={`p-3 rounded border space-y-1.5 ${
+                theme === 'light' ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400">Status:</span>
+                  <span className="font-semibold text-emerald-400 flex items-center gap-1">
+                    <ShieldCheck size={13} />
+                    {licenseData?.status || 'ACTIVE (Licensed)'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400">Offline Lease:</span>
+                  <span className="font-mono text-slate-200">
+                    {licenseData?.daysRemaining !== undefined
+                      ? `${licenseData.daysRemaining} days remaining`
+                      : 'Active (30-day rolling heartbeats)'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400">Device Seat:</span>
+                  <span className="font-mono text-slate-200">
+                    {licenseData?.machineName || 'DESKTOP-LOCAL-SEAT'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {showKeyInput ? (
+              <form onSubmit={handleActivateNewKey} className="space-y-2">
+                <input
+                  type="text"
+                  placeholder="Enter License Key (CRGO-XXXX-...)"
+                  value={newLicenseKey}
+                  onChange={(e) => setNewLicenseKey(e.target.value)}
+                  className={`w-full px-3 py-1.5 font-mono text-xs rounded border outline-none ${
+                    theme === 'light'
+                      ? 'bg-white border-slate-200 text-slate-900'
+                      : 'bg-slate-950 border-slate-700 text-slate-100'
+                  }`}
+                  required
+                />
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    size="sm"
+                    disabled={desktopLoading || !newLicenseKey.trim()}
+                    className="text-xs"
+                  >
+                    {desktopLoading ? 'Activating...' : 'Save & Activate'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setShowKeyInput(false)}
+                    className="text-xs"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowKeyInput(true)}
+                className="text-xs text-indigo-400 hover:text-indigo-300 hover:underline cursor-pointer flex items-center gap-1"
+              >
+                <KeyRound size={13} />
+                Activate or update enterprise device license key
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* ─── Desktop Software Auto-Updates Section (GitHub Releases) ─── */}
+        <div className={`mt-5 pt-4 border-t flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+          theme === 'light' ? 'border-slate-100' : 'border-slate-800'
+        }`}>
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-lg border ${
+              theme === 'light' ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400'
+            }`}>
+              <Sparkles size={18} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className={`font-bold text-xs ${theme === 'light' ? 'text-slate-800' : 'text-slate-200'}`}>
+                  CargoMS Desktop Version
+                </span>
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/15 text-indigo-400 border border-indigo-500/30">
+                  v{appVersion}
+                </span>
+                <span className={`text-[10px] ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>
+                  (Channel: GitHub Releases · Gopal562004/cargo_ms)
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                {updaterStatus?.status === 'downloading' ? (
+                  <span className="text-amber-400 font-medium">
+                    Downloading update v{updaterStatus?.version || ''}: {updaterStatus?.percent || 0}%...
+                  </span>
+                ) : updaterStatus?.status === 'downloaded' ? (
+                  <span className="text-emerald-400 font-semibold">
+                    New update v{updaterStatus?.version} downloaded and ready! Click restart to apply.
+                  </span>
+                ) : updaterStatus?.status === 'available' ? (
+                  <span className="text-indigo-400 font-medium">
+                    New update v{updaterStatus?.version} detected. Downloading in background...
+                  </span>
+                ) : updaterStatus?.status === 'checking' ? (
+                  <span className="text-slate-400 flex items-center gap-1">
+                    <RotateCw size={11} className="animate-spin" /> Checking GitHub for latest releases...
+                  </span>
+                ) : updaterStatus?.status === 'not-available' ? (
+                  <span className="text-emerald-500 flex items-center gap-1">
+                    <CheckCircle2 size={12} /> You are running the latest version (v{appVersion}).
+                  </span>
+                ) : updaterStatus?.status === 'error' ? (
+                  <span className="text-rose-400">
+                    Update check note: {updaterStatus?.error}
+                  </span>
+                ) : (
+                  'Automatic silent updates via GitHub Releases. Checks quietly in the background on startup.'
+                )}
+              </p>
+
+              {/* Download progress bar if downloading */}
+              {updaterStatus?.status === 'downloading' && (
+                <div className="w-64 h-1.5 bg-slate-800 rounded-full mt-2 overflow-hidden border border-slate-700">
+                  <div
+                    className="h-full bg-indigo-500 transition-all duration-300"
+                    style={{ width: `${updaterStatus?.percent || 0}%` }}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {updaterStatus?.status === 'downloaded' ? (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleRestartAndInstall}
+                className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                <RotateCw size={13} />
+                Restart & Update Now
+              </Button>
+            ) : (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleCheckUpdates}
+                disabled={isCheckingUpdate || updaterStatus?.status === 'checking'}
+                className="text-xs flex items-center gap-1.5 cursor-pointer"
+              >
+                <RotateCw size={13} className={isCheckingUpdate || updaterStatus?.status === 'checking' ? 'animate-spin text-indigo-400' : ''} />
+                <span>{isCheckingUpdate || updaterStatus?.status === 'checking' ? 'Checking...' : 'Check for Updates'}</span>
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+      )}
+
+      {/* ─── SECTION: DATA IMPORT & EXPORT ─────────────────────────────────── */}
+      <div
+        className={`p-5 rounded-md border transition-all ${
+          theme === 'light' ? 'bg-white border-slate-200 shadow-xs' : 'bg-slate-900/80 border-slate-800 shadow-sm'
+        }`}
+      >
+        <div className={`flex items-center justify-between border-b pb-3 mb-4 ${
+          theme === 'light' ? 'border-slate-100' : 'border-slate-800'
+        }`}>
+          <div className="flex items-center gap-2">
+            <div className={`p-1.5 rounded ${theme === 'light' ? 'bg-violet-50 text-violet-600' : 'bg-violet-500/15 text-violet-400'}`}>
+              <FileDown size={18} />
+            </div>
+            <div>
+              <h2 className={`font-bold text-sm ${theme === 'light' ? 'text-slate-900' : 'text-slate-100'}`}>
+                Data Import & Export
+              </h2>
+              <p className="text-[11px] text-slate-400">
+                Export backups, restore from file, or transfer data between accounts.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className={`grid grid-cols-1 ${typeof window !== 'undefined' && window.electronAPI?.isElectron ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-3`}>
+          {/* Import from Web — Desktop Only */}
+          {typeof window !== 'undefined' && window.electronAPI?.isElectron && (
+            <button
+              type="button"
+              onClick={() => {
+                setMigrationModalTab('cloud');
+                setShowMigrationModal(true);
+              }}
+              className={`p-3 rounded border text-left transition-all cursor-pointer group ${
+                theme === 'light'
+                  ? 'bg-indigo-50/50 border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50'
+                  : 'bg-indigo-500/5 border-indigo-500/20 hover:border-indigo-500/50 hover:bg-indigo-500/10'
+              }`}
+            >
+              <CloudDownload size={18} className={`mb-1.5 ${theme === 'light' ? 'text-indigo-600' : 'text-indigo-400'}`} />
+              <h3 className={`text-xs font-bold ${theme === 'light' ? 'text-indigo-800' : 'text-indigo-300'}`}>
+                Import from Web
+              </h3>
+              <p className="text-[10px] text-slate-400 mt-0.5">
+                Pull all documents & templates from your online account
+              </p>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => {
+              setMigrationModalTab('file');
+              setShowMigrationModal(true);
+            }}
+            className={`p-3 rounded border text-left transition-all cursor-pointer group ${
+              theme === 'light'
+                ? 'bg-emerald-50/50 border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50'
+                : 'bg-emerald-500/5 border-emerald-500/20 hover:border-emerald-500/50 hover:bg-emerald-500/10'
+            }`}
+          >
+            <FileDown size={18} className={`mb-1.5 ${theme === 'light' ? 'text-emerald-600' : 'text-emerald-400'}`} />
+            <h3 className={`text-xs font-bold ${theme === 'light' ? 'text-emerald-800' : 'text-emerald-300'}`}>
+              Export Backup
+            </h3>
+            <p className="text-[10px] text-slate-400 mt-0.5">
+              Download a full .json backup of all your data
+            </p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setMigrationModalTab('file');
+              setShowMigrationModal(true);
+            }}
+            className={`p-3 rounded border text-left transition-all cursor-pointer group ${
+              theme === 'light'
+                ? 'bg-sky-50/50 border-sky-200 hover:border-sky-400 hover:bg-sky-50'
+                : 'bg-sky-500/5 border-sky-500/20 hover:border-sky-500/50 hover:bg-sky-500/10'
+            }`}
+          >
+            <RotateCw size={18} className={`mb-1.5 ${theme === 'light' ? 'text-sky-600' : 'text-sky-400'}`} />
+            <h3 className={`text-xs font-bold ${theme === 'light' ? 'text-sky-800' : 'text-sky-300'}`}>
+              Restore from File
+            </h3>
+            <p className="text-[10px] text-slate-400 mt-0.5">
+              Import a previously exported .json backup
+            </p>
+          </button>
+        </div>
+      </div>
+
       {/* ─── SECTION 3: SYSTEM SHORTCUTS STRIP (CONCISE) ────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div
@@ -650,6 +1170,12 @@ export default function SettingsPage() {
           onSave={handleSaveModal}
         />
       )}
+      {/* Data Migration Modal */}
+      <ImportExportModal
+        isOpen={showMigrationModal}
+        onClose={() => setShowMigrationModal(false)}
+        initialTab={migrationModalTab}
+      />
     </div>
   );
 }

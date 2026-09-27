@@ -1,5 +1,5 @@
 import React from 'react';
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter, createHashRouter, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import { hasServiceAccess, isSubscriptionExpired } from './utils/permissions';
 import AppLayout from './components/layout/AppLayout';
@@ -17,9 +17,17 @@ import BillingTemplatesPage from './pages/BillingTemplatesPage';
 import LedgersPage from './pages/LedgersPage';
 import MasterUsersPage from './pages/MasterUsersPage';
 import SettingsPage from './pages/SettingsPage';
+import LocalArchivePage from './pages/LocalArchivePage';
 import NotFound from './pages/NotFound';
 import LoadingLogo from './components/ui/LoadingLogo';
 import SubscriptionExpiredLockout from './components/ui/SubscriptionExpiredLockout';
+
+const isElectron =
+  typeof window !== 'undefined' &&
+  (Boolean(window.electronAPI) ||
+    Boolean(window.__ELECTRON_API_PORT__) ||
+    window.location.protocol === 'file:' ||
+    window.navigator?.userAgent?.includes('Electron'));
 
 /**
  * Protected route wrapper — redirects to /login if not authenticated.
@@ -32,7 +40,7 @@ function ProtectedRoute({ children }) {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/landing" replace />;
+    return <Navigate to={isElectron ? '/login' : '/landing'} replace />;
   }
 
   return children;
@@ -82,19 +90,19 @@ function PublicRoute({ children }) {
   return children;
 }
 
-export const router = createBrowserRouter([
-  // Public Marketing Landing Page & Product Tour
+const routes = [
+  // Public Marketing Landing Page & Product Tour (Bypassed on Desktop)
   {
     path: '/landing',
-    element: <LandingPage />,
+    element: isElectron ? <Navigate to="/login" replace /> : <LandingPage />,
   },
   {
     path: '/product-tour',
-    element: <ProductTourPage />,
+    element: isElectron ? <Navigate to="/login" replace /> : <ProductTourPage />,
   },
   {
     path: '/how-it-works',
-    element: <ProductTourPage />,
+    element: isElectron ? <Navigate to="/login" replace /> : <ProductTourPage />,
   },
 
   // Public Auth routes
@@ -216,7 +224,14 @@ export const router = createBrowserRouter([
         ),
       },
       { path: 'documents/:id', element: <DocumentEditorPage /> },
-      { path: 'documents/:id/edit', element: <DocumentEditorPage /> },
+      {
+        path: 'documents/:id/edit',
+        element: (
+          <ActiveSubscriptionRoute actionName="edit documents">
+            <DocumentEditorPage />
+          </ActiveSubscriptionRoute>
+        ),
+      },
       {
         path: 'contacts',
         element: (
@@ -237,9 +252,16 @@ export const router = createBrowserRouter([
         path: 'settings',
         element: <SettingsPage />,
       },
+      {
+        path: 'archive',
+        element: <LocalArchivePage />,
+      },
     ],
   },
 
   // 404
   { path: '*', element: <NotFound /> },
-]);
+];
+
+export const router = isElectron ? createHashRouter(routes) : createBrowserRouter(routes);
+

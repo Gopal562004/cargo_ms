@@ -1,5 +1,6 @@
 import { AppError } from '../middleware/error.middleware.js';
 import prisma from '../config/database.js';
+import { hydrateTemplate, hydrateTemplates, dehydrateDocumentData, parseJsonField } from '../utils/sqlite-helpers.js';
 
 /**
  * POST /api/templates
@@ -17,7 +18,7 @@ export async function createTemplate(req, res, next) {
         where: { id: fromDocumentId, createdById: req.user.id },
       });
       if (!doc) throw new AppError('Source document not found', 404);
-      templateData = doc.data;
+      templateData = parseJsonField(doc.data, {});
     }
 
     // Check if updating existing template with same ID
@@ -32,11 +33,11 @@ export async function createTemplate(req, res, next) {
             name: name || existing.name,
             description: description !== undefined ? description : existing.description,
             documentType: documentType || existing.documentType,
-            data: templateData,
+            data: dehydrateDocumentData(templateData),
             isDefault: isDefault !== undefined ? isDefault : existing.isDefault,
           },
         });
-        return res.json({ success: true, data: { template: updated } });
+        return res.json({ success: true, data: { template: hydrateTemplate(updated) } });
       }
     }
 
@@ -46,13 +47,13 @@ export async function createTemplate(req, res, next) {
         name: name || 'Untitled Template',
         description,
         documentType: documentType || 'TAX_INVOICE',
-        data: templateData,
+        data: dehydrateDocumentData(templateData),
         isDefault: Boolean(isDefault),
         createdById: req.user.id,
       },
     });
 
-    res.status(201).json({ success: true, data: { template } });
+    res.status(201).json({ success: true, data: { template: hydrateTemplate(template) } });
   } catch (error) {
     next(error);
   }
@@ -73,7 +74,8 @@ export async function getAllTemplates(req, res, next) {
       orderBy: { name: 'asc' },
     });
 
-    const activeTemplates = templates.filter((t) => !t.data?.isDeleted);
+    const hydratedTemplates = hydrateTemplates(templates);
+    const activeTemplates = hydratedTemplates.filter((t) => !t.data?.isDeleted);
     res.json({ success: true, data: { templates: activeTemplates } });
   } catch (error) {
     next(error);
@@ -88,8 +90,10 @@ export async function getTemplateById(req, res, next) {
     const template = await prisma.template.findFirst({
       where: { id: req.params.id, createdById: req.user.id },
     });
-    if (!template || template.data?.isDeleted) throw new AppError('Template not found', 404);
-    res.json({ success: true, data: { template } });
+    if (!template) throw new AppError('Template not found', 404);
+    const hydrated = hydrateTemplate(template);
+    if (hydrated.data?.isDeleted) throw new AppError('Template not found', 404);
+    res.json({ success: true, data: { template: hydrated } });
   } catch (error) {
     next(error);
   }
@@ -103,13 +107,19 @@ export async function updateTemplate(req, res, next) {
     const existing = await prisma.template.findFirst({
       where: { id: req.params.id, createdById: req.user.id },
     });
-    if (!existing || existing.data?.isDeleted) throw new AppError('Template not found', 404);
+    if (!existing) throw new AppError('Template not found', 404);
+    const existingData = parseJsonField(existing.data, {});
+    if (existingData?.isDeleted) throw new AppError('Template not found', 404);
 
+    const updatePayload = { ...req.body };
+    if (updatePayload.data !== undefined) {
+      updatePayload.data = dehydrateDocumentData(updatePayload.data);
+    }
     const template = await prisma.template.update({
       where: { id: req.params.id },
-      data: req.body,
+      data: updatePayload,
     });
-    res.json({ success: true, data: { template } });
+    res.json({ success: true, data: { template: hydrateTemplate(template) } });
   } catch (error) {
     next(error);
   }
@@ -126,15 +136,15 @@ export async function deleteTemplate(req, res, next) {
     if (!existing) throw new AppError('Template not found', 404);
 
     // Soft delete: Store isDeleted and deletedAt in template data
-    const currentData = (typeof existing.data === 'object' && existing.data !== null) ? existing.data : {};
+    const currentData = parseJsonField(existing.data, {});
     await prisma.template.update({
       where: { id: req.params.id },
       data: {
-        data: {
+        data: dehydrateDocumentData({
           ...currentData,
           isDeleted: true,
           deletedAt: new Date().toISOString(),
-        },
+        }),
       },
     });
 
@@ -158,10 +168,11 @@ export async function applyTemplate(req, res, next) {
     // Import document service to create from template
     const { createDocument } = await import('../services/document.service.js');
 
+    const templateData = parseJsonField(template.data, {});
     const document = await createDocument({
       documentType: template.documentType,
       title: req.body.title || `From template: ${template.name}`,
-      data: { ...template.data, ...(req.body.data || {}) },
+      data: { ...templateData, ...(req.body.data || {}) },
       packages: req.body.packages || [],
     }, req.user.id);
 

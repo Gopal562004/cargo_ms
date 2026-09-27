@@ -1,6 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Package, Mail, Lock, AlertCircle, Sun, Moon, ArrowLeft, ArrowRight, ShieldCheck, KeyRound, Sparkles } from 'lucide-react';
+import {
+  Package,
+  Mail,
+  Lock,
+  AlertCircle,
+  Sun,
+  Moon,
+  ArrowLeft,
+  ArrowRight,
+  ShieldCheck,
+  KeyRound,
+  Sparkles,
+  Eye,
+  EyeOff,
+} from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
@@ -8,11 +22,19 @@ import BrandLogo from '../components/ui/BrandLogo';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 
+const isElectron =
+  typeof window !== 'undefined' &&
+  (Boolean(window.electronAPI) ||
+    Boolean(window.__ELECTRON_API_PORT__) ||
+    window.location.protocol === 'file:' ||
+    window.navigator?.userAgent?.includes('Electron'));
+
 export default function Login() {
   const [loginMode, setLoginMode] = useState('CREDENTIALS'); // 'CREDENTIALS' | 'LICENSE_KEY'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [licenseKey, setLicenseKey] = useState('');
+  const [showLicenseKey, setShowLicenseKey] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [liveUtc, setLiveUtc] = useState('');
@@ -83,16 +105,22 @@ export default function Login() {
 
       {/* Top Bar (Z-10) */}
       <div className="relative z-10 flex items-center justify-between max-w-5xl mx-auto w-full">
-        <Link
-          to="/landing"
-          className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded border text-xs font-mono backdrop-blur-md transition-all shadow-xs ${
-            theme === 'light'
-              ? 'bg-white/90 border-slate-300 text-slate-800 hover:bg-white'
-              : 'bg-slate-900/85 border-slate-700/80 text-slate-200 hover:bg-slate-800'
-          }`}
-        >
-          <ArrowLeft size={13} /> LANDING PAGE
-        </Link>
+        {!isElectron ? (
+          <Link
+            to="/landing"
+            className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded border text-xs font-mono backdrop-blur-md transition-all shadow-xs ${
+              theme === 'light'
+                ? 'bg-white/90 border-slate-300 text-slate-800 hover:bg-white'
+                : 'bg-slate-900/85 border-slate-700/80 text-slate-200 hover:bg-slate-800'
+            }`}
+          >
+            <ArrowLeft size={13} /> LANDING PAGE
+          </Link>
+        ) : (
+          <div className="flex items-center gap-2">
+            <BrandLogo size="sm" showText={true} subtitle="Enterprise Desktop" />
+          </div>
+        )}
 
         <div className="flex items-center gap-3">
           <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded border text-[11px] font-mono backdrop-blur-md bg-slate-900/60 border-slate-800 text-slate-300">
@@ -209,16 +237,25 @@ export default function Login() {
                 <label className="text-xs font-mono font-medium text-slate-300 block mb-1">
                   Product License Key
                 </label>
-                <div className="relative">
-                  <KeyRound size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <div className="relative flex items-center">
+                  <KeyRound size={15} className="absolute left-3 text-slate-400 pointer-events-none" />
                   <input
-                    type="text"
+                    type={showLicenseKey ? 'text' : 'password'}
                     placeholder="CRGO-2026-XXXX-YYYY-ZZZZ"
                     value={licenseKey}
                     onChange={(e) => setLicenseKey(e.target.value)}
                     required
-                    className="w-full pl-9 pr-3 py-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-100 font-mono uppercase tracking-wider placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                    className="w-full pl-9 pr-9 py-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-100 font-mono uppercase tracking-wider placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowLicenseKey(!showLicenseKey)}
+                    tabIndex={-1}
+                    className="absolute right-2.5 text-slate-400 hover:text-slate-200 cursor-pointer"
+                    title={showLicenseKey ? 'Hide key' : 'Show key'}
+                  >
+                    {showLicenseKey ? <EyeOff size={14} className="text-indigo-400" /> : <Eye size={14} />}
+                  </button>
                 </div>
                 <p className="text-[10px] text-slate-400 mt-1">
                   License key provided by your CargoHub dispatch administrator.

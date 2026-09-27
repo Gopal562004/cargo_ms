@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, KeyRound, Calendar, ShieldAlert, ArrowLeft, Settings, FileText } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
+import { hasServiceAccess } from '../../utils/permissions';
 import Button from './Button';
 
 /**
@@ -83,7 +84,14 @@ export default function SubscriptionExpiredLockout({
         <Button
           variant="secondary"
           size="sm"
-          onClick={() => (onBack ? onBack() : navigate('/billing'))}
+          onClick={() => {
+            if (onBack) return onBack();
+            if (hasServiceAccess(user, 'SALES_BILLING')) {
+              navigate('/billing');
+            } else {
+              navigate('/documents');
+            }
+          }}
           className="rounded text-xs"
         >
           <FileText size={13} className="mr-1.5 inline" /> View Past Invoices

@@ -11,7 +11,11 @@
     "db:generate": "npx prisma generate",
     "db:push": "npx prisma db push",
     "db:seed": "node prisma/seed.js",
-    "db:studio": "npx prisma studio"
+    "db:studio": "npx prisma studio",
+    "desktop:generate": "npx prisma generate --schema=prisma/schema.desktop.prisma",
+    "desktop:push": "npx prisma db push --schema=prisma/schema.desktop.prisma",
+    "db:generate:desktop": "npx prisma generate --schema=prisma/schema.desktop.prisma",
+    "db:push:desktop": "npx prisma db push --schema=prisma/schema.desktop.prisma"
   },
   "dependencies": {
     "@prisma/client": "^6.9.0",

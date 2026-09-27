@@ -9,6 +9,10 @@ import documentRoutes from './routes/document.routes.js';
 import contactRoutes from './routes/contact.routes.js';
 import templateRoutes from './routes/template.routes.js';
 import userRoutes from './routes/user.routes.js';
+import storageRoutes from './routes/storage.routes.js';
+import licenseRoutes from './routes/license.routes.js';
+import downloadRoutes from './routes/download.routes.js';
+import migrationRoutes from './routes/migration.routes.js';
 
 const app = express();
 
@@ -16,6 +20,8 @@ const app = express();
 app.use(helmet());
 
 // ─── CORS ────────────────────────────────────────────
+const IS_EMBEDDED = process.env.ELECTRON_EMBEDDED === 'true';
+
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
@@ -25,8 +31,12 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps, curl, server-to-server)
+    // Allow requests with no origin (like mobile apps, curl, server-to-server, Electron)
     if (!origin) return callback(null, true);
+    // In Electron embedded mode, always allow localhost
+    if (IS_EMBEDDED && /^http:\/\/localhost(:\d+)?$/.test(origin)) {
+      return callback(null, true);
+    }
     if (allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin)) {
       return callback(null, true);
     }
@@ -69,6 +79,10 @@ app.use('/api/documents', documentRoutes);
 app.use('/api/contacts', contactRoutes);
 app.use('/api/templates', templateRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/storage', storageRoutes);
+app.use('/api/license', licenseRoutes);
+app.use('/api/download', downloadRoutes);
+app.use('/api/migration', migrationRoutes);
 
 // ─── Route Aliases (Fallback for direct requests) ────
 app.use('/documents', documentRoutes);

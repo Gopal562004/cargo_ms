@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Printer,
@@ -30,6 +30,9 @@ import {
   ArrowDown,
 } from 'lucide-react';
 import { useDocumentStore } from '../store/documentStore';
+import { useAuthStore } from '../store/authStore';
+import { useThemeStore } from '../store/themeStore';
+import { isSubscriptionExpired } from '../utils/permissions';
 import { useFinancialYearStore, filterDocumentsByFY } from '../store/financialYearStore';
 import { printDocumentPDF, downloadDocumentPDF, deleteDocument } from '../services/documentService';
 import InvoiceDetailModal from '../components/documents/InvoiceDetailModal';
@@ -50,9 +53,16 @@ function formatINR(val) {
 
 export default function BillingPage() {
   const navigate = useNavigate();
+  const { theme } = useThemeStore();
+  const { user } = useAuthStore();
+  const isExpired = isSubscriptionExpired(user);
   const { documents, fetchDocuments, isLoading, updateDocument, clearCurrent } = useDocumentStore();
 
   const handleCreateNew = () => {
+    if (isExpired) {
+      alert('Subscription Expired: Creating new invoices is locked. Your past invoices remain accessible in read-only mode.');
+      return;
+    }
     clearCurrent();
     navigate('/documents/new/TAX_INVOICE');
   };
@@ -472,10 +482,12 @@ export default function BillingPage() {
   const startIndex = (currentPage - 1) * pageSize;
   const paginatedInvoices = sortedInvoices.slice(startIndex, startIndex + pageSize);
 
-  const handlePrint = async (docId) => {
+  const handlePrint = async (docId, docNumber) => {
     setPrintingId(docId);
     try {
-      await printDocumentPDF(docId);
+      const targetDoc = (invoices || []).find((i) => i.id === docId);
+      const invoiceNum = docNumber || targetDoc?.documentNumber || targetDoc?.data?.invoiceNumber || '';
+      await printDocumentPDF(docId, invoiceNum);
     } catch (err) {
       alert('Error initiating print: ' + err.message);
     } finally {
@@ -500,6 +512,11 @@ export default function BillingPage() {
 
   const handleConfirmDelete = async () => {
     if (!deleteTargetDoc) return;
+    if (isExpired) {
+      alert('Subscription Expired: Deleting invoices is locked in read-only mode.');
+      setDeleteTargetDoc(null);
+      return;
+    }
     setIsDeleting(true);
     try {
       await deleteDocument(deleteTargetDoc.id);
@@ -511,6 +528,104 @@ export default function BillingPage() {
     } finally {
       setIsDeleting(false);
     }
+  };
+
+  const [selectedInvoiceIds, setSelectedInvoiceIds] = useState([]);
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+  const masterCheckboxRef = useRef(null);
+
+  useEffect(() => {
+    setSelectedInvoiceIds([]);
+  }, [currentPage, pageSize, activeFY, appliedFilters]);
+
+  const allInvoicesOnPageSelected =
+    paginatedInvoices.length > 0 && paginatedInvoices.every((d) => selectedInvoiceIds.includes(d.id));
+  const someInvoicesOnPageSelected =
+    paginatedInvoices.some((d) => selectedInvoiceIds.includes(d.id)) && !allInvoicesOnPageSelected;
+
+  useEffect(() => {
+    if (masterCheckboxRef.current) {
+      masterCheckboxRef.current.indeterminate = someInvoicesOnPageSelected;
+    }
+  }, [someInvoicesOnPageSelected]);
+
+  const toggleSelectAllInvoices = () => {
+    if (allInvoicesOnPageSelected) {
+      setSelectedInvoiceIds([]);
+    } else {
+      setSelectedInvoiceIds(paginatedInvoices.map((d) => d.id));
+    }
+  };
+
+  const toggleSelectOneInvoice = (id) => {
+    setSelectedInvoiceIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const totalSelectedAmount = paginatedInvoices
+    .filter((d) => selectedInvoiceIds.includes(d.id))
+    .reduce((sum, d) => sum + (parseFloat(d.data?.grandTotal) || 0), 0);
+
+  const handleBulkStatusChange = async (newStatus) => {
+    if (!newStatus || selectedInvoiceIds.length === 0) return;
+    setBulkActionLoading(true);
+    try {
+      await Promise.all(
+        selectedInvoiceIds.map((id) =>
+          updateDocument(id, {
+            status: newStatus,
+            statusNote: `Bulk status change to ${newStatus}`,
+          })
+        )
+      );
+      setSuccessMessage(`Updated status to ${newStatus} for ${selectedInvoiceIds.length} invoices.`);
+      setSelectedInvoiceIds([]);
+      fetchDocuments({ documentType: 'TAX_INVOICE', limit: 100, sortBy: 'createdAt', sortOrder: 'desc' });
+    } catch (err) {
+      alert('Failed to update status for some invoices: ' + err.message);
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
+  const handleConfirmBulkDelete = async () => {
+    if (selectedInvoiceIds.length === 0) return;
+    if (isExpired) {
+      alert('Subscription Expired: Deleting invoices is locked in read-only mode.');
+      setBulkDeleteConfirm(false);
+      return;
+    }
+    setBulkActionLoading(true);
+    try {
+      await Promise.all(selectedInvoiceIds.map((id) => deleteDocument(id)));
+      setSuccessMessage(`Deleted ${selectedInvoiceIds.length} invoices.`);
+      setSelectedInvoiceIds([]);
+      setBulkDeleteConfirm(false);
+      fetchDocuments({ documentType: 'TAX_INVOICE', limit: 100, sortBy: 'createdAt', sortOrder: 'desc' });
+    } catch (err) {
+      alert('Failed to delete some invoices: ' + err.message);
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
+  const handleBulkExport = () => {
+    const selected = invoices.filter((d) => selectedInvoiceIds.includes(d.id));
+    const payload = {
+      version: '1.0.0',
+      exportedAt: new Date().toISOString(),
+      count: selected.length,
+      invoices: selected,
+    };
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(payload, null, 2));
+    const a = document.createElement('a');
+    a.href = dataStr;
+    a.download = `Invoices_Export_${selected.length}_${activeFY}_${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
   };
 
   return (
@@ -541,15 +656,43 @@ export default function BillingPage() {
             <FileSpreadsheet size={14} className="mr-1.5 inline text-emerald-400" /> Export Sales Register & GSTR-1
           </Button>
 
-          <Button
-            variant="primary"
-            onClick={handleCreateNew}
-            className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold"
-          >
-            <Plus size={14} className="mr-1.5 inline" /> Create New Bill
-          </Button>
+          {isExpired ? (
+            <Button
+              variant="secondary"
+              disabled
+              className="rounded text-xs opacity-60 cursor-not-allowed text-rose-500 border-rose-500/30"
+              title="Subscription Expired - Creating new invoices is locked"
+            >
+              <Plus size={14} className="mr-1.5 inline" /> New Bill (Locked)
+            </Button>
+          ) : (
+            <Button
+              variant="primary"
+              onClick={handleCreateNew}
+              className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold"
+            >
+              <Plus size={14} className="mr-1.5 inline" /> Create New Bill
+            </Button>
+          )}
         </div>
       </div>
+
+      {/* Expired Subscription Read-Only Banner */}
+      {isExpired && (
+        <div className="p-3 bg-amber-500/10 border border-amber-500/25 rounded-md text-xs text-amber-300 flex items-center justify-between shadow-xs">
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-amber-400">🔒 Read-Only Archive:</span>
+            <span>Your subscription has expired. All past tax invoices, ledger entries, and records remain safe to view, print, and export.</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate('/settings')}
+            className="text-amber-400 hover:text-amber-200 underline font-semibold cursor-pointer shrink-0"
+          >
+            Renew Plan
+          </button>
+        </div>
+      )}
 
       {/* Success Notification Alert */}
       {successMessage && (
@@ -950,20 +1093,97 @@ export default function BillingPage() {
             <Button
               variant="primary"
               size="sm"
+              disabled={isExpired}
               onClick={handleCreateNew}
-              className="rounded"
+              className={`rounded ${isExpired ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              <Plus size={14} className="mr-1 inline" /> Create First Bill
+              <Plus size={14} className="mr-1 inline" /> {isExpired ? 'New Bill (Locked)' : 'Create First Bill'}
             </Button>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left border-collapse">
-              <thead className="bg-slate-950/50 text-slate-400 font-semibold border-b border-slate-800 text-[11px]">
-                <tr>
-                  <th
-                    className="py-3 px-3 whitespace-nowrap cursor-pointer select-none hover:text-white transition-colors"
-                    onClick={() => handleSort('invoiceNumber')}
+          <div>
+            {/* Bulk Action Bar */}
+            {selectedInvoiceIds.length > 0 && (
+              <div className="p-2.5 px-3.5 bg-indigo-950/40 border-b border-indigo-500/30 flex flex-wrap items-center justify-between gap-3 text-xs animate-fade-in">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold bg-indigo-600 text-white rounded px-2 py-0.5 text-[11px]">
+                    {selectedInvoiceIds.length} Selected
+                  </span>
+                  <span className="text-slate-400 text-[11px]">
+                    Total Amount: <strong className="text-emerald-400 font-mono">₹{formatINR(totalSelectedAmount)}</strong>
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <select
+                    className="px-2 py-1 rounded text-xs border bg-slate-900 border-indigo-500/30 text-slate-200 focus:outline-none cursor-pointer"
+                    onChange={(e) => {
+                      handleBulkStatusChange(e.target.value);
+                      e.target.value = '';
+                    }}
+                    defaultValue=""
+                    disabled={bulkActionLoading}
+                  >
+                    <option value="" disabled>Change Status...</option>
+                    <option value="COMPLETED">Mark as Paid / Completed</option>
+                    <option value="ISSUED">Mark as Issued (Pending)</option>
+                    <option value="DRAFT">Mark as Draft</option>
+                    <option value="CANCELLED">Mark as Cancelled</option>
+                  </select>
+
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleBulkExport}
+                    className="rounded text-xs flex items-center gap-1"
+                    disabled={bulkActionLoading}
+                  >
+                    <Download size={13} /> Export ({selectedInvoiceIds.length})
+                  </Button>
+
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    disabled={bulkActionLoading || isExpired}
+                    onClick={() => !isExpired && setBulkDeleteConfirm(true)}
+                    className={`rounded text-xs flex items-center gap-1 ${isExpired ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    title={isExpired ? 'Deletion locked in read-only mode' : 'Delete selected invoices'}
+                  >
+                    <Trash2 size={13} /> Delete ({selectedInvoiceIds.length})
+                  </Button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedInvoiceIds([])}
+                    className="text-xs text-slate-400 hover:text-slate-200 ml-1 cursor-pointer"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-left border-collapse">
+                <thead className="bg-slate-950/50 text-slate-400 font-semibold border-b border-slate-800 text-[11px]">
+                  <tr>
+                    <th className="py-3 px-3 w-10 text-center">
+                      <input
+                        type="checkbox"
+                        ref={masterCheckboxRef}
+                        checked={allInvoicesOnPageSelected}
+                        onChange={toggleSelectAllInvoices}
+                        className={`rounded cursor-pointer w-4 h-4 transition-all accent-indigo-600 focus:ring-2 focus:ring-indigo-500/40 focus:ring-offset-1 ${
+                          theme === 'light'
+                            ? 'border border-slate-300 bg-white text-indigo-600 focus:ring-offset-white'
+                            : 'border border-slate-600 bg-slate-900 text-indigo-500 focus:ring-offset-slate-900'
+                        }`}
+                        aria-label="Select all invoices on this page"
+                      />
+                    </th>
+                    <th
+                      className="py-3 px-3 whitespace-nowrap cursor-pointer select-none hover:text-white transition-colors"
+                      onClick={() => handleSort('invoiceNumber')}
                     title="Click to sort by Invoice #"
                   >
                     <div className="flex items-center gap-1.5">
@@ -1059,7 +1279,31 @@ export default function BillingPage() {
                   const invoiceDate = data.invoiceDate || new Date(doc.createdAt).toLocaleDateString('en-GB');
 
                   return (
-                    <tr key={doc.id} className="hover:bg-slate-800/30 transition-colors">
+                    <tr
+                      key={doc.id}
+                      className={`transition-colors ${
+                        selectedInvoiceIds.includes(doc.id)
+                          ? theme === 'light'
+                            ? 'bg-indigo-50/90 border-l-2 border-l-indigo-600'
+                            : 'bg-indigo-950/40 border-l-2 border-l-indigo-500'
+                          : theme === 'light'
+                          ? 'hover:bg-slate-50'
+                          : 'hover:bg-slate-800/30'
+                      }`}
+                    >
+                      <td className="py-3 px-3 text-center" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={selectedInvoiceIds.includes(doc.id)}
+                          onChange={() => toggleSelectOneInvoice(doc.id)}
+                          className={`rounded cursor-pointer w-4 h-4 transition-all accent-indigo-600 focus:ring-2 focus:ring-indigo-500/40 focus:ring-offset-1 ${
+                            theme === 'light'
+                              ? 'border border-slate-300 bg-white text-indigo-600 focus:ring-offset-white'
+                              : 'border border-slate-600 bg-slate-900 text-indigo-500 focus:ring-offset-slate-900'
+                          }`}
+                          aria-label={`Select invoice ${invoiceNum}`}
+                        />
+                      </td>
                       <td className="py-3 px-3 font-bold text-slate-100 font-mono whitespace-nowrap">
                         <button
                           type="button"
@@ -1167,9 +1411,14 @@ export default function BillingPage() {
                           {/* Delete */}
                           <button
                             type="button"
-                            className="p-1 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition-colors cursor-pointer"
-                            onClick={() => setDeleteTargetDoc(doc)}
-                            title="Delete Invoice"
+                            disabled={isExpired}
+                            className={`p-1 rounded transition-colors ${
+                              isExpired
+                                ? 'opacity-40 cursor-not-allowed text-slate-500'
+                                : 'text-slate-400 hover:text-rose-400 hover:bg-slate-800 cursor-pointer'
+                            }`}
+                            onClick={() => !isExpired && setDeleteTargetDoc(doc)}
+                            title={isExpired ? 'Deletion locked in read-only mode' : 'Delete Invoice'}
                           >
                             <Trash2 size={14} />
                           </button>
@@ -1190,7 +1439,8 @@ export default function BillingPage() {
               onPageSizeChange={setPageSize}
             />
           </div>
-        )}
+        </div>
+      )}
       </div>
 
       {/* Comprehensive Invoice Details, Payment & Activity Modal */}
@@ -1241,16 +1491,23 @@ export default function BillingPage() {
           financialYears={financialYears}
         />
       )}
-      {/* Custom Delete Confirmation Modal */}
+      {/* Custom Delete Confirmation Modal (Single or Bulk) */}
       <ConfirmDialog
-        isOpen={Boolean(deleteTargetDoc)}
-        onClose={() => setDeleteTargetDoc(null)}
-        onConfirm={handleConfirmDelete}
-        title="Delete Tax Invoice"
-        message={`Are you sure you want to permanently delete Tax Invoice #${deleteTargetDoc?.documentNumber || deleteTargetDoc?.data?.invoiceNumber || ''}? This action cannot be undone.`}
-        confirmText="Delete Invoice"
+        isOpen={Boolean(deleteTargetDoc) || bulkDeleteConfirm}
+        onClose={() => {
+          setDeleteTargetDoc(null);
+          setBulkDeleteConfirm(false);
+        }}
+        onConfirm={bulkDeleteConfirm ? handleConfirmBulkDelete : handleConfirmDelete}
+        title={bulkDeleteConfirm ? `Delete ${selectedInvoiceIds.length} Invoices` : "Delete Tax Invoice"}
+        message={
+          bulkDeleteConfirm
+            ? `Are you sure you want to permanently delete all ${selectedInvoiceIds.length} selected invoices? This action cannot be undone.`
+            : `Are you sure you want to permanently delete Tax Invoice #${deleteTargetDoc?.documentNumber || deleteTargetDoc?.data?.invoiceNumber || ''}? This action cannot be undone.`
+        }
+        confirmText={bulkDeleteConfirm ? `Delete ${selectedInvoiceIds.length} Invoices` : "Delete Invoice"}
         variant="danger"
-        isLoading={isDeleting}
+        isLoading={isDeleting || bulkActionLoading}
       />
     </div>
   );

@@ -34,6 +34,7 @@ import {
   KeyRound,
   Layers,
   BookOpen,
+  HardDrive,
 } from 'lucide-react';
 
 const NAV_SECTIONS = [
@@ -44,6 +45,7 @@ const NAV_SECTIONS = [
       { path: '/', label: 'Dashboard', icon: LayoutDashboard },
       { path: '/new', label: 'New Document', icon: Plus },
       { path: '/documents', label: 'All Documents', icon: FileText },
+      { path: '/archive', label: 'Local Archive', icon: HardDrive, desktopOnly: true },
     ],
   },
   {
@@ -119,12 +121,17 @@ export default function Sidebar() {
     return location.pathname === itemPath && !location.search;
   };
 
-  // Filter sections and items based on logged-in user's assigned services
+  const isElectron = typeof window !== 'undefined' && Boolean(window.electronAPI?.isElectron);
+
+  // Filter sections and items based on logged-in user's assigned services and desktop status
   const visibleSections = NAV_SECTIONS.map((sec) => {
     if (sec.adminOnly && user?.role !== 'ADMIN') {
       return null;
     }
-    const visibleItems = sec.items.filter((item) => hasServiceAccess(user, item.serviceKey, item.adminOnly));
+    const visibleItems = sec.items.filter((item) => {
+      if (item.desktopOnly && !isElectron) return false;
+      return hasServiceAccess(user, item.serviceKey, item.adminOnly);
+    });
     return {
       ...sec,
       items: visibleItems,
@@ -222,9 +229,15 @@ export default function Sidebar() {
                         <div className="flex items-center justify-between w-full min-w-0">
                           <span className="truncate">{item.label}</span>
                           {isExpired && item.path !== '/settings' && item.path !== '/master/users' && (
-                            <span className="px-1.5 py-0.2 text-[9px] font-mono rounded bg-rose-500/15 text-rose-500 font-bold border border-rose-500/30">
-                              Locked
-                            </span>
+                            (item.path === '/new' || item.path.includes('/new')) ? (
+                              <span className="px-1.5 py-0.2 text-[9px] font-mono rounded bg-rose-500/15 text-rose-500 font-bold border border-rose-500/30">
+                                Locked
+                              </span>
+                            ) : (
+                              <span className="px-1.5 py-0.2 text-[9px] font-mono rounded bg-amber-500/15 text-amber-500 font-medium border border-amber-500/30">
+                                Read-Only
+                              </span>
+                            )
                           )}
                         </div>
                       ) : (
@@ -235,7 +248,7 @@ export default function Sidebar() {
                               : 'bg-slate-800 text-slate-100'
                             }`}
                         >
-                          {item.label} {isExpired && item.path !== '/settings' && item.path !== '/master/users' ? '(Locked - Expired)' : ''}
+                          {item.label} {isExpired && item.path !== '/settings' && item.path !== '/master/users' ? ((item.path === '/new' || item.path.includes('/new')) ? '(Locked - Expired)' : '(Read-Only)') : ''}
                         </div>
                       )}
                     </NavLink>

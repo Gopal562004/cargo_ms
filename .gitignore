@@ -13,6 +13,7 @@ node_modules/
 
 # Production Build Outputs
 dist/
+dist-electron/
 dist-ssr/
 build/
 out/

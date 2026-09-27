@@ -29,3 +29,8 @@ export function getMe() {
 export function refreshToken() {
   return api.post('/auth/refresh');
 }
+
+export function syncSubscription() {
+  return api.post('/auth/sync-subscription');
+}
+

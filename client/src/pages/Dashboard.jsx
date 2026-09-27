@@ -146,7 +146,7 @@ export default function Dashboard() {
   const [previewDocTitle, setPreviewDocTitle] = useState('');
 
   useEffect(() => {
-    fetchDocuments({ limit: 20, sortBy: 'createdAt', sortOrder: 'desc' });
+    fetchDocuments({ limit: 50, sortBy: 'createdAt', sortOrder: 'desc' });
   }, []);
 
   // Filter accessible quick actions based on user permissions
@@ -167,12 +167,12 @@ export default function Dashboard() {
   useEffect(() => {
     const activeDocs = accessibleDocuments;
     setStats({
-      total: activeDocs.length,
+      total: pagination.total ?? activeDocs.length,
       draft: activeDocs.filter((d) => d.status === 'DRAFT').length,
       inTransit: activeDocs.filter((d) => ['DEPARTED', 'IN_TRANSIT', 'BOOKED'].includes(d.status)).length,
       delivered: activeDocs.filter((d) => ['DELIVERED', 'COMPLETED'].includes(d.status)).length,
     });
-  }, [documents, user]);
+  }, [documents, user, pagination.total]);
 
   return (
     <div className="space-y-8 animate-fade-in">

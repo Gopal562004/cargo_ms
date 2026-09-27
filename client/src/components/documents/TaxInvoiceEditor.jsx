@@ -808,7 +808,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
 
       const targetId = resultDoc?.id || documentId;
       if (targetId) {
-        await printDocumentPDF(targetId);
+        await printDocumentPDF(targetId, formData.invoiceNumber);
       }
 
       if (onSaved) {
@@ -826,7 +826,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
     if (!documentId) return;
     setDownloadingPdf(true);
     try {
-      await downloadDocumentPDF(documentId, `Invoice_${formData.invoiceNumber || 'Document'}.pdf`);
+      await downloadDocumentPDF(documentId, `${formData.invoiceNumber || 'Invoice'}.pdf`);
     } catch (err) {
       alert('Error downloading PDF: ' + err.message);
     } finally {

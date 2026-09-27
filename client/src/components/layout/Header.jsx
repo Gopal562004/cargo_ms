@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Search, Sun, Moon, Calendar, SlidersHorizontal } from 'lucide-react';
+import { Search, Sun, Moon, Calendar, SlidersHorizontal, Download, ChevronDown, Check, Settings } from 'lucide-react';
 import { useThemeStore } from '../../store/themeStore';
 import { useFinancialYearStore } from '../../store/financialYearStore';
+import DownloadModal from '../ui/DownloadModal';
 
 const BREADCRUMB_MAP = {
   '/': 'Dashboard',
@@ -22,6 +23,29 @@ export default function Header() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useThemeStore();
   const { activeFY, financialYears, setActiveFY } = useFinancialYearStore();
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [isFyDropdownOpen, setIsFyDropdownOpen] = useState(false);
+  const fyDropdownRef = useRef(null);
+  const isElectron = typeof window !== 'undefined' && !!window.electronAPI;
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (fyDropdownRef.current && !fyDropdownRef.current.contains(event.target)) {
+        setIsFyDropdownOpen(false);
+      }
+    };
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setIsFyDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   const getBreadcrumbs = () => {
     const path = location.pathname;
@@ -72,34 +96,149 @@ export default function Header() {
       </div>
 
       <div className="flex items-center gap-3">
-        {/* Global Financial Year Switcher */}
-        <div className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-200 rounded-md px-2.5 py-1 text-xs shadow-xs">
-          <Calendar size={13} className="text-indigo-600 shrink-0" />
-          <span className="font-semibold text-slate-700 text-[11px]">FY:</span>
-          <select
-            className="bg-transparent text-xs font-bold font-mono text-indigo-700 focus:outline-none cursor-pointer"
-            value={activeFY}
-            onChange={(e) => {
-              if (e.target.value === '__manage__') {
-                navigate('/settings');
-              } else {
-                setActiveFY(e.target.value);
-              }
-            }}
-            title="Switch Active Financial Year across whole website"
+        {/* Global Financial Year Switcher (Theme-adaptive, crisp rounded corners, themed list content) */}
+        <div className="relative" ref={fyDropdownRef}>
+          <button
+            type="button"
+            onClick={() => setIsFyDropdownOpen((prev) => !prev)}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded border text-xs transition-colors cursor-pointer focus:outline-none select-none ${
+              theme === 'light'
+                ? 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'
+                : 'bg-slate-950 hover:bg-slate-900 border-slate-800 text-slate-200'
+            }`}
+            title="Switch Active Financial Year across whole application"
+            aria-haspopup="listbox"
+            aria-expanded={isFyDropdownOpen}
           >
-            {financialYears.map((fy) => (
-              <option key={fy.code} value={fy.code} className="bg-white text-slate-800 font-sans">
-                FY {fy.code}
-              </option>
-            ))}
-            <option value="ALL" className="bg-white text-slate-800 font-sans">
-              All Financial Years
-            </option>
-            <option value="__manage__" className="bg-white text-indigo-600 font-bold font-sans">
-              ⚙ Manage / Add FY...
-            </option>
-          </select>
+            <Calendar
+              size={13}
+              className={theme === 'light' ? 'text-indigo-600 shrink-0' : 'text-indigo-400 shrink-0'}
+            />
+            <span
+              className={`font-semibold text-[11px] ${
+                theme === 'light' ? 'text-slate-500' : 'text-slate-400'
+              }`}
+            >
+              FY:
+            </span>
+            <span
+              className={`font-bold font-mono text-xs ${
+                theme === 'light' ? 'text-indigo-700' : 'text-indigo-400'
+              }`}
+            >
+              {activeFY === 'ALL' ? 'All Financial Years' : `FY ${activeFY}`}
+            </span>
+            <ChevronDown
+              size={12}
+              className={`transition-transform duration-150 ${isFyDropdownOpen ? 'rotate-180' : ''} ${
+                theme === 'light' ? 'text-slate-400' : 'text-slate-500'
+              }`}
+            />
+          </button>
+
+          {/* Theme-based Dropdown List Content */}
+          {isFyDropdownOpen && (
+            <div
+              className={`absolute left-0 mt-1 w-48 py-1 rounded border shadow-xl z-50 animate-in fade-in zoom-in-95 duration-100 ${
+                theme === 'light'
+                  ? 'bg-white border-slate-200 text-slate-700 shadow-slate-200/50'
+                  : 'bg-slate-900 border-slate-800 text-slate-200 shadow-black/60'
+              }`}
+              role="listbox"
+            >
+              <div
+                className={`px-3 py-1 text-[10px] font-semibold uppercase tracking-wider ${
+                  theme === 'light'
+                    ? 'text-slate-400 border-b border-slate-100'
+                    : 'text-slate-500 border-b border-slate-800/80'
+                }`}
+              >
+                Financial Years
+              </div>
+
+              {financialYears.map((fy) => {
+                const isSelected = activeFY === fy.code;
+                return (
+                  <button
+                    key={fy.code}
+                    type="button"
+                    onClick={() => {
+                      setActiveFY(fy.code);
+                      setIsFyDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-1.5 text-xs flex items-center justify-between transition-colors cursor-pointer ${
+                      isSelected
+                        ? theme === 'light'
+                          ? 'bg-indigo-50 text-indigo-700 font-bold'
+                          : 'bg-indigo-950/60 text-indigo-400 font-bold'
+                        : theme === 'light'
+                          ? 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                          : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                    }`}
+                    role="option"
+                    aria-selected={isSelected}
+                  >
+                    <span className="font-mono">FY {fy.code}</span>
+                    {isSelected && (
+                      <Check
+                        size={13}
+                        className={theme === 'light' ? 'text-indigo-600' : 'text-indigo-400'}
+                      />
+                    )}
+                  </button>
+                );
+              })}
+
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveFY('ALL');
+                  setIsFyDropdownOpen(false);
+                }}
+                className={`w-full text-left px-3 py-1.5 text-xs flex items-center justify-between transition-colors cursor-pointer ${
+                  activeFY === 'ALL'
+                    ? theme === 'light'
+                      ? 'bg-indigo-50 text-indigo-700 font-bold'
+                      : 'bg-indigo-950/60 text-indigo-400 font-bold'
+                    : theme === 'light'
+                      ? 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                      : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                }`}
+                role="option"
+                aria-selected={activeFY === 'ALL'}
+              >
+                <span>All Financial Years</span>
+                {activeFY === 'ALL' && (
+                  <Check
+                    size={13}
+                    className={theme === 'light' ? 'text-indigo-600' : 'text-indigo-400'}
+                  />
+                )}
+              </button>
+
+              <div
+                className={`my-1 border-t ${
+                  theme === 'light' ? 'border-slate-100' : 'border-slate-800/80'
+                }`}
+              />
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsFyDropdownOpen(false);
+                  navigate('/settings');
+                }}
+                className={`w-full text-left px-3 py-1.5 text-xs flex items-center gap-1.5 font-medium transition-colors cursor-pointer ${
+                  theme === 'light'
+                    ? 'text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700'
+                    : 'text-indigo-400 hover:bg-slate-800/80 hover:text-indigo-300'
+                }`}
+              >
+                <Settings size={12} />
+                <span>Manage / Add FY...</span>
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="relative flex items-center">
@@ -127,6 +266,23 @@ export default function Header() {
           </kbd>
         </div>
 
+        {/* Desktop App Download (only on Web) */}
+        {!isElectron && (
+          <button
+            type="button"
+            onClick={() => setShowDownloadModal(true)}
+            className={`px-2.5 py-1.5 rounded border text-xs font-mono font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
+              theme === 'light'
+                ? 'text-indigo-600 bg-indigo-50 border-indigo-200 hover:bg-indigo-100'
+                : 'text-indigo-300 bg-indigo-950/50 border-indigo-800 hover:bg-indigo-900/60'
+            }`}
+            title="Download CargoMS Desktop Software for Windows & Mac"
+          >
+            <Download size={13} className="text-indigo-500" />
+            <span className="hidden sm:inline">Desktop App</span>
+          </button>
+        )}
+
         {/* Theme Toggle Button */}
         <button
           onClick={toggleTheme}
@@ -143,6 +299,12 @@ export default function Header() {
           )}
         </button>
       </div>
+
+      {/* Cross-Platform Desktop Download Modal */}
+      <DownloadModal
+        isOpen={showDownloadModal}
+        onClose={() => setShowDownloadModal(false)}
+      />
     </header>
   );
 }

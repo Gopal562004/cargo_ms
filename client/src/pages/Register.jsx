@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Package, User, Mail, Building, Phone, AlertCircle, Sun, Moon, ArrowLeft, ArrowRight, ShieldCheck, CheckCircle2, Send, MessageSquare } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useThemeStore } from '../store/themeStore';
+import BrandLogo from '../components/ui/BrandLogo';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 
@@ -101,19 +102,7 @@ export default function Register() {
         >
           {/* Brand Header */}
           <div className="flex items-center justify-between border-b border-slate-800/40 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded bg-indigo-600 text-white flex items-center justify-center font-bold shadow-sm">
-                <Package size={18} />
-              </div>
-              <div>
-                <span className="font-semibold text-sm tracking-wider uppercase leading-none block">
-                  Cargo<span className="text-indigo-500">Hub</span>
-                </span>
-                <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">
-                  Logistics OS
-                </span>
-              </div>
-            </div>
+            <BrandLogo size="md" showText={true} subtitle="Logistics OS" />
             <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
               ACCESS DESK
             </span>

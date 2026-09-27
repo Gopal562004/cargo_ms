@@ -2,15 +2,20 @@ import {
   registerUser,
   loginUser,
   refreshTokens,
+  desktopVerifyUser,
+  desktopSyncUser,
+  syncSubscriptionWithCloud,
 } from '../services/auth.service.js';
+import prisma from '../config/database.js';
 import { AppError } from '../middleware/error.middleware.js';
+import { hydrateUser } from '../utils/sqlite-helpers.js';
 
-// Cookie options for refresh token
+// Cookie options for refresh token (30-day persistent session)
 const REFRESH_COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
   sameSite: 'lax',
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
   path: '/',
 };
 
@@ -37,7 +42,7 @@ export async function login(req, res, next) {
   try {
     const { user, accessToken, refreshToken } = await loginUser(req.body);
 
-    // Set refresh token as httpOnly cookie
+    // Set refresh token as httpOnly cookie (30 days)
     res.cookie('refreshToken', refreshToken, REFRESH_COOKIE_OPTIONS);
 
     res.json({
@@ -63,7 +68,7 @@ export async function logout(req, res) {
  */
 export async function getMe(req, res, next) {
   try {
-    const user = await prisma.user.findUnique({
+    let user = await prisma.user.findUnique({
       where: { id: req.user.id },
       select: {
         id: true,
@@ -91,11 +96,16 @@ export async function getMe(req, res, next) {
       throw new AppError('User not found', 404);
     }
 
-    if (user.isActive === false) {
-      throw new AppError('This user account has been deactivated', 403);
+    // In Desktop mode, trigger subscription sync in background without blocking local response
+    if (process.env.ELECTRON_EMBEDDED === 'true') {
+      syncSubscriptionWithCloud(user).catch(() => {});
     }
 
-    res.json({ success: true, data: { user } });
+    if (user.isActive === false) {
+      throw new AppError('This user account has been deactivated on the website', 403);
+    }
+
+    res.json({ success: true, data: { user: hydrateUser(user) } });
   } catch (error) {
     next(error);
   }
@@ -115,7 +125,7 @@ export async function refresh(req, res, next) {
 
     const { accessToken, refreshToken, user } = await refreshTokens(token);
 
-    // Update cookie
+    // Update cookie (30 days)
     res.cookie('refreshToken', refreshToken, REFRESH_COOKIE_OPTIONS);
 
     res.json({
@@ -126,3 +136,62 @@ export async function refresh(req, res, next) {
     next(error);
   }
 }
+
+/**
+ * POST /api/auth/desktop-verify
+ * Verifies credentials and active subscription for desktop client authorization.
+ */
+export async function desktopVerify(req, res, next) {
+  try {
+    const data = await desktopVerifyUser(req.body);
+    res.json({
+      success: true,
+      message: 'Desktop authorization verified successfully',
+      data,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * POST /api/auth/desktop-sync
+ * Cloud endpoint: Syncs live subscription, plan, and module permissions to desktop client.
+ */
+export async function desktopSync(req, res, next) {
+  try {
+    const data = await desktopSyncUser(req.body);
+    res.json({
+      success: true,
+      message: 'Subscription data synchronized successfully',
+      data,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * POST /api/auth/sync-subscription
+ * Desktop local endpoint: Triggered by desktop client to manually or periodically refresh plan from website.
+ */
+export async function syncSubscription(req, res, next) {
+  try {
+    const localUser = await prisma.user.findUnique({
+      where: { id: req.user.id },
+    });
+    if (!localUser) {
+      throw new AppError('User not found', 404);
+    }
+
+    const result = await syncSubscriptionWithCloud(localUser);
+    res.json({
+      success: true,
+      message: result.synced ? 'Subscription synchronized with website' : 'Running in offline cached mode',
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+

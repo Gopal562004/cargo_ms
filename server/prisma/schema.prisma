@@ -38,6 +38,7 @@ model User {
   contacts     Contact[]
   templates    Template[]
   activityLogs UserActivityLog[]
+  deviceSeats  DeviceSeat[]
 }
 
 model UserActivityLog {
@@ -59,6 +60,24 @@ enum Role {
   ADMIN
   OPERATOR
   VIEWER
+}
+
+// ─── DEVICE SEATS (License Hardware Binding) ─────────
+
+model DeviceSeat {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  machineId    String
+  deviceName   String?
+  osPlatform   String?
+  ipAddress    String?
+  isActive     Boolean  @default(true)
+  firstSeenAt  DateTime @default(now())
+  lastActiveAt DateTime @default(now())
+
+  @@unique([userId, machineId])
+  @@index([machineId])
 }
 
 // ─── DOCUMENT ENGINE ─────────────────────────────────
@@ -240,4 +259,14 @@ model Template {
 
   @@index([documentType])
   @@index([createdById])
+}
+
+// ─── APP CONFIG (Local Settings Store) ───────────────
+
+model AppConfig {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+
+  @@index([key])
 }

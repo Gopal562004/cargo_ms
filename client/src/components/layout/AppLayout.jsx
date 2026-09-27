@@ -1,20 +1,26 @@
 import React from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
-import { isSubscriptionExpired } from '../../utils/permissions';
-import { Clock, AlertTriangle } from 'lucide-react';
-import SubscriptionExpiredLockout from '../ui/SubscriptionExpiredLockout';
+import { AlertTriangle } from 'lucide-react';
+import LicenseStatusBanner from '../ui/LicenseStatusBanner';
 
 /**
  * Main application layout styled with Tailwind CSS.
  */
 export default function AppLayout() {
-  const { user } = useAuthStore();
+  const { user, checkAuth } = useAuthStore();
   const { theme } = useThemeStore();
-  const location = useLocation();
+
+  // Periodic background heartbeat to fetch admin subscription updates
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      checkAuth();
+    }, 15 * 60 * 1000); // every 15 minutes
+    return () => clearInterval(interval);
+  }, [checkAuth]);
 
   const expiryInfo = React.useMemo(() => {
     if (!user || user.role === 'ADMIN') return null;
@@ -38,14 +44,12 @@ export default function AppLayout() {
     return null;
   }, [user]);
 
-  const isExpired = Boolean(expiryInfo?.isExpired);
-  const isSettingsPage = location.pathname === '/settings';
-
   return (
     <div className={`flex min-h-screen transition-colors ${theme === 'light' ? 'bg-slate-100 text-slate-900' : 'bg-slate-950 text-slate-100'}`}>
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <Header />
+        <LicenseStatusBanner />
 
         {/* Subscription Expiry Alert Banner */}
         {expiryInfo && (
@@ -76,11 +80,7 @@ export default function AppLayout() {
 
         <main className="flex-1 p-4 sm:p-6 overflow-y-auto">
           <div className="w-full max-w-[1920px] mx-auto">
-            {isExpired && !isSettingsPage ? (
-              <SubscriptionExpiredLockout actionName="access operations and commercial tools" />
-            ) : (
-              <Outlet />
-            )}
+            <Outlet />
           </div>
         </main>
       </div>

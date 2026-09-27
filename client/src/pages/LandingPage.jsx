@@ -36,9 +36,16 @@ import {
   Filter,
   BarChart3,
   QrCode,
+  Monitor,
+  Apple,
+  HardDrive,
+  WifiOff,
+  FolderOpen,
 } from 'lucide-react';
 import { useThemeStore } from '../store/themeStore';
 import { useAuthStore } from '../store/authStore';
+import { getApiBaseUrl } from '../services/api';
+import DownloadModal from '../components/ui/DownloadModal';
 
 const MODULES = [
   { id: 'AIR_FREIGHT', name: 'Air Freight (MAWB / HAWB)', price: 1499, icon: Plane },
@@ -141,6 +148,7 @@ export default function LandingPage() {
   const [activeTemplate, setActiveTemplate] = useState(DOC_TEMPLATES[0]);
 
   // Modular Pricing State
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [selectedMods, setSelectedMods] = useState(['AIR_FREIGHT', 'SALES_BILLING']);
   const [volume, setVolume] = useState(150);
   const [seats, setSeats] = useState(2);
@@ -273,11 +281,30 @@ export default function LandingPage() {
             <a href="#overview" className="hover:text-indigo-500 transition-colors">OPERATIONS</a>
             <a href="#templates" className="hover:text-indigo-500 transition-colors">TEMPLATES</a>
             <a href="#dispatch-deck" className="hover:text-indigo-500 transition-colors">DISPATCH</a>
+            <a href="#download" className="hover:text-indigo-500 transition-colors flex items-center gap-1">
+              <Download size={12} className="text-indigo-500" />
+              <span>DESKTOP APP</span>
+            </a>
             <Link to="/product-tour" className="hover:text-indigo-500 transition-colors">HOW IT WORKS</Link>
             <a href="#calculator" className="hover:text-indigo-500 transition-colors">PRICING</a>
           </nav>
 
           <div className="flex items-center gap-3 font-mono text-xs">
+            {/* Download Desktop App Button */}
+            <button
+              type="button"
+              onClick={() => setShowDownloadModal(true)}
+              className={`px-3 py-1.5 rounded border text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                theme === 'light'
+                  ? 'bg-indigo-50/80 border-indigo-200 text-indigo-700 hover:bg-indigo-100 shadow-xs'
+                  : 'bg-indigo-950/40 border-indigo-800/80 text-indigo-300 hover:bg-indigo-900/60 shadow-xs'
+              }`}
+              title="Download CargoMS Desktop App for Windows & Mac"
+            >
+              <Download size={13} className="text-indigo-500 animate-pulse" />
+              <span>DOWNLOAD APP</span>
+            </button>
+
             {isAuthenticated ? (
               <Link
                 to="/"
@@ -333,21 +360,33 @@ export default function LandingPage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-3 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowDownloadModal(true)}
+                className="px-6 py-3 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-bold flex items-center gap-2.5 transition-all shadow-lg shadow-indigo-600/25 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <Download size={15} />
+                <span>DOWNLOAD SOFTWARE (WIN / MAC)</span>
+              </button>
               <Link
                 to="/register"
-                className="px-6 py-3 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-bold flex items-center gap-2 transition-colors shadow-lg shadow-indigo-600/25"
-              >
-                REQUEST DISPATCH ACCESS <ArrowRight size={14} />
-              </Link>
-              <a
-                href="#templates"
                 className={`px-5 py-3 rounded border font-mono text-xs font-bold backdrop-blur-md transition-colors flex items-center gap-2 ${
                   theme === 'light'
                     ? 'bg-white/90 border-slate-300 hover:bg-white text-slate-800'
                     : 'bg-slate-900/80 border-slate-800 hover:bg-slate-900 text-slate-200'
                 }`}
               >
-                EXPLORE TEMPLATES ↓
+                REQUEST DISPATCH ACCESS <ArrowRight size={14} />
+              </Link>
+              <a
+                href="#download"
+                className={`px-4 py-3 rounded border font-mono text-xs font-bold backdrop-blur-md transition-colors flex items-center gap-1.5 ${
+                  theme === 'light'
+                    ? 'bg-white/70 border-slate-200 hover:bg-white text-slate-700'
+                    : 'bg-slate-900/60 border-slate-800 hover:bg-slate-900 text-slate-300'
+                }`}
+              >
+                DESKTOP SPECS ↓
               </a>
             </div>
 
@@ -670,6 +709,237 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Enterprise Native Desktop Software Suite (Windows, macOS & Linux) (Z-10) */}
+      <section id="download" className="relative z-10 py-20 lg:py-24 border-b border-slate-800/60">
+        <div className="max-w-6xl mx-auto px-6 space-y-12">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-1 rounded bg-indigo-600/15 border border-indigo-500/30 text-indigo-400 font-mono text-[10px] font-bold tracking-widest uppercase">
+                  ENTERPRISE DESKTOP SUITE
+                </span>
+                <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-mono text-[10px] font-bold border border-emerald-500/20">
+                  OFFLINE-FIRST
+                </span>
+              </div>
+              <h2
+                className={`text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight ${
+                  theme === 'light' ? 'text-slate-900' : 'text-white'
+                }`}
+              >
+                Zero-Latency Desktop Engine.
+              </h2>
+              <p className="text-sm sm:text-base text-slate-400 max-w-xl">
+                Installed natively on Windows, Mac, or Linux. Features an embedded SQLite database engine with a 30-day offline lease and high-speed direct thermal barcode printer integration.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowDownloadModal(true)}
+              className="px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/25 transition-all shrink-0 cursor-pointer self-start md:self-auto"
+            >
+              <Download size={15} />
+              <span>VIEW ALL PLATFORMS & BUILDS</span>
+            </button>
+          </div>
+
+          {/* 3 Platform Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Windows */}
+            <div
+              className={`p-6 rounded-2xl border transition-all flex flex-col justify-between group hover:border-indigo-500/50 ${
+                theme === 'light'
+                  ? 'bg-white/90 border-slate-200 shadow-lg hover:shadow-xl'
+                  : 'bg-slate-900/40 border-slate-800/80 hover:bg-slate-900/70 shadow-xl'
+              }`}
+            >
+              <div className="space-y-4">
+                <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-500 flex items-center justify-center">
+                  <Monitor size={24} />
+                </div>
+                <div>
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-base tracking-tight">Windows</h3>
+                    <span className="text-[10px] font-mono text-blue-400 font-semibold uppercase">64-Bit / x64</span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                    Windows 10 & 11 compatible. Includes standard NSIS one-click installer and self-contained portable executable.
+                  </p>
+                </div>
+
+                <div className="space-y-1.5 pt-2 border-t border-slate-800/40 text-[11px] font-mono text-slate-400">
+                  <div className="flex items-center gap-2">
+                    <Check size={12} className="text-emerald-500" />
+                    <span>Auto-update background channel</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Check size={12} className="text-emerald-500" />
+                    <span>USB Thermal Printer Raw Passthrough</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Check size={12} className="text-emerald-500" />
+                    <span>Silent Background SQLite Daemon</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-6 space-y-2">
+                <a
+                  href={`${getApiBaseUrl()}/download/desktop?os=windows&file=CargoMS-Setup-1.0.0.exe`}
+                  download="CargoMS-Setup-1.0.0.exe"
+                  className="w-full py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md shadow-indigo-600/20 cursor-pointer"
+                >
+                  <Download size={14} />
+                  <span>Download for Windows (.exe)</span>
+                </a>
+                <p className="text-[10px] text-center text-slate-400 font-mono">
+                  v1.0.0 · ~243 MB · Win 10/11
+                </p>
+              </div>
+            </div>
+
+            {/* macOS */}
+            <div
+              className={`p-6 rounded-2xl border transition-all flex flex-col justify-between group hover:border-indigo-500/50 ${
+                theme === 'light'
+                  ? 'bg-white/90 border-slate-200 shadow-lg hover:shadow-xl'
+                  : 'bg-slate-900/40 border-slate-800/80 hover:bg-slate-900/70 shadow-xl'
+              }`}
+            >
+              <div className="space-y-4">
+                <div className="w-12 h-12 rounded-xl bg-slate-500/10 border border-slate-500/20 text-slate-300 flex items-center justify-center">
+                  <Apple size={24} />
+                </div>
+                <div>
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-base tracking-tight">macOS</h3>
+                    <span className="text-[10px] font-mono text-indigo-400 font-semibold uppercase">Universal DMG</span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                    Optimized for Apple Silicon (M1, M2, M3, M4) with native ARM64 performance and Intel x64 backward compatibility.
+                  </p>
+                </div>
+
+                <div className="space-y-1.5 pt-2 border-t border-slate-800/40 text-[11px] font-mono text-slate-400">
+                  <div className="flex items-center gap-2">
+                    <Check size={12} className="text-emerald-500" />
+                    <span>Apple Silicon Native ARM64 & Intel</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Check size={12} className="text-emerald-500" />
+                    <span>macOS Ventura, Sonoma & Sequoia</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Check size={12} className="text-emerald-500" />
+                    <span>Retina Display Crisp Vector Graphics</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-6 space-y-2">
+                <a
+                  href={`${getApiBaseUrl()}/download/desktop?os=mac&file=CargoMS-1.0.0-arm64.dmg`}
+                  download="CargoMS-1.0.0-arm64.dmg"
+                  className="w-full py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md shadow-indigo-600/20 cursor-pointer"
+                >
+                  <Download size={14} />
+                  <span>Download for Mac (.dmg)</span>
+                </a>
+                <p className="text-[10px] text-center text-slate-400 font-mono">
+                  Universal · macOS 12+
+                </p>
+              </div>
+            </div>
+
+            {/* Linux */}
+            <div
+              className={`p-6 rounded-2xl border transition-all flex flex-col justify-between group hover:border-indigo-500/50 ${
+                theme === 'light'
+                  ? 'bg-white/90 border-slate-200 shadow-lg hover:shadow-xl'
+                  : 'bg-slate-900/40 border-slate-800/80 hover:bg-slate-900/70 shadow-xl'
+              }`}
+            >
+              <div className="space-y-4">
+                <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
+                  <Terminal size={24} />
+                </div>
+                <div>
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-base tracking-tight">Linux</h3>
+                    <span className="text-[10px] font-mono text-amber-400 font-semibold uppercase">AppImage / DEB</span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                    Zero-dependency portable AppImage and native Debian/Ubuntu packages for logistics kiosk workstations.
+                  </p>
+                </div>
+
+                <div className="space-y-1.5 pt-2 border-t border-slate-800/40 text-[11px] font-mono text-slate-400">
+                  <div className="flex items-center gap-2">
+                    <Check size={12} className="text-emerald-500" />
+                    <span>Universal standalone .AppImage</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Check size={12} className="text-emerald-500" />
+                    <span>Debian / Ubuntu / Mint .deb package</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Check size={12} className="text-emerald-500" />
+                    <span>CUPS Industrial Printing integration</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-6 space-y-2">
+                <button
+                  type="button"
+                  onClick={() => setShowDownloadModal(true)}
+                  className={`w-full py-2.5 rounded-lg border font-mono text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    theme === 'light'
+                      ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
+                      : 'bg-slate-800/80 hover:bg-slate-800 text-slate-200 border-slate-700'
+                  }`}
+                >
+                  <Download size={14} />
+                  <span>Choose Linux Package</span>
+                </button>
+                <p className="text-[10px] text-center text-slate-400 font-mono">
+                  AppImage / DEB · x86_64
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Offline Resiliency Banner */}
+          <div
+            className={`p-5 rounded-xl border flex flex-col md:flex-row items-center justify-between gap-4 font-mono text-xs ${
+              theme === 'light'
+                ? 'bg-indigo-50/70 border-indigo-200 text-slate-700'
+                : 'bg-indigo-950/20 border-indigo-900/60 text-slate-300'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
+                <WifiOff size={16} />
+              </div>
+              <div>
+                <span className="font-bold text-indigo-400">Airport & Warehouse Internet Down?</span>
+                <p className="text-[11px] text-slate-400">
+                  No problem. CargoMS Desktop caches your login credentials and plan lease locally for 30 days. Issue waybills offline and auto-sync when connection restores.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowDownloadModal(true)}
+              className="underline text-indigo-400 hover:text-indigo-300 font-bold shrink-0 cursor-pointer"
+            >
+              System Requirements →
+            </button>
+          </div>
+        </div>
+      </section>
+
       {/* Spacious Modular Pricing Calculator (Z-10) */}
       <section id="calculator" className="relative z-10 py-20 lg:py-24 border-b border-slate-800/60">
         <div className="max-w-6xl mx-auto px-6 space-y-10">
@@ -867,6 +1137,14 @@ export default function LandingPage() {
             <a href="#overview" className="hover:text-indigo-400">OPERATIONS</a>
             <a href="#templates" className="hover:text-indigo-400">TEMPLATES</a>
             <a href="#dispatch-deck" className="hover:text-indigo-400">DISPATCH</a>
+            <button
+              type="button"
+              onClick={() => setShowDownloadModal(true)}
+              className="hover:text-indigo-400 text-indigo-400 font-bold flex items-center gap-1 cursor-pointer"
+            >
+              <Download size={12} />
+              <span>DOWNLOAD APP</span>
+            </button>
             <Link to="/product-tour" className="hover:text-indigo-400">HOW IT WORKS</Link>
             <a href="#calculator" className="hover:text-indigo-400">PRICING</a>
             <Link to="/login" className="hover:text-indigo-400">LOGIN</Link>
@@ -876,6 +1154,12 @@ export default function LandingPage() {
           <p className="text-[11px] text-slate-400">© {new Date().getFullYear()} CARGOHUB OS</p>
         </div>
       </footer>
+
+      {/* Cross-Platform Download Modal */}
+      <DownloadModal
+        isOpen={showDownloadModal}
+        onClose={() => setShowDownloadModal(false)}
+      />
     </div>
   );
 }

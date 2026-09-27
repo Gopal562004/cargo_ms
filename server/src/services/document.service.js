@@ -1,3 +1,4 @@
+import prisma from '../config/database.js';
 import { AppError } from '../middleware/error.middleware.js';
 import { DOCUMENT_TYPES, STATUS_TRANSITIONS } from '../utils/constants.js';
 import {
@@ -6,6 +7,7 @@ import {
   generateBOLNumber,
   generateDocumentNumber,
 } from '../utils/awbNumber.js';
+import { hydrateDocument, hydrateDocuments, dehydrateDocumentData, parseJsonField } from '../utils/sqlite-helpers.js';
 
 /**
  * Get the document category from document type.
@@ -68,7 +70,7 @@ export async function createDocument({ documentType, title, documentNumber, data
       category,
       title: title || `${DOCUMENT_TYPES[documentType]?.name || documentType} - ${docNumber}`,
       documentNumber: docNumber,
-      data: data || {},
+      data: dehydrateDocumentData(data || {}),
       createdById: userId,
       statusHistory: {
         create: {
@@ -92,7 +94,7 @@ export async function createDocument({ documentType, title, documentNumber, data
     },
   });
 
-  return document;
+  return hydrateDocument(document);
 }
 
 /**
@@ -117,8 +119,8 @@ export async function getAllDocuments(userId, query = {}) {
     ...(status ? { status } : { status: { not: 'CANCELLED' } }),
     ...(search && {
       OR: [
-        { documentNumber: { contains: search, mode: 'insensitive' } },
-        { title: { contains: search, mode: 'insensitive' } },
+        { documentNumber: { contains: search, ...(process.env.ELECTRON_EMBEDDED === 'true' ? {} : { mode: 'insensitive' }) } },
+        { title: { contains: search, ...(process.env.ELECTRON_EMBEDDED === 'true' ? {} : { mode: 'insensitive' }) } },
       ],
     }),
   };
@@ -139,7 +141,7 @@ export async function getAllDocuments(userId, query = {}) {
   ]);
 
   return {
-    documents,
+    documents: hydrateDocuments(documents),
     pagination: {
       page: pageNum,
       limit: limitNum,
@@ -166,7 +168,7 @@ export async function getDocumentById(id, userId) {
     throw new AppError('Document not found', 404);
   }
 
-  return document;
+  return hydrateDocument(document);
 }
 
 /**
@@ -194,7 +196,7 @@ export async function updateDocument(id, userId, updateData) {
     version: { increment: 1 },
     ...(status && { status }),
     ...(docData.data && {
-      data: { ...existing.data, ...docData.data },
+      data: dehydrateDocumentData({ ...parseJsonField(existing.data, {}), ...docData.data }),
     }),
     ...(status && {
       statusHistory: {
@@ -228,15 +230,16 @@ export async function updateDocument(id, userId, updateData) {
     },
   });
 
-  return document;
+  return hydrateDocument(document);
 }
 
 /**
  * Delete a document (Soft delete — archives document and marks as CANCELLED).
  */
 export async function deleteDocument(id, userId) {
+  const isDesktop = process.env.ELECTRON_EMBEDDED === 'true';
   const existing = await prisma.document.findFirst({
-    where: { id, createdById: userId },
+    where: isDesktop ? { id } : { id, createdById: userId },
   });
 
   if (!existing) {
@@ -244,16 +247,16 @@ export async function deleteDocument(id, userId) {
   }
 
   // Soft delete: Mark document as CANCELLED and preserve records in db
-  const currentData = (typeof existing.data === 'object' && existing.data !== null) ? existing.data : {};
+  const currentData = parseJsonField(existing.data, {});
   await prisma.document.update({
     where: { id },
     data: {
       status: 'CANCELLED',
-      data: {
+      data: dehydrateDocumentData({
         ...currentData,
         isDeleted: true,
         deletedAt: new Date().toISOString(),
-      },
+      }),
       statusHistory: {
         create: {
           status: 'CANCELLED',
@@ -263,6 +266,16 @@ export async function deleteDocument(id, userId) {
       },
     },
   });
+
+  // Also delete corresponding local disk archive files (.pdf and .json) if they exist
+  if (existing.documentNumber) {
+    try {
+      const { deleteLocalDocumentFiles } = await import('./localStorage.service.js');
+      await deleteLocalDocumentFiles(existing.documentNumber);
+    } catch (err) {
+      console.warn('[LocalStorage] Could not delete local files on delete:', err.message);
+    }
+  }
 
   return { message: 'Document soft-deleted successfully' };
 }
@@ -289,7 +302,7 @@ export async function duplicateDocument(id, userId) {
       category: original.category,
       title: `Copy of ${original.title}`,
       documentNumber: newNumber,
-      data: original.data,
+      data: typeof original.data === 'string' ? original.data : dehydrateDocumentData(original.data),
       status: 'DRAFT',
       createdById: userId,
       statusHistory: {
@@ -312,7 +325,7 @@ export async function duplicateDocument(id, userId) {
     },
   });
 
-  return duplicate;
+  return hydrateDocument(duplicate);
 }
 
 /**
@@ -355,7 +368,7 @@ export async function updateDocumentStatus(id, userId, { status, note }) {
     },
   });
 
-  return document;
+  return hydrateDocument(document);
 }
 
 /**
