@@ -26,16 +26,16 @@ export default function BrandLogo({
     <div className={`inline-flex items-center gap-2.5 select-none ${className}`}>
       {/* Square Brand Icon */}
       <div
-        className={`${config.box} flex items-center justify-center shrink-0 transition-colors ${
+        className={`${config.box} flex items-center justify-center shrink-0 transition-all ${
           theme === 'light'
-            ? 'bg-indigo-600 text-white shadow-xs'
-            : 'bg-indigo-600 text-white border border-indigo-500/30'
+            ? 'bg-gradient-to-b from-indigo-500 to-indigo-700 text-white shadow-xs border border-indigo-400/25'
+            : 'bg-gradient-to-b from-indigo-500 to-indigo-800 text-white border border-indigo-400/30 shadow-indigo-950/40 shadow-sm'
         }`}
       >
         <Package
           size={config.iconSize}
           strokeWidth={2}
-          className="text-white shrink-0"
+          className="text-white shrink-0 drop-shadow-xs"
         />
       </div>
 
