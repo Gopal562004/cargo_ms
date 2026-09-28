@@ -18,7 +18,8 @@ import { getApiBaseUrl } from '../../services/api';
 import BrandLogo from './BrandLogo';
 
 const GITHUB_REPO = 'Gopal562004/cargo_ms';
-const RELEASE_TAG = 'v1.0.0';
+const APP_VERSION = '1.0.1';
+const RELEASE_TAG = `v${APP_VERSION}`;
 const GITHUB_RELEASE_BASE = `https://github.com/${GITHUB_REPO}/releases/download/${RELEASE_TAG}`;
 const GITHUB_RELEASES_PAGE = `https://github.com/${GITHUB_REPO}/releases`;
 
@@ -241,13 +242,13 @@ export default function DownloadModal({ isOpen, onClose }) {
 
                   <button
                     type="button"
-                    onClick={() => handleDownload('windows', 'CargoMS-Setup-1.0.0.exe')}
-                    disabled={downloadingFile === 'CargoMS-Setup-1.0.0.exe'}
+                    onClick={() => handleDownload('windows', `CargoMS-Setup-${APP_VERSION}.exe`)}
+                    disabled={downloadingFile === `CargoMS-Setup-${APP_VERSION}.exe`}
                     className="w-full py-2 px-3 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow cursor-pointer disabled:opacity-50"
                   >
                     <Download size={13} />
                     <span>
-                      {downloadingFile === 'CargoMS-Setup-1.0.0.exe'
+                      {downloadingFile === `CargoMS-Setup-${APP_VERSION}.exe`
                         ? 'Opening Download...'
                         : 'Download Setup (.exe)'}
                     </span>
@@ -279,13 +280,13 @@ export default function DownloadModal({ isOpen, onClose }) {
 
                   <button
                     type="button"
-                    onClick={() => handleDownload('windows', 'CargoMS-Portable-1.0.0.exe')}
-                    disabled={downloadingFile === 'CargoMS-Portable-1.0.0.exe'}
+                    onClick={() => handleDownload('windows', `CargoMS-Portable-${APP_VERSION}.exe`)}
+                    disabled={downloadingFile === `CargoMS-Portable-${APP_VERSION}.exe`}
                     className="w-full py-2 px-3 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 font-mono text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
                   >
                     <Download size={13} />
                     <span>
-                      {downloadingFile === 'CargoMS-Portable-1.0.0.exe'
+                      {downloadingFile === `CargoMS-Portable-${APP_VERSION}.exe`
                         ? 'Opening Download...'
                         : 'Download Portable (.exe)'}
                     </span>
@@ -322,7 +323,7 @@ export default function DownloadModal({ isOpen, onClose }) {
 
                   <button
                     type="button"
-                    onClick={() => handleDownload('mac', 'CargoMS-1.0.0-arm64.dmg')}
+                    onClick={() => handleDownload('mac', `CargoMS-${APP_VERSION}-arm64.dmg`)}
                     className="w-full py-2 px-3 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow cursor-pointer"
                   >
                     <Download size={13} />
@@ -353,7 +354,7 @@ export default function DownloadModal({ isOpen, onClose }) {
 
                   <button
                     type="button"
-                    onClick={() => handleDownload('mac', 'CargoMS-1.0.0-x64.dmg')}
+                    onClick={() => handleDownload('mac', `CargoMS-${APP_VERSION}-x64.dmg`)}
                     className="w-full py-2 px-3 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 font-mono text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer"
                   >
                     <Download size={13} />
@@ -386,7 +387,7 @@ export default function DownloadModal({ isOpen, onClose }) {
 
                   <button
                     type="button"
-                    onClick={() => handleDownload('linux', 'CargoMS-1.0.0.AppImage')}
+                    onClick={() => handleDownload('linux', `CargoMS-${APP_VERSION}.AppImage`)}
                     className="w-full py-2 px-3 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer"
                   >
                     <Download size={13} />
@@ -412,7 +413,7 @@ export default function DownloadModal({ isOpen, onClose }) {
 
                   <button
                     type="button"
-                    onClick={() => handleDownload('linux', 'CargoMS-1.0.0.deb')}
+                    onClick={() => handleDownload('linux', `CargoMS-${APP_VERSION}.deb`)}
                     className="w-full py-2 px-3 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 font-mono text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer"
                   >
                     <Download size={13} />
