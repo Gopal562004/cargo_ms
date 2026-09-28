@@ -9,7 +9,7 @@
     "server:install": "npm install --prefix server",
     "install:all": "npm run client:install && npm run server:install",
     "client:build": "npm run build --prefix client",
-    "client:build:electron": "cross-env ELECTRON_BUILD=true npm run build --prefix client",
+    "client:build:electron": "npm run build --prefix client",
     "server:generate": "node -e \"if (!require('fs').existsSync('server/node_modules/.prisma/desktop-client/index.js')) { require('child_process').execSync('npm run db:generate:desktop --prefix server', { stdio: 'inherit' }); } else { console.log('✅ Desktop Prisma client ready.'); }\"",
     "server:db:push": "npm run db:push:desktop --prefix server",
     "prebuild": "npm run client:build:electron && npm run server:generate",

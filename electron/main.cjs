@@ -4,8 +4,9 @@ const path = require('path');
 const fs = require('fs');
 const { startEmbeddedServer, stopEmbeddedServer, getServerPort } = require('./server-bridge.cjs');
 
-// Disable hardware acceleration for better compatibility
+// Disable hardware acceleration for better compatibility and allow file access for ES modules
 app.disableHardwareAcceleration();
+app.commandLine.appendSwitch('allow-file-access-from-files');
 
 // Set Application User Model ID so Windows taskbar displays our custom BrandLogo icon
 if (process.platform === 'win32') {
@@ -60,8 +61,9 @@ async function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
+      webSecurity: false,
     },
-    show: false,
+    show: true,
     backgroundColor: '#0f172a',
   });
 
@@ -69,7 +71,7 @@ async function createWindow() {
     mainWindow.setIcon(iconPath);
   }
 
-  // Show window as soon as DOM / Chromium is ready to paint
+  // Ensure window is focused once shown
   mainWindow.once('ready-to-show', () => {
     if (mainWindow) {
       mainWindow.show();
@@ -77,21 +79,29 @@ async function createWindow() {
     }
   });
 
-  // Fast timeout fallback: force show within 2.5s (never leave process invisible)
-  setTimeout(() => {
-    if (mainWindow && !mainWindow.isVisible()) {
-      console.log('[Main] Forcing window visible (fast timeout fallback)');
-      mainWindow.show();
-      mainWindow.focus();
+  const localDistPath = path.join(__dirname, '..', 'client', 'dist', 'index.html');
+
+  // Log any load failure or renderer console for debugging
+  mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
+    console.error(`[Main] Page failed to load (${errorCode}): ${errorDescription} - URL: ${validatedURL}`);
+    if (validatedURL && validatedURL.includes('5173')) {
+      console.log('[Main] Vite dev server not detected on 5173, falling back to local built bundle: ' + localDistPath);
+      mainWindow.loadFile(localDistPath);
     }
-  }, 2500);
+  });
+
+  mainWindow.webContents.on('console-message', (_event, level, message, line, sourceId) => {
+    console.log(`[Renderer Console] ${message} (${sourceId}:${line})`);
+  });
 
   // Load the app
-  if (IS_DEV) {
-    mainWindow.loadURL(`http://localhost:5173`);
-    mainWindow.webContents.openDevTools({ mode: 'detach' });
+  if (IS_DEV && process.env.TEST_PACKAGED !== 'true') {
+    mainWindow.loadURL(`http://localhost:5173`).catch(() => {
+      console.log('[Main] Could not reach localhost:5173, loading built index.html');
+      mainWindow.loadFile(localDistPath);
+    });
   } else {
-    mainWindow.loadFile(path.join(__dirname, '..', 'client', 'dist', 'index.html'));
+    mainWindow.loadFile(localDistPath);
   }
 
   // Start the embedded Express server in parallel without blocking window display
