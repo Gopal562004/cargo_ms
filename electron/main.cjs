@@ -94,12 +94,12 @@ async function createWindow() {
     console.log(`[Renderer Console] ${message} (${sourceId}:${line})`);
   });
 
-  // Load the app
-  if (IS_DEV && process.env.TEST_PACKAGED !== 'true') {
-    mainWindow.loadURL(`http://localhost:5173`).catch(() => {
-      console.log('[Main] Could not reach localhost:5173, loading built index.html');
-      mainWindow.loadFile(localDistPath);
-    });
+  // Load the app: use Vite dev server ONLY if started with --dev flag
+  const isDevWithVite = process.argv.includes('--dev') || process.env.ELECTRON_DEV === '1';
+
+  if (isDevWithVite) {
+    mainWindow.loadURL('http://localhost:5173');
+    mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
     mainWindow.loadFile(localDistPath);
   }

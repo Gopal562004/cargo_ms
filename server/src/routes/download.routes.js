@@ -125,7 +125,7 @@ router.get('/desktop', (req, res) => {
   }
 
   // Fallback: If binary is not on this server (e.g. hosted on Render), redirect to GitHub Release asset
-  const githubReleaseBase = process.env.DESKTOP_DOWNLOAD_URL || 'https://github.com/Gopal562004/cargo_ms/releases/download/v1.0.2';
+  const githubReleaseBase = process.env.DESKTOP_DOWNLOAD_URL || 'https://github.com/Gopal562004/cargo_ms/releases/download/v1.0.3';
   
   // Normalize filenames for electron-builder output
   let resolvedFilename = filename;

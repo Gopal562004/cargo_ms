@@ -47,7 +47,7 @@ import { useAuthStore } from '../store/authStore';
 import { getApiBaseUrl } from '../services/api';
 import DownloadModal from '../components/ui/DownloadModal';
 
-const APP_VERSION = '1.0.2';
+const APP_VERSION = '1.0.3';
 
 const MODULES = [
   { id: 'AIR_FREIGHT', name: 'Air Freight (MAWB / HAWB)', price: 1499, icon: Plane },
