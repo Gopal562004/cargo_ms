@@ -787,16 +787,16 @@ export default function LandingPage() {
               </div>
 
               <div className="pt-6 space-y-2">
-                <a
-                  href={`${getApiBaseUrl()}/download/desktop?os=windows&file=CargoMS-Setup-${APP_VERSION}.exe`}
-                  download={`CargoMS-Setup-${APP_VERSION}.exe`}
+                <button
+                  type="button"
+                  onClick={() => setShowDownloadModal(true)}
                   className="w-full py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md shadow-indigo-600/20 cursor-pointer"
                 >
                   <Download size={14} />
                   <span>Download for Windows (.exe)</span>
-                </a>
+                </button>
                 <p className="text-[10px] text-center text-slate-400 font-mono">
-                  v{APP_VERSION} · ~243 MB · Win 10/11
+                  v{APP_VERSION} · ~168 MB · Win 10/11
                 </p>
               </div>
             </div>
@@ -840,14 +840,14 @@ export default function LandingPage() {
               </div>
 
               <div className="pt-6 space-y-2">
-                <a
-                  href={`${getApiBaseUrl()}/download/desktop?os=mac&file=CargoMS-${APP_VERSION}-arm64.dmg`}
-                  download={`CargoMS-${APP_VERSION}-arm64.dmg`}
+                <button
+                  type="button"
+                  onClick={() => setShowDownloadModal(true)}
                   className="w-full py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md shadow-indigo-600/20 cursor-pointer"
                 >
                   <Download size={14} />
                   <span>Download for Mac (.dmg)</span>
-                </a>
+                </button>
                 <p className="text-[10px] text-center text-slate-400 font-mono">
                   Universal · macOS 12+
                 </p>

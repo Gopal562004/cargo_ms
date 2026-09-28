@@ -125,27 +125,18 @@ router.get('/desktop', (req, res) => {
   }
 
   // Fallback: If binary is not on this server (e.g. hosted on Render), redirect to GitHub Release asset
-  const githubReleaseBase = process.env.DESKTOP_DOWNLOAD_URL || 'https://github.com/Gopal562004/cargo_ms/releases/download/v1.0.0';
-  const githubReleaseUrl = `${githubReleaseBase}/${filename}`;
-  const releasePageUrl = 'https://github.com/Gopal562004/cargo_ms/releases';
-
-  // If redirect query or environment variable is set, directly redirect to GitHub Releases
-  if (req.query.redirect === 'true') {
-    return res.redirect(githubReleaseUrl);
+  const githubReleaseBase = process.env.DESKTOP_DOWNLOAD_URL || 'https://github.com/Gopal562004/cargo_ms/releases/download/v1.0.1';
+  
+  // Normalize filenames for electron-builder output
+  let resolvedFilename = filename;
+  if (resolvedFilename === 'CargoMS-Setup-1.0.1.exe' || resolvedFilename === 'CargoMS-Setup-1.0.0.exe') {
+    resolvedFilename = 'CargoMS-Desktop-Setup-1.0.1.exe';
+  } else if (resolvedFilename === 'CargoMS-Portable-1.0.1.exe' || resolvedFilename === 'CargoMS-Portable-1.0.0.exe') {
+    resolvedFilename = 'CargoMS-Desktop-1.0.1.exe';
   }
 
-  return res.status(404).json({
-    success: false,
-    message: `Installer binary "${filename}" is not stored on this cloud server. Please download directly from the official GitHub Release.`,
-    githubReleaseUrl,
-    releasePageUrl,
-    downloadDetails: {
-      file: filename,
-      os,
-      version: '1.0.0',
-      instruction: 'Upload your compiled binaries from dist-electron/ to GitHub Releases under tag v1.0.0.',
-    },
-  });
+  const githubReleaseUrl = `${githubReleaseBase}/${resolvedFilename}`;
+  return res.redirect(githubReleaseUrl);
 });
 
 export default router;

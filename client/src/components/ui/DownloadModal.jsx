@@ -242,13 +242,13 @@ export default function DownloadModal({ isOpen, onClose }) {
 
                   <button
                     type="button"
-                    onClick={() => handleDownload('windows', `CargoMS-Setup-${APP_VERSION}.exe`)}
-                    disabled={downloadingFile === `CargoMS-Setup-${APP_VERSION}.exe`}
+                    onClick={() => handleDownload('windows', `CargoMS-Desktop-Setup-${APP_VERSION}.exe`)}
+                    disabled={downloadingFile === `CargoMS-Desktop-Setup-${APP_VERSION}.exe`}
                     className="w-full py-2 px-3 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow cursor-pointer disabled:opacity-50"
                   >
                     <Download size={13} />
                     <span>
-                      {downloadingFile === `CargoMS-Setup-${APP_VERSION}.exe`
+                      {downloadingFile === `CargoMS-Desktop-Setup-${APP_VERSION}.exe`
                         ? 'Opening Download...'
                         : 'Download Setup (.exe)'}
                     </span>
@@ -280,13 +280,13 @@ export default function DownloadModal({ isOpen, onClose }) {
 
                   <button
                     type="button"
-                    onClick={() => handleDownload('windows', `CargoMS-Portable-${APP_VERSION}.exe`)}
-                    disabled={downloadingFile === `CargoMS-Portable-${APP_VERSION}.exe`}
+                    onClick={() => handleDownload('windows', `CargoMS-Desktop-${APP_VERSION}.exe`)}
+                    disabled={downloadingFile === `CargoMS-Desktop-${APP_VERSION}.exe`}
                     className="w-full py-2 px-3 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 font-mono text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
                   >
                     <Download size={13} />
                     <span>
-                      {downloadingFile === `CargoMS-Portable-${APP_VERSION}.exe`
+                      {downloadingFile === `CargoMS-Desktop-${APP_VERSION}.exe`
                         ? 'Opening Download...'
                         : 'Download Portable (.exe)'}
                     </span>
