@@ -71,12 +71,24 @@ async function startEmbeddedServer() {
 
   // Determine the server entry point path
   let serverEntryPath;
+  let serverNodeModulesPath;
   if (app.isPackaged) {
-    // In packaged app, server files are bundled alongside Electron
-    serverEntryPath = path.join(process.resourcesPath, 'server', 'src', 'server.js');
+    const candidatePaths = [
+      path.join(process.resourcesPath, 'app.asar.unpacked', 'server', 'src', 'server.js'),
+      path.join(process.resourcesPath, 'server', 'src', 'server.js'),
+      path.join(__dirname, '..', 'server', 'src', 'server.js'),
+    ];
+    serverEntryPath = candidatePaths.find(p => fs.existsSync(p)) || candidatePaths[0];
+
+    const candidateModules = [
+      path.join(process.resourcesPath, 'app.asar.unpacked', 'server', 'node_modules'),
+      path.join(process.resourcesPath, 'server', 'node_modules'),
+      path.join(process.resourcesPath, 'app.asar', 'server', 'node_modules'),
+    ];
+    serverNodeModulesPath = candidateModules.find(p => fs.existsSync(p)) || candidateModules[0];
   } else {
-    // In development, use the local server directory
     serverEntryPath = path.join(__dirname, '..', 'server', 'src', 'server.js');
+    serverNodeModulesPath = path.join(__dirname, '..', 'server', 'node_modules');
   }
 
   console.log(`[ServerBridge] Starting embedded server on port ${port}`);
@@ -99,60 +111,73 @@ async function startEmbeddedServer() {
     } catch {}
   }
 
-  return new Promise((resolve, reject) => {
-    // Fork the Express server as a child process
-    serverProcess = fork(serverEntryPath, [], {
-      env: {
-        ...process.env,
-        EMBEDDED_PORT: String(port),
-        PORT: String(port),
-        ELECTRON_EMBEDDED: 'true',
-        DATABASE_URL: `file:${dbPath}`,
-        DESKTOP_DATABASE_URL: `file:${dbPath}`,
-        STORAGE_ROOT: storageRoot,
-        CLOUD_API_URL: process.env.CLOUD_API_URL || 'http://localhost:5000/api',
-        JWT_SECRET: desktopSecret + '-access',
-        JWT_REFRESH_SECRET: desktopSecret + '-refresh',
-        JWT_EXPIRES_IN: '30d',
-        JWT_REFRESH_EXPIRES_IN: '30d',
-        NODE_ENV: 'production',
-      },
-      stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
-    });
-
-    // Listen for the server ready signal
-    serverProcess.on('message', (msg) => {
-      if (msg.type === 'SERVER_READY') {
-        console.log(`[ServerBridge] ✅ Server ready on port ${msg.port}`);
-        resolve(msg.port);
+  return new Promise((resolve) => {
+    let resolved = false;
+    const safeResolve = (p) => {
+      if (!resolved) {
+        resolved = true;
+        resolve(p);
       }
-    });
+    };
 
-    serverProcess.stdout?.on('data', (data) => {
-      console.log(`[Server] ${data.toString().trim()}`);
-    });
+    try {
+      // Fork the Express server as a child process with pure Node mode
+      serverProcess = fork(serverEntryPath, [], {
+        env: {
+          ...process.env,
+          ELECTRON_RUN_AS_NODE: '1',
+          NODE_PATH: serverNodeModulesPath,
+          EMBEDDED_PORT: String(port),
+          PORT: String(port),
+          ELECTRON_EMBEDDED: 'true',
+          DATABASE_URL: `file:${dbPath}`,
+          DESKTOP_DATABASE_URL: `file:${dbPath}`,
+          STORAGE_ROOT: storageRoot,
+          CLOUD_API_URL: process.env.CLOUD_API_URL || 'http://localhost:5000/api',
+          JWT_SECRET: desktopSecret + '-access',
+          JWT_REFRESH_SECRET: desktopSecret + '-refresh',
+          JWT_EXPIRES_IN: '30d',
+          JWT_REFRESH_EXPIRES_IN: '30d',
+          NODE_ENV: 'production',
+        },
+        stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
+      });
 
-    serverProcess.stderr?.on('data', (data) => {
-      console.error(`[Server Error] ${data.toString().trim()}`);
-    });
+      // Listen for the server ready signal
+      serverProcess.on('message', (msg) => {
+        if (msg && msg.type === 'SERVER_READY') {
+          console.log(`[ServerBridge] ✅ Server ready on port ${msg.port}`);
+          safeResolve(msg.port);
+        }
+      });
 
-    serverProcess.on('error', (err) => {
-      console.error('[ServerBridge] Failed to start server:', err.message);
-      reject(err);
-    });
+      serverProcess.stdout?.on('data', (data) => {
+        console.log(`[Server] ${data.toString().trim()}`);
+      });
 
-    serverProcess.on('exit', (code) => {
-      console.log(`[ServerBridge] Server process exited with code ${code}`);
-      serverProcess = null;
-    });
+      serverProcess.stderr?.on('data', (data) => {
+        console.error(`[Server Error] ${data.toString().trim()}`);
+      });
 
-    // Timeout fallback: if no IPC message received, assume server is ready after a delay
+      serverProcess.on('error', (err) => {
+        console.error('[ServerBridge] Failed to start server:', err.message);
+        safeResolve(port);
+      });
+
+      serverProcess.on('exit', (code) => {
+        console.log(`[ServerBridge] Server process exited with code ${code}`);
+        serverProcess = null;
+        safeResolve(port);
+      });
+    } catch (err) {
+      console.error('[ServerBridge] Exception starting server fork:', err);
+      safeResolve(port);
+    }
+
+    // Timeout fallback: never block window creation
     setTimeout(() => {
-      if (serverProcess && !serverProcess.killed) {
-        console.log(`[ServerBridge] Assuming server ready (timeout fallback)`);
-        resolve(port);
-      }
-    }, 5000);
+      safeResolve(port);
+    }, 4000);
   });
 }
 

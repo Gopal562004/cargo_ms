@@ -125,14 +125,14 @@ router.get('/desktop', (req, res) => {
   }
 
   // Fallback: If binary is not on this server (e.g. hosted on Render), redirect to GitHub Release asset
-  const githubReleaseBase = process.env.DESKTOP_DOWNLOAD_URL || 'https://github.com/Gopal562004/cargo_ms/releases/download/v1.0.1';
+  const githubReleaseBase = process.env.DESKTOP_DOWNLOAD_URL || 'https://github.com/Gopal562004/cargo_ms/releases/download/v1.0.2';
   
   // Normalize filenames for electron-builder output
   let resolvedFilename = filename;
-  if (resolvedFilename === 'CargoMS-Setup-1.0.1.exe' || resolvedFilename === 'CargoMS-Setup-1.0.0.exe') {
-    resolvedFilename = 'CargoMS-Desktop-Setup-1.0.1.exe';
-  } else if (resolvedFilename === 'CargoMS-Portable-1.0.1.exe' || resolvedFilename === 'CargoMS-Portable-1.0.0.exe') {
-    resolvedFilename = 'CargoMS-Desktop-1.0.1.exe';
+  if (/^CargoMS-Setup-[\d.]+\.exe$/i.test(resolvedFilename)) {
+    resolvedFilename = resolvedFilename.replace(/^CargoMS-Setup-/i, 'CargoMS-Desktop-Setup-');
+  } else if (/^CargoMS-Portable-[\d.]+\.exe$/i.test(resolvedFilename)) {
+    resolvedFilename = resolvedFilename.replace(/^CargoMS-Portable-/i, 'CargoMS-Desktop-');
   }
 
   const githubReleaseUrl = `${githubReleaseBase}/${resolvedFilename}`;

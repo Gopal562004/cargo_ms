@@ -46,8 +46,6 @@ function getAppIcon() {
  * Create the main application window.
  */
 async function createWindow() {
-  // Start the embedded Express server first
-  const port = await startEmbeddedServer();
   const iconPath = getAppIcon();
 
   mainWindow = new BrowserWindow({
@@ -71,22 +69,52 @@ async function createWindow() {
     mainWindow.setIcon(iconPath);
   }
 
+  // Show window as soon as DOM / Chromium is ready to paint
+  mainWindow.once('ready-to-show', () => {
+    if (mainWindow) {
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  });
+
+  // Fast timeout fallback: force show within 2.5s (never leave process invisible)
+  setTimeout(() => {
+    if (mainWindow && !mainWindow.isVisible()) {
+      console.log('[Main] Forcing window visible (fast timeout fallback)');
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  }, 2500);
+
   // Load the app
   if (IS_DEV) {
-    // In development, load from Vite dev server
     mainWindow.loadURL(`http://localhost:5173`);
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
-    // In production, load the built React app from disk
     mainWindow.loadFile(path.join(__dirname, '..', 'client', 'dist', 'index.html'));
   }
 
-  // Inject the API URL into the renderer once loaded
+  // Start the embedded Express server in parallel without blocking window display
+  startEmbeddedServer().then((port) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.executeJavaScript(`
+        window.__ELECTRON_API_PORT__ = ${port};
+        window.__ELECTRON_API_URL__ = 'http://localhost:${port}/api';
+      `).catch(() => {});
+    }
+  }).catch((err) => {
+    console.error('[Main] Embedded server startup error:', err);
+  });
+
+  // Inject API info once page finishes loading as well
   mainWindow.webContents.on('did-finish-load', () => {
-    mainWindow.webContents.executeJavaScript(`
-      window.__ELECTRON_API_PORT__ = ${port};
-      window.__ELECTRON_API_URL__ = 'http://localhost:${port}/api';
-    `);
+    const currentPort = getServerPort();
+    if (currentPort && mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.executeJavaScript(`
+        window.__ELECTRON_API_PORT__ = ${currentPort};
+        window.__ELECTRON_API_URL__ = 'http://localhost:${currentPort}/api';
+      `).catch(() => {});
+    }
   });
 
   // Security: Restrict new windows and open external URLs in OS default browser
@@ -113,21 +141,6 @@ async function createWindow() {
       event.preventDefault();
     }
   });
-
-  // Show window once ready
-  mainWindow.once('ready-to-show', () => {
-    mainWindow.show();
-    mainWindow.focus();
-  });
-
-  // Timeout fallback: force-show the window after 8 seconds in case ready-to-show is delayed
-  setTimeout(() => {
-    if (mainWindow && !mainWindow.isVisible()) {
-      console.log('[Main] Forcing window visible (timeout fallback)');
-      mainWindow.show();
-      mainWindow.focus();
-    }
-  }, 8000);
 
   mainWindow.on('close', (event) => {
     // Minimize to tray instead of closing on Windows, BUT only if not quitting

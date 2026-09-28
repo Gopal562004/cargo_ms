@@ -1,6 +1,6 @@
 {
   "name": "cargoms-desktop",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "CargoMS Desktop - Enterprise Cargo Document Management & Billing Software",
   "main": "electron/main.cjs",
   "private": true,
@@ -27,6 +27,10 @@
     "directories": {
       "output": "dist-electron"
     },
+    "asar": true,
+    "asarUnpack": [
+      "server/**/*"
+    ],
     "files": [
       "electron/**/*",
       "client/dist/**/*",
