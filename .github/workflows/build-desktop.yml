@@ -33,6 +33,8 @@ jobs:
       - name: Build React Client
         run: |
           cd client && npm run build
+        env:
+          ELECTRON_BUILD: "true"
 
       - name: Generate Desktop Prisma SQLite Client
         run: |

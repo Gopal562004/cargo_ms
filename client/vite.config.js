@@ -4,7 +4,8 @@ import tailwindcss from '@tailwindcss/vite';
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: './',
+  // Use relative base './' for Electron desktop builds, '/' for web (Vercel)
+  base: process.env.VITE_APP_ENV === 'electron' || process.env.ELECTRON_BUILD === 'true' ? './' : '/',
   plugins: [react(), tailwindcss()],
   server: {
     port: 5173,
