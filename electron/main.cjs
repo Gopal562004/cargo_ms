@@ -16,6 +16,23 @@ let mainWindow = null;
 let tray = null;
 const IS_DEV = !app.isPackaged;
 
+// ─── Single Instance Lock ────────────────────────────
+// Prevent multiple instances; if a second instance launches, focus the existing window
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  // Another instance is already running, quit this one immediately
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    // Someone tried to launch a second instance – focus our existing window
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  });
+}
+
 function getAppIcon() {
   const icoPath = path.join(__dirname, '..', 'assets', 'icon.ico');
   const pngPath = path.join(__dirname, '..', 'assets', 'icon.png');
@@ -100,11 +117,21 @@ async function createWindow() {
   // Show window once ready
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
+    mainWindow.focus();
   });
 
+  // Timeout fallback: force-show the window after 8 seconds in case ready-to-show is delayed
+  setTimeout(() => {
+    if (mainWindow && !mainWindow.isVisible()) {
+      console.log('[Main] Forcing window visible (timeout fallback)');
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  }, 8000);
+
   mainWindow.on('close', (event) => {
-    // Minimize to tray instead of closing on Windows
-    if (process.platform === 'win32' && tray) {
+    // Minimize to tray instead of closing on Windows, BUT only if not quitting
+    if (process.platform === 'win32' && tray && !app.isQuitting) {
       event.preventDefault();
       mainWindow.hide();
     }
