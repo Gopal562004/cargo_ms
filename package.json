@@ -13,7 +13,7 @@
     "server:generate": "node -e \"if (!require('fs').existsSync('server/node_modules/.prisma/desktop-client/index.js')) { require('child_process').execSync('npm run db:generate:desktop --prefix server', { stdio: 'inherit' }); } else { console.log('✅ Desktop Prisma client ready.'); }\"",
     "server:db:push": "npm run db:push:desktop --prefix server",
     "prebuild": "npm run client:build:electron && npm run server:generate",
-    "electron:dev": "concurrently -k \"npm run dev --prefix client\" \"wait-on tcp:5173 && electron .\"",
+    "electron:dev": "npm run server:generate && concurrently -k \"npm run dev --prefix client\" \"wait-on tcp:5173 && electron .\"",
     "electron:build": "npm run prebuild && electron-builder",
     "electron:build:win": "npm run prebuild && electron-builder --win",
     "electron:build:mac": "npm run prebuild && electron-builder --mac",
