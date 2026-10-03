@@ -33,6 +33,7 @@
     ],
     "files": [
       "electron/**/*",
+      "assets/**/*",
       "client/dist/**/*",
       "server/src/**/*",
       "server/prisma/**/*",

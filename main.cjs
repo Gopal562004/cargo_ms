@@ -35,18 +35,12 @@ if (!gotTheLock) {
 }
 
 function getAppIcon() {
-  const candidatePaths = [
-    path.join(__dirname, '..', 'assets', 'icon.ico'),
-    path.join(__dirname, '..', 'assets', 'icon.png'),
-    path.join(process.resourcesPath, 'assets', 'icon.ico'),
-    path.join(process.resourcesPath, 'assets', 'icon.png'),
-  ];
-  for (const p of candidatePaths) {
-    try {
-      if (fs.existsSync(p)) return p;
-    } catch {}
+  const icoPath = path.join(__dirname, '..', 'assets', 'icon.ico');
+  const pngPath = path.join(__dirname, '..', 'assets', 'icon.png');
+  if (process.platform === 'win32' && fs.existsSync(icoPath)) {
+    return icoPath;
   }
-  return null;
+  return pngPath;
 }
 
 /**
@@ -55,12 +49,13 @@ function getAppIcon() {
 async function createWindow() {
   const iconPath = getAppIcon();
 
-  const windowOpts = {
+  mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
     minWidth: 1024,
     minHeight: 700,
     title: 'CargoMS Desktop - Logistics OS',
+    icon: iconPath,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
@@ -70,20 +65,10 @@ async function createWindow() {
     },
     show: true,
     backgroundColor: '#0f172a',
-  };
+  });
 
-  if (iconPath) {
-    windowOpts.icon = iconPath;
-  }
-
-  mainWindow = new BrowserWindow(windowOpts);
-
-  if (process.platform === 'win32' && iconPath) {
-    try {
-      mainWindow.setIcon(iconPath);
-    } catch (err) {
-      console.warn('[Main] Failed to set window icon:', err.message);
-    }
+  if (process.platform === 'win32') {
+    mainWindow.setIcon(iconPath);
   }
 
   // Ensure window is focused once shown
@@ -114,7 +99,8 @@ async function createWindow() {
     console.log(`[Renderer Console] ${message} (${sourceId}:${line})`);
   });
 
-  // DevTools available via F12 / Ctrl+Shift+I / View menu (not auto-opened in production)
+  // Always open DevTools in detached window so we can see all network requests and logs
+  mainWindow.webContents.openDevTools({ mode: 'detach' });
 
   // Load the app: dev mode uses localhost:5173; production uses live Vercel
   const isDevWithVite = process.argv.includes('--dev') || process.env.ELECTRON_DEV === '1';
@@ -182,6 +168,14 @@ async function createWindow() {
     }
   });
 
+  mainWindow.on('close', (event) => {
+    // Minimize to tray instead of closing on Windows, BUT only if not quitting
+    if (process.platform === 'win32' && tray && !app.isQuitting) {
+      event.preventDefault();
+      mainWindow.hide();
+    }
+  });
+
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
@@ -191,17 +185,16 @@ async function createWindow() {
  * Create system tray icon.
  */
 function createTray() {
+  const iconPath = path.join(__dirname, '..', 'assets', 'icon.png');
+  let trayIcon;
   try {
-    const iconPath = getAppIcon();
-    let trayIcon = nativeImage.createEmpty();
-    if (iconPath) {
-      try {
-        trayIcon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
-      } catch {}
-    }
+    trayIcon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
+  } catch {
+    trayIcon = nativeImage.createEmpty();
+  }
 
-    tray = new Tray(trayIcon);
-    tray.setToolTip('CargoMS Desktop');
+  tray = new Tray(trayIcon);
+  tray.setToolTip('CargoMS Desktop');
 
   const contextMenu = Menu.buildFromTemplate([
     {
@@ -230,9 +223,6 @@ function createTray() {
       mainWindow.focus();
     }
   });
-} catch (err) {
-    console.warn('[Main] Failed to create system tray:', err.message);
-  }
 }
 
 /**

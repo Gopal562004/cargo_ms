@@ -105,7 +105,7 @@ export async function getCloudApiUrl() {
     const config = await prisma.appConfig.findUnique({ where: { key: 'CLOUD_API_URL' } });
     if (config?.value) return config.value;
   } catch {}
-  return 'http://localhost:5000/api';
+  return 'https://cargo-ms.onrender.com/api';
 }
 
 /**

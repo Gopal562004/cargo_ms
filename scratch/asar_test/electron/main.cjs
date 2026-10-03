@@ -4,7 +4,8 @@ const path = require('path');
 const fs = require('fs');
 const { startEmbeddedServer, stopEmbeddedServer, getServerPort } = require('./server-bridge.cjs');
 
-// Allow file access for ES modules
+// Disable hardware acceleration for better compatibility and allow file access for ES modules
+app.disableHardwareAcceleration();
 app.commandLine.appendSwitch('allow-file-access-from-files');
 
 // Set Application User Model ID so Windows taskbar displays our custom BrandLogo icon
@@ -15,7 +16,6 @@ if (process.platform === 'win32') {
 let mainWindow = null;
 let tray = null;
 const IS_DEV = !app.isPackaged;
-const CLOUD_WEB_URL = 'https://cargo-ms.vercel.app';
 
 // ─── Single Instance Lock ────────────────────────────
 // Prevent multiple instances; if a second instance launches, focus the existing window
@@ -35,18 +35,12 @@ if (!gotTheLock) {
 }
 
 function getAppIcon() {
-  const candidatePaths = [
-    path.join(__dirname, '..', 'assets', 'icon.ico'),
-    path.join(__dirname, '..', 'assets', 'icon.png'),
-    path.join(process.resourcesPath, 'assets', 'icon.ico'),
-    path.join(process.resourcesPath, 'assets', 'icon.png'),
-  ];
-  for (const p of candidatePaths) {
-    try {
-      if (fs.existsSync(p)) return p;
-    } catch {}
+  const icoPath = path.join(__dirname, '..', 'assets', 'icon.ico');
+  const pngPath = path.join(__dirname, '..', 'assets', 'icon.png');
+  if (process.platform === 'win32' && fs.existsSync(icoPath)) {
+    return icoPath;
   }
-  return null;
+  return pngPath;
 }
 
 /**
@@ -55,12 +49,13 @@ function getAppIcon() {
 async function createWindow() {
   const iconPath = getAppIcon();
 
-  const windowOpts = {
+  mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
     minWidth: 1024,
     minHeight: 700,
     title: 'CargoMS Desktop - Logistics OS',
+    icon: iconPath,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
@@ -70,20 +65,10 @@ async function createWindow() {
     },
     show: true,
     backgroundColor: '#0f172a',
-  };
+  });
 
-  if (iconPath) {
-    windowOpts.icon = iconPath;
-  }
-
-  mainWindow = new BrowserWindow(windowOpts);
-
-  if (process.platform === 'win32' && iconPath) {
-    try {
-      mainWindow.setIcon(iconPath);
-    } catch (err) {
-      console.warn('[Main] Failed to set window icon:', err.message);
-    }
+  if (process.platform === 'win32') {
+    mainWindow.setIcon(iconPath);
   }
 
   // Ensure window is focused once shown
@@ -96,82 +81,67 @@ async function createWindow() {
 
   const localDistPath = path.join(__dirname, '..', 'client', 'dist', 'index.html');
 
-  // Support F12 / Ctrl+Shift+I anytime
-  mainWindow.webContents.on('before-input-event', (_event, input) => {
-    if (input.key === 'F12' || (input.control && input.shift && input.key.toLowerCase() === 'i')) {
-      mainWindow.webContents.toggleDevTools();
+  // Log any load failure or renderer console for debugging
+  mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
+    console.error(`[Main] Page failed to load (${errorCode}): ${errorDescription} - URL: ${validatedURL}`);
+    if (validatedURL && validatedURL.includes('5173')) {
+      console.log('[Main] Vite dev server not detected on 5173, falling back to local built bundle: ' + localDistPath);
+      mainWindow.loadFile(localDistPath);
     }
-  });
-
-  // Log load failure safely without infinite reload loops
-  mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
-    if (errorCode === -3) return; // ERR_ABORTED is normal on navigation/redirects
-    if (!isMainFrame) return; // Ignore failures for subresources
-    console.error(`[Main] Main frame failed to load (${errorCode}): ${errorDescription} - URL: ${validatedURL}`);
   });
 
   mainWindow.webContents.on('console-message', (_event, level, message, line, sourceId) => {
     console.log(`[Renderer Console] ${message} (${sourceId}:${line})`);
   });
 
-  // DevTools available via F12 / Ctrl+Shift+I / View menu (not auto-opened in production)
-
-  // Load the app: dev mode uses localhost:5173; production uses live Vercel
+  // Load the app: use Vite dev server ONLY if started with --dev flag
   const isDevWithVite = process.argv.includes('--dev') || process.env.ELECTRON_DEV === '1';
 
   if (isDevWithVite) {
     mainWindow.loadURL('http://localhost:5173');
+    mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
-    mainWindow.loadURL(CLOUD_WEB_URL);
+    mainWindow.loadFile(localDistPath);
   }
 
-  const RENDER_API_URL = 'https://cargo-ms.onrender.com/api';
-
-  // Inject production Render API URL on page load
-  mainWindow.webContents.on('did-finish-load', () => {
+  // Start the embedded Express server in parallel without blocking window display
+  startEmbeddedServer().then((port) => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.executeJavaScript(`
-        window.__ELECTRON_API_URL__ = '${RENDER_API_URL}';
+        window.__ELECTRON_API_PORT__ = ${port};
+        window.__ELECTRON_API_URL__ = 'http://localhost:${port}/api';
+      `).catch(() => {});
+    }
+  }).catch((err) => {
+    console.error('[Main] Embedded server startup error:', err);
+  });
+
+  // Inject API info once page finishes loading as well
+  mainWindow.webContents.on('did-finish-load', () => {
+    const currentPort = getServerPort();
+    if (currentPort && mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.executeJavaScript(`
+        window.__ELECTRON_API_PORT__ = ${currentPort};
+        window.__ELECTRON_API_URL__ = 'http://localhost:${currentPort}/api';
       `).catch(() => {});
     }
   });
 
-  // Start embedded local server ONLY in dev if explicitly requested
-  if (!app.isPackaged && process.env.ENABLE_EMBEDDED === 'true') {
-    startEmbeddedServer().then((port) => {
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.executeJavaScript(`
-          window.__ELECTRON_API_PORT__ = ${port};
-          window.__ELECTRON_API_URL__ = 'http://localhost:${port}/api';
-        `).catch(() => {});
-      }
-    }).catch((err) => {
-      console.error('[Main] Embedded server startup error:', err);
-    });
-  }
-
   // Security: Restrict new windows and open external URLs in OS default browser
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('http:') || url.startsWith('https:') || url.startsWith('mailto:')) {
-      if (!url.includes('cargo-ms.vercel.app') && !url.includes('cargo-ms.onrender.com')) {
-        shell.openExternal(url);
-        return { action: 'deny' };
-      }
+      shell.openExternal(url);
     }
-    return { action: 'allow' };
+    return { action: 'deny' };
   });
 
-  // Security: Prevent in-app navigation away from application bundle or cloud app
+  // Security: Prevent in-app navigation away from application bundle
   mainWindow.webContents.on('will-navigate', (event, navigationUrl) => {
     try {
       const parsedUrl = new URL(navigationUrl);
-      const isAllowedOrigin =
-        (IS_DEV && parsedUrl.host === 'localhost:5173') ||
-        parsedUrl.protocol === 'file:' ||
-        parsedUrl.host.includes('cargo-ms.vercel.app') ||
-        parsedUrl.host.includes('cargo-ms.onrender.com');
-
-      if (!isAllowedOrigin) {
+      const isDevVite = IS_DEV && parsedUrl.host === 'localhost:5173';
+      const isFileProtocol = parsedUrl.protocol === 'file:';
+      if (!isDevVite && !isFileProtocol) {
         event.preventDefault();
         if (navigationUrl.startsWith('http:') || navigationUrl.startsWith('https:')) {
           shell.openExternal(navigationUrl);
@@ -179,6 +149,14 @@ async function createWindow() {
       }
     } catch {
       event.preventDefault();
+    }
+  });
+
+  mainWindow.on('close', (event) => {
+    // Minimize to tray instead of closing on Windows, BUT only if not quitting
+    if (process.platform === 'win32' && tray && !app.isQuitting) {
+      event.preventDefault();
+      mainWindow.hide();
     }
   });
 
@@ -191,17 +169,16 @@ async function createWindow() {
  * Create system tray icon.
  */
 function createTray() {
+  const iconPath = path.join(__dirname, '..', 'assets', 'icon.png');
+  let trayIcon;
   try {
-    const iconPath = getAppIcon();
-    let trayIcon = nativeImage.createEmpty();
-    if (iconPath) {
-      try {
-        trayIcon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
-      } catch {}
-    }
+    trayIcon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
+  } catch {
+    trayIcon = nativeImage.createEmpty();
+  }
 
-    tray = new Tray(trayIcon);
-    tray.setToolTip('CargoMS Desktop');
+  tray = new Tray(trayIcon);
+  tray.setToolTip('CargoMS Desktop');
 
   const contextMenu = Menu.buildFromTemplate([
     {
@@ -230,9 +207,6 @@ function createTray() {
       mainWindow.focus();
     }
   });
-} catch (err) {
-    console.warn('[Main] Failed to create system tray:', err.message);
-  }
 }
 
 /**
@@ -471,7 +445,5 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', async () => {
   app.isQuitting = true;
-  if (!app.isPackaged) {
-    await stopEmbeddedServer();
-  }
+  await stopEmbeddedServer();
 });

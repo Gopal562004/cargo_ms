@@ -34,6 +34,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
    */
   getApiUrl: async () => {
     const port = await ipcRenderer.invoke('app:getApiPort');
-    return port ? `http://localhost:${port}/api` : 'https://cargo-ms.onrender.com/api';
+    return `http://localhost:${port}/api`;
   },
 });
