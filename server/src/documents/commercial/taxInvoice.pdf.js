@@ -97,6 +97,7 @@ function drawHeaderLogo(doc, x, y, customLogoBase64) {
  */
 export function generateTaxInvoicePDF(document) {
   return new Promise((resolve, reject) => {
+    try {
       const rawNum = document.documentNumber || document.data?.invoiceNumber || 'Tax_Invoice';
       const safeTitle = String(rawNum).replace(/[/\\?%*:|"<>]/g, '_').trim();
       const doc = new PDFDocument({
