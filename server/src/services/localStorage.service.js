@@ -84,6 +84,7 @@ export async function setStorageRootPath(newPath) {
     update: { value: newPath },
     create: { key: 'STORAGE_ROOT', value: newPath },
   });
+  invalidateLocalStorageCache();
   return newPath;
 }
 
@@ -138,123 +139,133 @@ export async function saveDocumentLocally(document, pdfBuffer, companyName) {
     pdfPath,
   };
   fs.writeFileSync(jsonPath, JSON.stringify(metadata, null, 2), 'utf-8');
-
+  invalidateLocalStorageCache();
   return { pdfPath, jsonPath, dirPath };
+}
+
+// In-memory cache for fast local disk document listing
+let _cachedLocalDocs = null;
+let _cacheTimestamp = 0;
+const CACHE_TTL_MS = 5000; // 5 seconds fresh cache
+
+export function invalidateLocalStorageCache() {
+  _cachedLocalDocs = null;
+  _cacheTimestamp = 0;
 }
 
 /**
  * List all locally saved documents by scanning the storage directory.
+ * Uses intelligent in-memory caching for near-instant response times.
  */
 export async function listLocalDocuments(filters = {}) {
-  // First ensure any documents marked cancelled/deleted in database are removed from disk
-  await purgeCancelledDocumentsFromArchive();
-
   const storageRoot = await getStorageRootPath();
 
   if (!fs.existsSync(storageRoot)) {
     return [];
   }
 
-  const documents = [];
+  const now = Date.now();
+  let allDocuments = [];
 
-  function scanDir(dir) {
-    try {
-      const entries = fs.readdirSync(dir, { withFileTypes: true });
-      for (const entry of entries) {
-        const fullPath = path.join(dir, entry.name);
-        if (entry.isDirectory()) {
-          scanDir(fullPath);
-        } else if (entry.name.endsWith('.json') && !entry.name.startsWith('.')) {
-          try {
-            const content = JSON.parse(fs.readFileSync(fullPath, 'utf-8'));
-            const pdfExists = fs.existsSync(content.pdfPath || fullPath.replace('.json', '.pdf'));
-            
-            // Apply filters
-            if (filters.year && !fullPath.includes(`Year_${filters.year}`)) continue;
-            if (filters.category && content.category !== filters.category) continue;
-            if (filters.documentType && content.documentType !== filters.documentType) continue;
-            if (filters.search) {
-              const searchLower = filters.search.toLowerCase();
-              const matchesSearch =
-                (content.documentNumber || '').toLowerCase().includes(searchLower) ||
-                (content.title || '').toLowerCase().includes(searchLower) ||
-                JSON.stringify(content.data || {}).toLowerCase().includes(searchLower);
-              if (!matchesSearch) continue;
+  if (_cachedLocalDocs && (now - _cacheTimestamp) < CACHE_TTL_MS) {
+    allDocuments = _cachedLocalDocs;
+  } else {
+    function scanDir(dir) {
+      try {
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+        for (const entry of entries) {
+          const fullPath = path.join(dir, entry.name);
+          if (entry.isDirectory()) {
+            scanDir(fullPath);
+          } else if (entry.name.endsWith('.json') && !entry.name.startsWith('.')) {
+            try {
+              const content = JSON.parse(fs.readFileSync(fullPath, 'utf-8'));
+              const pdfPath = content.pdfPath || fullPath.replace('.json', '.pdf');
+              const pdfExists = fs.existsSync(pdfPath);
+              let fileSize = 0;
+              if (pdfExists) {
+                try {
+                  fileSize = fs.statSync(pdfPath).size;
+                } catch {}
+              }
+
+              allDocuments.push({
+                ...content,
+                jsonPath: fullPath,
+                pdfPath,
+                hasPdf: pdfExists,
+                fileSize,
+              });
+            } catch {
+              // Skip malformed JSON files
             }
-
-            documents.push({
-              ...content,
-              jsonPath: fullPath,
-              pdfPath: content.pdfPath || fullPath.replace('.json', '.pdf'),
-              hasPdf: pdfExists,
-              fileSize: pdfExists ? fs.statSync(content.pdfPath || fullPath.replace('.json', '.pdf')).size : 0,
-            });
-          } catch {
-            // Skip malformed JSON files
           }
         }
+      } catch {
+        // Skip inaccessible directories
       }
-    } catch {
-      // Skip inaccessible directories
     }
+
+    scanDir(storageRoot);
+
+    function extractDocSequence(docNo = '') {
+      const match = String(docNo).match(/\/(\d+)\//);
+      if (match) return parseInt(match[1], 10);
+      const numMatch = String(docNo).match(/(\d+)/);
+      return numMatch ? parseInt(numMatch[1], 10) : 0;
+    }
+
+    // Sort descending by sequence or creation date
+    allDocuments.sort((a, b) => {
+      const seqA = extractDocSequence(a.documentNumber);
+      const seqB = extractDocSequence(b.documentNumber);
+      if (seqA > 0 && seqB > 0 && seqA !== seqB) {
+        return seqB - seqA;
+      }
+      return new Date(b.createdAt || b.savedAt || 0) - new Date(a.createdAt || a.savedAt || 0);
+    });
+
+    _cachedLocalDocs = allDocuments;
+    _cacheTimestamp = now;
   }
 
-  scanDir(storageRoot);
-
-  function extractDocSequence(docNo = '') {
-    const match = String(docNo).match(/\/(\d+)\//);
-    if (match) return parseInt(match[1], 10);
-    const numMatch = String(docNo).match(/(\d+)/);
-    return numMatch ? parseInt(numMatch[1], 10) : 0;
+  // Apply filters in-memory (instantaneous)
+  let filtered = allDocuments;
+  if (filters.year) {
+    filtered = filtered.filter(d => (d.jsonPath || '').includes(`Year_${filters.year}`));
+  }
+  if (filters.category) {
+    filtered = filtered.filter(d => d.category === filters.category);
+  }
+  if (filters.documentType) {
+    filtered = filtered.filter(d => d.documentType === filters.documentType);
+  }
+  if (filters.search) {
+    const q = filters.search.toLowerCase().trim();
+    filtered = filtered.filter(d =>
+      (d.documentNumber || '').toLowerCase().includes(q) ||
+      (d.title || '').toLowerCase().includes(q) ||
+      JSON.stringify(d.data || {}).toLowerCase().includes(q)
+    );
   }
 
-  // Sort by document number sequence descending (e.g. DGR/020 down to DGR/001), then by createdAt
-  documents.sort((a, b) => {
-    const seqA = extractDocSequence(a.documentNumber);
-    const seqB = extractDocSequence(b.documentNumber);
-    if (seqA > 0 && seqB > 0 && seqA !== seqB) {
-      return seqB - seqA;
-    }
-    return new Date(b.createdAt || b.savedAt) - new Date(a.createdAt || a.savedAt);
-  });
-
-  return documents;
+  return filtered;
 }
 
 /**
  * Get storage statistics (total docs, total size).
  */
 export async function getStorageStats() {
-  await purgeCancelledDocumentsFromArchive();
-
   const storageRoot = await getStorageRootPath();
 
   if (!fs.existsSync(storageRoot)) {
-    return { totalDocuments: 0, totalSizeBytes: 0, storagePath: storageRoot };
+    return { totalDocuments: 0, totalSizeBytes: 0, totalSizeMB: 0, totalSizeFormatted: '0 KB', storagePath: storageRoot };
   }
 
-  let totalFiles = 0;
-  let totalSize = 0;
-
-  function countFiles(dir) {
-    try {
-      const entries = fs.readdirSync(dir, { withFileTypes: true });
-      for (const entry of entries) {
-        const fullPath = path.join(dir, entry.name);
-        if (entry.isDirectory()) {
-          countFiles(fullPath);
-        } else if (entry.name.endsWith('.pdf')) {
-          totalFiles++;
-          totalSize += fs.statSync(fullPath).size;
-        }
-      }
-    } catch {
-      // Skip inaccessible
-    }
-  }
-
-  countFiles(storageRoot);
-
+  // Calculate quickly using listLocalDocuments (benefitting from cache)
+  const docs = await listLocalDocuments();
+  const totalFiles = docs.filter(d => d.hasPdf).length;
+  const totalSize = docs.reduce((acc, d) => acc + (d.fileSize || 0), 0);
   const formatted = totalSize >= 1024 * 1024
     ? `${(totalSize / (1024 * 1024)).toFixed(2)} MB`
     : `${Math.round(totalSize / 1024)} KB`;
@@ -351,6 +362,7 @@ export async function deleteLocalDocumentFiles(documentNumberOrPath) {
   }
 
   removeMatches(storageRoot);
+  invalidateLocalStorageCache();
   return deletedCount > 0;
 }
 

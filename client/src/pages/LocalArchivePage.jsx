@@ -73,7 +73,20 @@ export default function LocalArchivePage() {
   };
 
   const sortedDocuments = useMemo(() => {
-    const list = [...documents];
+    let list = [...documents];
+
+    // Instant client-side search across document number, title, category, type, and JSON payload
+    if (search.trim()) {
+      const q = search.toLowerCase().trim();
+      list = list.filter((doc) =>
+        (doc.documentNumber || '').toLowerCase().includes(q) ||
+        (doc.title || '').toLowerCase().includes(q) ||
+        (doc.category || '').toLowerCase().includes(q) ||
+        (doc.documentType || '').toLowerCase().includes(q) ||
+        JSON.stringify(doc.data || {}).toLowerCase().includes(q)
+      );
+    }
+
     list.sort((a, b) => {
       if (sortBy === 'docNo') {
         const seqA = extractDocSequence(a.documentNumber);
@@ -98,7 +111,7 @@ export default function LocalArchivePage() {
       return 0;
     });
     return list;
-  }, [documents, sortBy, sortOrder]);
+  }, [documents, sortBy, sortOrder, search]);
 
   const totalPages = pageSize === 'ALL' ? 1 : Math.max(1, Math.ceil(sortedDocuments.length / pageSize));
   const paginatedDocuments = useMemo(() => {
@@ -128,7 +141,7 @@ export default function LocalArchivePage() {
     setLoading(true);
     try {
       const [docsRes, statsRes, configRes] = await Promise.all([
-        getLocalDocuments({ search, category, year }).catch(() => ({ documents: [] })),
+        getLocalDocuments({ category, year }).catch(() => ({ documents: [] })),
         getStorageStats().catch(() => ({ totalFiles: 0, totalSizeFormatted: '0 B' })),
         getStorageConfig().catch(() => ({ storagePath: '' })),
       ]);
@@ -151,15 +164,19 @@ export default function LocalArchivePage() {
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    loadData();
+    // Live client-side filtering already filters instantaneous on state change
   };
 
   const handleOpenFolder = async (targetPath) => {
     const pathToOpen = targetPath || storagePath;
     if (window.electronAPI?.showInFolder) {
+      setFeedback({ type: 'info', message: 'Opening folder in Windows Explorer...' });
       await window.electronAPI.showInFolder(pathToOpen);
+      setTimeout(() => setFeedback(null), 2500);
     } else if (window.electronAPI?.openFile) {
+      setFeedback({ type: 'info', message: 'Opening folder...' });
       await window.electronAPI.openFile(pathToOpen);
+      setTimeout(() => setFeedback(null), 2500);
     } else {
       setFeedback({ type: 'info', message: `Path: ${pathToOpen}` });
     }
@@ -167,7 +184,9 @@ export default function LocalArchivePage() {
 
   const handleOpenFile = async (filePath) => {
     if (window.electronAPI?.openFile) {
+      setFeedback({ type: 'info', message: 'Opening file with default viewer...' });
       await window.electronAPI.openFile(filePath);
+      setTimeout(() => setFeedback(null), 2500);
     } else {
       setFeedback({ type: 'info', message: `Opening: ${filePath}` });
     }
