@@ -25,6 +25,7 @@ import {
   importFromBackupFile,
   cloudImportData,
 } from '../../services/migrationService';
+import { syncStorageArchive } from '../../services/storageService';
 
 /**
  * ImportExportModal — Data Migration & Cloud Transfer modal.
@@ -89,6 +90,13 @@ export default function ImportExportModal({ isOpen, onClose, onComplete, initial
         licenseKey: isLicense ? cloudIdentifier : undefined,
       });
 
+      // Automatically sync and archive all newly imported documents directly to local PC disk
+      try {
+        await syncStorageArchive();
+      } catch (syncErr) {
+        console.warn('Auto-sync to local disk after cloud import:', syncErr.message);
+      }
+
       setCloudResult(result);
       if (onComplete) onComplete();
     } catch (err) {
@@ -141,6 +149,14 @@ export default function ImportExportModal({ isOpen, onClose, onComplete, initial
 
     try {
       const result = await importFromBackupFile(selectedFile);
+
+      // Automatically sync and archive all newly imported documents directly to local PC disk
+      try {
+        await syncStorageArchive();
+      } catch (syncErr) {
+        console.warn('Auto-sync to local disk after backup import:', syncErr.message);
+      }
+
       setImportResult(result);
       if (onComplete) onComplete();
     } catch (err) {

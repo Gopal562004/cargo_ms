@@ -277,14 +277,12 @@ export async function importUserData(userId, payload) {
   }
 
   // Automatically archive all imported documents to local disk on device
-  if (isDesktopMode()) {
-    try {
-      const { syncAllDocumentsToArchive } = await import('./localStorage.service.js');
-      await syncAllDocumentsToArchive(userId);
-      console.log(`[Migration] Auto-archived imported documents to local disk storage.`);
-    } catch (err) {
-      console.warn('[Migration] Auto-archive to local storage failed:', err.message);
-    }
+  try {
+    const { syncAllDocumentsToArchive } = await import('./localStorage.service.js');
+    await syncAllDocumentsToArchive(userId);
+    console.log(`[Migration] Auto-archived imported documents to local disk storage.`);
+  } catch (err) {
+    console.warn('[Migration] Auto-archive to local storage failed:', err.message);
   }
 
   return stats;
