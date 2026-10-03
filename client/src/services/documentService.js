@@ -98,13 +98,22 @@ export async function printDocumentPDF(id, docNumber = '') {
   const safeName = resolvedNumber ? String(resolvedNumber).replace(/[/\\?%*:|"<>]/g, '_').trim() : 'Tax_Invoice';
   const url = await fetchDocumentPDFBlobUrl(id);
 
+  // Set the window title so Windows / Chrome Print Dialog uses the invoice number as the default save file name
+  const prevTitle = document.title;
+  document.title = safeName;
+
   // Open titled window & trigger native print
   const printWindow = window.open('', '_blank');
   if (printWindow) {
+    try {
+      printWindow.document.title = safeName;
+    } catch {}
+
     printWindow.document.write(`
       <!DOCTYPE html>
-      <html>
+      <html lang="en">
         <head>
+          <meta charset="utf-8">
           <title>${safeName}</title>
           <style>
             body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; background: #525659; }
@@ -112,11 +121,13 @@ export async function printDocumentPDF(id, docNumber = '') {
           </style>
         </head>
         <body>
-          <iframe id="pdfFrame" src="${url}"></iframe>
+          <iframe id="pdfFrame" name="${safeName}" src="${url}#toolbar=0&navpanes=0"></iframe>
           <script>
+            document.title = ${JSON.stringify(safeName)};
             const frame = document.getElementById('pdfFrame');
             frame.onload = () => {
               setTimeout(() => {
+                document.title = ${JSON.stringify(safeName)};
                 try {
                   frame.contentWindow.focus();
                   frame.contentWindow.print();
@@ -124,13 +135,21 @@ export async function printDocumentPDF(id, docNumber = '') {
                   window.focus();
                   window.print();
                 }
-              }, 350);
+              }, 400);
             };
           </script>
         </body>
       </html>
     `);
+    try {
+      printWindow.document.title = safeName;
+    } catch {}
     printWindow.document.close();
+
+    // Revert parent document title after print dialog has launched
+    setTimeout(() => {
+      document.title = prevTitle;
+    }, 6000);
   } else {
     // Fallback: Invisible iframe with temporary document title update
     const iframe = document.createElement('iframe');
@@ -142,46 +161,51 @@ export async function printDocumentPDF(id, docNumber = '') {
     iframe.style.border = 'none';
     iframe.src = url;
 
-    const originalTitle = document.title;
-    if (safeName) {
-      document.title = safeName;
-    }
-
     document.body.appendChild(iframe);
 
     iframe.onload = () => {
       setTimeout(() => {
         try {
-          if (safeName && iframe.contentDocument) {
-            iframe.contentDocument.title = safeName;
-          }
           iframe.contentWindow.focus();
           iframe.contentWindow.print();
         } catch (e) {
           console.warn('Iframe print fallback:', e);
         }
         setTimeout(() => {
-          document.title = originalTitle;
+          document.title = prevTitle;
           iframe.remove();
-        }, 1500);
-      }, 350);
+        }, 6000);
+      }, 400);
     };
   }
 
   return url;
 }
 
-export async function downloadDocumentPDF(id, filename = 'document.pdf') {
+export async function downloadDocumentPDF(id, filename = '') {
+  let resolvedFilename = filename;
+  if (!resolvedFilename || resolvedFilename === 'document.pdf' || resolvedFilename === 'Invoice.pdf' || resolvedFilename === '.pdf') {
+    try {
+      const res = await api.get(`/documents/${id}`);
+      const d = res.data?.data?.document || res.data?.document || res.data;
+      const num = d?.documentNumber || d?.data?.invoiceNumber;
+      if (num) {
+        resolvedFilename = `${num}.pdf`;
+      }
+    } catch {}
+  }
+  if (!resolvedFilename) resolvedFilename = 'Tax_Invoice.pdf';
+
   // Replace illegal filename characters such as '/' with '_'
-  const safeFilename = String(filename).replace(/[/\\?%*:|"<>]/g, '_').trim();
+  const safeFilename = String(resolvedFilename).replace(/[/\\?%*:|"<>]/g, '_').trim();
   const url = await fetchDocumentPDFBlobUrl(id);
   const a = document.createElement('a');
   a.href = url;
   a.download = safeFilename.endsWith('.pdf') ? safeFilename : `${safeFilename}.pdf`;
   document.body.appendChild(a);
   a.click();
-  a.remove();
-  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+  setTimeout(() => window.URL.revokeObjectURL(url), 10000);
 }
 
 export async function parseInvoiceDocument(base64Data, fileName = '') {

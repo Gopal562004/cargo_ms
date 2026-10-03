@@ -738,21 +738,24 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
         amountInWords,
       };
 
+      const effectiveInvoiceNumber = (formData.invoiceNumber && formData.invoiceNumber.trim()) || getNextInvoiceNumber(documents);
+      const effectiveTitle = `Tax Invoice ${effectiveInvoiceNumber}`;
+
       let resultDoc;
       if (isEdit) {
         resultDoc = await updateDocument(documentId, {
-          title: `Tax Invoice ${formData.invoiceNumber}`,
-          documentNumber: formData.invoiceNumber,
+          title: effectiveTitle,
+          documentNumber: effectiveInvoiceNumber,
           status: formData.status || 'ISSUED',
           statusNote: `Status updated via Invoice Editor`,
-          data: payloadData,
+          data: { ...payloadData, invoiceNumber: effectiveInvoiceNumber },
         });
       } else {
         resultDoc = await createDocument({
           documentType: 'TAX_INVOICE',
-          documentNumber: formData.invoiceNumber,
-          title: `Tax Invoice ${formData.invoiceNumber}`,
-          data: payloadData,
+          documentNumber: effectiveInvoiceNumber,
+          title: effectiveTitle,
+          data: { ...payloadData, invoiceNumber: effectiveInvoiceNumber },
         });
       }
 
@@ -788,27 +791,31 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
         amountInWords,
       };
 
+      const effectiveInvoiceNumber = (formData.invoiceNumber && formData.invoiceNumber.trim()) || getNextInvoiceNumber(documents);
+      const effectiveTitle = `Tax Invoice ${effectiveInvoiceNumber}`;
+
       let resultDoc;
       if (isEdit) {
         resultDoc = await updateDocument(documentId, {
-          title: `Tax Invoice ${formData.invoiceNumber}`,
-          documentNumber: formData.invoiceNumber,
+          title: effectiveTitle,
+          documentNumber: effectiveInvoiceNumber,
           status: formData.status || 'ISSUED',
           statusNote: `Status updated via Invoice Editor`,
-          data: payloadData,
+          data: { ...payloadData, invoiceNumber: effectiveInvoiceNumber },
         });
       } else {
         resultDoc = await createDocument({
           documentType: 'TAX_INVOICE',
-          documentNumber: formData.invoiceNumber,
-          title: `Tax Invoice ${formData.invoiceNumber}`,
-          data: payloadData,
+          documentNumber: effectiveInvoiceNumber,
+          title: effectiveTitle,
+          data: { ...payloadData, invoiceNumber: effectiveInvoiceNumber },
         });
       }
 
       const targetId = resultDoc?.id || documentId;
+      const finalDocNumber = resultDoc?.documentNumber || effectiveInvoiceNumber;
       if (targetId) {
-        await printDocumentPDF(targetId, formData.invoiceNumber);
+        await printDocumentPDF(targetId, finalDocNumber);
       }
 
       if (onSaved) {
@@ -826,7 +833,8 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
     if (!documentId) return;
     setDownloadingPdf(true);
     try {
-      await downloadDocumentPDF(documentId, `${formData.invoiceNumber || 'Invoice'}.pdf`);
+      const dlNumber = currentDocument?.documentNumber || formData.invoiceNumber || 'Tax_Invoice';
+      await downloadDocumentPDF(documentId, `${dlNumber}.pdf`);
     } catch (err) {
       alert('Error downloading PDF: ' + err.message);
     } finally {
