@@ -35,12 +35,18 @@ if (!gotTheLock) {
 }
 
 function getAppIcon() {
-  const icoPath = path.join(__dirname, '..', 'assets', 'icon.ico');
-  const pngPath = path.join(__dirname, '..', 'assets', 'icon.png');
-  if (process.platform === 'win32' && fs.existsSync(icoPath)) {
-    return icoPath;
+  const candidatePaths = [
+    path.join(__dirname, '..', 'assets', 'icon.ico'),
+    path.join(__dirname, '..', 'assets', 'icon.png'),
+    path.join(process.resourcesPath, 'assets', 'icon.ico'),
+    path.join(process.resourcesPath, 'assets', 'icon.png'),
+  ];
+  for (const p of candidatePaths) {
+    try {
+      if (fs.existsSync(p)) return p;
+    } catch {}
   }
-  return pngPath;
+  return null;
 }
 
 /**
@@ -49,13 +55,12 @@ function getAppIcon() {
 async function createWindow() {
   const iconPath = getAppIcon();
 
-  mainWindow = new BrowserWindow({
+  const windowOpts = {
     width: 1440,
     height: 900,
     minWidth: 1024,
     minHeight: 700,
     title: 'CargoMS Desktop - Logistics OS',
-    icon: iconPath,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
@@ -65,10 +70,20 @@ async function createWindow() {
     },
     show: true,
     backgroundColor: '#0f172a',
-  });
+  };
 
-  if (process.platform === 'win32') {
-    mainWindow.setIcon(iconPath);
+  if (iconPath) {
+    windowOpts.icon = iconPath;
+  }
+
+  mainWindow = new BrowserWindow(windowOpts);
+
+  if (process.platform === 'win32' && iconPath) {
+    try {
+      mainWindow.setIcon(iconPath);
+    } catch (err) {
+      console.warn('[Main] Failed to set window icon:', err.message);
+    }
   }
 
   // Ensure window is focused once shown
@@ -99,41 +114,48 @@ async function createWindow() {
     console.log(`[Renderer Console] ${message} (${sourceId}:${line})`);
   });
 
-  // Always open DevTools in detached window so we can see all network requests and logs
-  mainWindow.webContents.openDevTools({ mode: 'detach' });
+  // DevTools available via F12 / Ctrl+Shift+I / View menu (not auto-opened in production)
 
-  // Load the app: dev mode uses localhost:5173; production uses live Vercel
+  // Start embedded local Express server with SQLite on an available local port
+  const serverPromise = startEmbeddedServer().catch((err) => {
+    console.error('[Main] Embedded server startup error:', err);
+    return null;
+  });
+
+  // Helper to inject the local API URL into renderer window
+  const injectApiUrl = (port) => {
+    if (mainWindow && !mainWindow.isDestroyed() && port) {
+      mainWindow.webContents.executeJavaScript(`
+        window.__ELECTRON_API_PORT__ = ${port};
+        window.__ELECTRON_API_URL__ = 'http://localhost:${port}/api';
+      `).catch(() => {});
+    }
+  };
+
+  serverPromise.then((port) => {
+    if (port) injectApiUrl(port);
+  });
+
+  mainWindow.webContents.on('did-finish-load', () => {
+    const currentPort = getServerPort();
+    if (currentPort) {
+      injectApiUrl(currentPort);
+    }
+  });
+
+  // Load the app: dev mode uses localhost:5173; production uses local pre-built bundle for 100% offline support
   const isDevWithVite = process.argv.includes('--dev') || process.env.ELECTRON_DEV === '1';
 
   if (isDevWithVite) {
     mainWindow.loadURL('http://localhost:5173');
   } else {
-    mainWindow.loadURL(CLOUD_WEB_URL);
-  }
-
-  const RENDER_API_URL = 'https://cargo-ms.onrender.com/api';
-
-  // Inject production Render API URL on page load
-  mainWindow.webContents.on('did-finish-load', () => {
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.executeJavaScript(`
-        window.__ELECTRON_API_URL__ = '${RENDER_API_URL}';
-      `).catch(() => {});
+    // Packaged / Offline Desktop: load local bundled files from disk
+    if (fs.existsSync(localDistPath)) {
+      mainWindow.loadFile(localDistPath);
+    } else {
+      console.warn('[Main] Local dist not found at ' + localDistPath + ', loading cloud URL');
+      mainWindow.loadURL(CLOUD_WEB_URL);
     }
-  });
-
-  // Start embedded local server ONLY in dev if explicitly requested
-  if (!app.isPackaged && process.env.ENABLE_EMBEDDED === 'true') {
-    startEmbeddedServer().then((port) => {
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.executeJavaScript(`
-          window.__ELECTRON_API_PORT__ = ${port};
-          window.__ELECTRON_API_URL__ = 'http://localhost:${port}/api';
-        `).catch(() => {});
-      }
-    }).catch((err) => {
-      console.error('[Main] Embedded server startup error:', err);
-    });
   }
 
   // Security: Restrict new windows and open external URLs in OS default browser
@@ -168,14 +190,6 @@ async function createWindow() {
     }
   });
 
-  mainWindow.on('close', (event) => {
-    // Minimize to tray instead of closing on Windows, BUT only if not quitting
-    if (process.platform === 'win32' && tray && !app.isQuitting) {
-      event.preventDefault();
-      mainWindow.hide();
-    }
-  });
-
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
@@ -185,16 +199,17 @@ async function createWindow() {
  * Create system tray icon.
  */
 function createTray() {
-  const iconPath = path.join(__dirname, '..', 'assets', 'icon.png');
-  let trayIcon;
   try {
-    trayIcon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
-  } catch {
-    trayIcon = nativeImage.createEmpty();
-  }
+    const iconPath = getAppIcon();
+    let trayIcon = nativeImage.createEmpty();
+    if (iconPath) {
+      try {
+        trayIcon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
+      } catch {}
+    }
 
-  tray = new Tray(trayIcon);
-  tray.setToolTip('CargoMS Desktop');
+    tray = new Tray(trayIcon);
+    tray.setToolTip('CargoMS Desktop');
 
   const contextMenu = Menu.buildFromTemplate([
     {
@@ -223,6 +238,9 @@ function createTray() {
       mainWindow.focus();
     }
   });
+} catch (err) {
+    console.warn('[Main] Failed to create system tray:', err.message);
+  }
 }
 
 /**
@@ -330,6 +348,11 @@ ipcMain.handle('shell:showInFolder', async (_event, filePath) => {
 // Get the current API port
 ipcMain.handle('app:getApiPort', () => {
   return getServerPort();
+});
+
+// Synchronous API port lookup for instant preload initialization
+ipcMain.on('app:getApiPortSync', (event) => {
+  event.returnValue = getServerPort() || 0;
 });
 
 // Get app version
@@ -461,7 +484,5 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', async () => {
   app.isQuitting = true;
-  if (!app.isPackaged) {
-    await stopEmbeddedServer();
-  }
+  await stopEmbeddedServer();
 });

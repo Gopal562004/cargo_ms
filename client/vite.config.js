@@ -4,8 +4,8 @@ import tailwindcss from '@tailwindcss/vite';
 
 // https://vite.dev/config/
 export default defineConfig({
-  // Use absolute base '/' so assets resolve correctly on all routes (Vercel SPA + Electron cloud mode)
-  base: '/',
+  // Use relative base './' for Electron desktop build so file:// loads assets correctly offline
+  base: process.env.ELECTRON_BUILD === 'true' ? './' : '/',
   plugins: [react(), tailwindcss()],
   server: {
     port: 5173,

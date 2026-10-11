@@ -1,8 +1,19 @@
 import axios from 'axios';
 
 export function getApiBaseUrl() {
-  if (typeof window !== 'undefined' && window.__ELECTRON_API_URL__) {
-    return window.__ELECTRON_API_URL__;
+  if (typeof window !== 'undefined') {
+    if (window.__ELECTRON_API_URL__) {
+      return window.__ELECTRON_API_URL__;
+    }
+    if (window.electronAPI?.getApiPortSync) {
+      try {
+        const port = window.electronAPI.getApiPortSync();
+        if (port) {
+          window.__ELECTRON_API_URL__ = `http://localhost:${port}/api`;
+          return window.__ELECTRON_API_URL__;
+        }
+      } catch {}
+    }
   }
   let rawUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
   rawUrl = rawUrl.replace(/\/+$/, '');
@@ -23,7 +34,7 @@ const api = axios.create({
 
 api.interceptors.request.use((config) => {
   const currentBase = getApiBaseUrl();
-  if (currentBase && (!config.baseURL || config.baseURL.includes('localhost:5000'))) {
+  if (currentBase && (!config.baseURL || config.baseURL.includes('localhost:5000') || !config.baseURL.includes(currentBase))) {
     config.baseURL = currentBase;
   }
   const token = localStorage.getItem('accessToken');
@@ -80,11 +91,15 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        localStorage.removeItem('accessToken');
-        if (window.electronAPI || window.location.hash) {
-          window.location.hash = '#/login';
-        } else {
-          window.location.href = '/login';
+        // Only force logout if the server actively rejected the refresh token (401 or 403)
+        // If offline / network disconnection, do NOT wipe local session
+        if (refreshError.response?.status === 401 || refreshError.response?.status === 403) {
+          localStorage.removeItem('accessToken');
+          if (window.electronAPI || window.location.hash) {
+            window.location.hash = '#/login';
+          } else {
+            window.location.href = '/login';
+          }
         }
         return Promise.reject(refreshError);
       } finally {

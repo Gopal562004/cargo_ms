@@ -15,6 +15,6 @@ services:
       - key: JWT_REFRESH_SECRET
         value: your-super-secret-refresh-token-key-change-in-production
       - key: JWT_EXPIRES_IN
-        value: 15m
+        value: 30d
       - key: JWT_REFRESH_EXPIRES_IN
-        value: 7d
+        value: 60d

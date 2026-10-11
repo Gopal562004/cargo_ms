@@ -137,7 +137,7 @@ async function startEmbeddedServer() {
           JWT_SECRET: desktopSecret + '-access',
           JWT_REFRESH_SECRET: desktopSecret + '-refresh',
           JWT_EXPIRES_IN: '30d',
-          JWT_REFRESH_EXPIRES_IN: '30d',
+          JWT_REFRESH_EXPIRES_IN: '60d',
           NODE_ENV: 'production',
         },
         stdio: ['pipe', 'pipe', 'pipe', 'ipc'],

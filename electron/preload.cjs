@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // ─── App Info ───────────────────────────────────────
   getApiPort: () => ipcRenderer.invoke('app:getApiPort'),
+  getApiPortSync: () => ipcRenderer.sendSync('app:getApiPortSync'),
   getVersion: () => ipcRenderer.invoke('app:getVersion'),
   getDataPath: () => ipcRenderer.invoke('app:getDataPath'),
 
