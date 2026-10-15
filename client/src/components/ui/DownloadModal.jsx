@@ -125,7 +125,7 @@ export default function DownloadModal({ isOpen, onClose }) {
               <div className="flex items-center gap-2">
                 <h3 className="font-bold text-base tracking-tight">Download CargoMS Desktop</h3>
                 <span className="px-1.5 py-0.5 rounded-sm text-[10px] font-mono font-bold bg-indigo-500/15 text-indigo-400 border border-indigo-500/30">
-                  {RELEASE_TAG}
+                  {releaseTag}
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
@@ -468,7 +468,7 @@ export default function DownloadModal({ isOpen, onClose }) {
           }`}
         >
           <div className="text-[11px] font-mono">
-            CargoMS Desktop {RELEASE_TAG} · Windows x64 Build
+            CargoMS Desktop {releaseTag} · Windows x64 Build
           </div>
           <a
             href={GITHUB_RELEASES_PAGE}
