@@ -40,9 +40,14 @@ jobs:
         env:
           ELECTRON_BUILD: "true"
 
-      - name: Generate Desktop Prisma SQLite Client
+      - name: Generate Desktop Prisma SQLite Client & Pre-seed Database
         run: |
-          cd server && npx prisma generate --schema=prisma/schema.desktop.prisma
+          cd server
+          npx prisma generate --schema=prisma/schema.desktop.prisma
+          npx prisma db push --schema=prisma/schema.desktop.prisma --accept-data-loss
+          node prisma/seed-desktop.js
+        env:
+          DESKTOP_DATABASE_URL: "file:./desktop.db"
 
       - name: Build Electron App
         run: |

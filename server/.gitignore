@@ -26,5 +26,6 @@ Thumbs.db
 *.db
 *.sqlite
 *.sqlite-journal
+!prisma/desktop.db
 coverage/
 dist/

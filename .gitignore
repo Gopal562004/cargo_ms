@@ -43,6 +43,7 @@ Thumbs.db
 *.db
 *.sqlite
 *.sqlite-journal
+!server/prisma/desktop.db
 coverage/
 .tmp/
 temp/

@@ -55,18 +55,47 @@ async function startEmbeddedServer() {
   const dbPath = path.join(dataDir, 'cargo_data.db');
   const storageRoot = getDefaultStorageRoot();
 
-  // If database doesn't exist or is empty, seed from template desktop.db
-  const templateDb = app.isPackaged
-    ? path.join(process.resourcesPath, 'server', 'prisma', 'desktop.db')
-    : path.join(__dirname, '..', 'server', 'prisma', 'desktop.db');
-
-  if (fs.existsSync(templateDb) && (!fs.existsSync(dbPath) || fs.statSync(dbPath).size === 0)) {
-    console.log(`[ServerBridge] Initializing new SQLite database from template: ${templateDb}`);
+  // If database doesn't exist or is empty (<32KB without tables), seed from template desktop.db
+  const candidateTemplates = [
+    path.join(process.resourcesPath, 'server', 'prisma', 'desktop.db'),
+    path.join(process.resourcesPath, 'app.asar.unpacked', 'server', 'prisma', 'desktop.db'),
+    path.join(__dirname, '..', 'server', 'prisma', 'desktop.db'),
+    path.join(app.getAppPath(), 'server', 'prisma', 'desktop.db'),
+  ];
+  const templateDb = candidateTemplates.find((p) => {
     try {
+      return fs.existsSync(p) && fs.statSync(p).size > 32768;
+    } catch {
+      return false;
+    }
+  });
+
+  let isDbEmptyOrInvalid = !fs.existsSync(dbPath);
+  if (!isDbEmptyOrInvalid) {
+    try {
+      const stats = fs.statSync(dbPath);
+      // Valid pre-seeded DB is >160KB. If <32KB it is an empty SQLite header (0 tables)
+      if (stats.size < 32768) {
+        isDbEmptyOrInvalid = true;
+      }
+    } catch {
+      isDbEmptyOrInvalid = true;
+    }
+  }
+
+  if (templateDb && isDbEmptyOrInvalid) {
+    console.log(`[ServerBridge] Initializing SQLite database from template: ${templateDb} -> ${dbPath}`);
+    try {
+      if (fs.existsSync(dbPath)) {
+        try { fs.unlinkSync(dbPath); } catch {}
+      }
       fs.copyFileSync(templateDb, dbPath);
+      console.log(`[ServerBridge] ✅ Database initialized successfully (${fs.statSync(dbPath).size} bytes)`);
     } catch (err) {
       console.warn('[ServerBridge] Failed to copy template database:', err.message);
     }
+  } else if (!templateDb) {
+    console.warn('[ServerBridge] ⚠️ Template desktop.db not found in candidate paths');
   }
 
   // Determine the server entry point path
@@ -132,6 +161,7 @@ async function startEmbeddedServer() {
           ELECTRON_EMBEDDED: 'true',
           DATABASE_URL: `file:${dbPath}`,
           DESKTOP_DATABASE_URL: `file:${dbPath}`,
+          DESKTOP_TEMPLATE_DB: templateDb || '',
           STORAGE_ROOT: storageRoot,
           CLOUD_API_URL: process.env.CLOUD_API_URL || 'https://cargo-ms.onrender.com/api',
           JWT_SECRET: desktopSecret + '-access',
