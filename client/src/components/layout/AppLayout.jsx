@@ -6,6 +6,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { AlertTriangle } from 'lucide-react';
 import LicenseStatusBanner from '../ui/LicenseStatusBanner';
+import UpdateBanner from '../ui/UpdateBanner';
 
 /**
  * Main application layout styled with Tailwind CSS.
@@ -48,6 +49,7 @@ export default function AppLayout() {
     <div className={`flex min-h-screen transition-colors ${theme === 'light' ? 'bg-slate-100 text-slate-900' : 'bg-slate-950 text-slate-100'}`}>
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
+        <UpdateBanner />
         <Header />
         <LicenseStatusBanner />
 

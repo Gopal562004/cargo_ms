@@ -21,6 +21,7 @@ import { useThemeStore } from '../store/themeStore';
 import BrandLogo from '../components/ui/BrandLogo';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
+import UpdateBanner from '../components/ui/UpdateBanner';
 
 const isElectron =
   typeof window !== 'undefined' &&
@@ -80,6 +81,9 @@ export default function Login() {
         theme === 'light' ? 'text-slate-900 bg-slate-100' : 'text-slate-100 bg-[#060a12]'
       }`}
     >
+      <div className="absolute top-0 left-0 right-0 z-50">
+        <UpdateBanner />
+      </div>
       {/* Rich Atmospheric Cargo Background Image with Adaptive Overlay */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
         <img
@@ -155,7 +159,7 @@ export default function Login() {
           <div className="flex items-center justify-between border-b border-slate-800/40 pb-4">
             <BrandLogo size="md" showText={true} subtitle="Logistics OS" />
             <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-              v2.5.0
+              v1.0.5
             </span>
           </div>
 
