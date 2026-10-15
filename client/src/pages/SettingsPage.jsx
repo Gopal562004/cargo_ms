@@ -961,8 +961,10 @@ export default function SettingsPage() {
                     <CheckCircle2 size={12} /> You are running the latest version (v{appVersion}).
                   </span>
                 ) : updaterStatus?.status === 'error' ? (
-                  <span className="text-rose-400">
-                    Update check note: {updaterStatus?.error}
+                  <span className="text-amber-400">
+                    {updaterStatus?.error?.includes('ERR_NAME_NOT_RESOLVED') || updaterStatus?.error?.includes('ENOTFOUND')
+                      ? 'Offline: Unable to reach GitHub. Please check your internet connection.'
+                      : `Update check: ${updaterStatus?.error}`}
                   </span>
                 ) : (
                   'Automatic silent updates via GitHub Releases. Checks quietly in the background on startup.'
