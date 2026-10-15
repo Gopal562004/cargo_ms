@@ -159,7 +159,7 @@ export default function Login() {
           <div className="flex items-center justify-between border-b border-slate-800/40 pb-4">
             <BrandLogo size="md" showText={true} subtitle="Logistics OS" />
             <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-              v1.0.5
+              v1.0.6
             </span>
           </div>
 

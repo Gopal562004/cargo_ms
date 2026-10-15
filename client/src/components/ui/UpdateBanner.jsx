@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowUpCircle, Download, RefreshCw, X, Sparkles, CheckCircle2 } from 'lucide-react';
 
 const GITHUB_REPO = 'Gopal562004/cargo_ms';
-const DEFAULT_VERSION = '1.0.5';
+const DEFAULT_VERSION = '1.0.6';
 
 /**
  * Compare two semver strings (e.g. "1.0.5" > "1.0.4")
