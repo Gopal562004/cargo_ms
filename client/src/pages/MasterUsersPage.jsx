@@ -114,7 +114,7 @@ export default function MasterUsersPage() {
     username: '',
     email: '',
     password: '',
-    company: 'DGR GLOBAL LOGISTICS',
+    company: 'Global Cargo Logistics',
     department: 'Accounts & Billing',
     phone: '',
     role: 'OPERATOR',
@@ -229,7 +229,7 @@ export default function MasterUsersPage() {
       username: '',
       email: '',
       password: '',
-      company: 'DGR GLOBAL LOGISTICS',
+      company: 'Global Cargo Logistics',
       department: 'Accounts & Billing',
       phone: '',
       role: 'OPERATOR',
@@ -1401,7 +1401,7 @@ Please keep your credentials secure.`;
                     <label className={`text-[11px] font-semibold block mb-1 ${theme === 'light' ? 'text-slate-700' : 'text-slate-300'}`}>Full Name *</label>
                     <input
                       type="text"
-                      placeholder="e.g. Mayur Kadam"
+                      placeholder="e.g. Operations Lead / Manager"
                       value={userForm.name}
                       onChange={(e) => setUserForm((prev) => ({ ...prev, name: e.target.value }))}
                       required
@@ -1433,7 +1433,7 @@ Please keep your credentials secure.`;
                     <label className={`text-[11px] font-semibold block mb-1 ${theme === 'light' ? 'text-slate-700' : 'text-slate-300'}`}>Email Address (Optional)</label>
                     <input
                       type="email"
-                      placeholder="e.g. mayur@dgrlogistics.com"
+                      placeholder="e.g. user@cargologistics.com"
                       value={userForm.email}
                       onChange={(e) => setUserForm((prev) => ({ ...prev, email: e.target.value }))}
                       className={`w-full px-3 py-1.5 rounded text-xs font-mono transition-colors focus:outline-none ${
@@ -1466,7 +1466,7 @@ Please keep your credentials secure.`;
                     <label className={`text-[11px] font-semibold block mb-1 ${theme === 'light' ? 'text-slate-700' : 'text-slate-300'}`}>Company / Agency Name</label>
                     <input
                       type="text"
-                      placeholder="e.g. DGR GLOBAL LOGISTICS"
+                      placeholder="e.g. ACME GLOBAL LOGISTICS"
                       value={userForm.company}
                       onChange={(e) => setUserForm((prev) => ({ ...prev, company: e.target.value }))}
                       className={`w-full px-3 py-1.5 rounded text-xs transition-colors focus:outline-none ${

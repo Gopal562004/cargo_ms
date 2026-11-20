@@ -1992,7 +1992,7 @@ export default function PurchaseBillsPage() {
                         setFormData({ ...formData, vendorName: e.target.value });
                         if (selectedVendorTemplateId) setSelectedVendorTemplateId('');
                       }}
-                      placeholder="e.g. DGR PACKAGING COMPANY / Airline Cargo / CHA"
+                      placeholder="e.g. Packaging Vendor / Airline Cargo / CHA"
                       className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
                       required
                     />
@@ -2270,7 +2270,7 @@ export default function PurchaseBillsPage() {
                       type="text"
                       value={formData.referenceName}
                       onChange={(e) => setFormData({ ...formData, referenceName: e.target.value })}
-                      placeholder="e.g. Mayur Kadam"
+                      placeholder="e.g. Operations Coordinator"
                       className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
                     />
                   </div>
@@ -2283,7 +2283,7 @@ export default function PurchaseBillsPage() {
                       type="text"
                       value={formData.contactNumber}
                       onChange={(e) => setFormData({ ...formData, contactNumber: e.target.value })}
-                      placeholder="e.g. 9028345261"
+                      placeholder="e.g. +91 98000 00000"
                       className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 focus:outline-none focus:border-indigo-500 font-mono"
                     />
                   </div>
@@ -2296,7 +2296,7 @@ export default function PurchaseBillsPage() {
                       type="text"
                       value={formData.shippedToName}
                       onChange={(e) => setFormData({ ...formData, shippedToName: e.target.value })}
-                      placeholder="e.g. Sai Warehouse & Transport, Bhiwandi"
+                      placeholder="e.g. Horizon Warehousing & Logistics, Bhiwandi"
                       className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
                     />
                   </div>

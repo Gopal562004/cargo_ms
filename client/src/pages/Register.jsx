@@ -130,7 +130,7 @@ export default function Register() {
                 <Input
                   label="Business Email"
                   type="email"
-                  placeholder="e.g. mayur@dgrlogistics.com"
+                  placeholder="e.g. user@cargologistics.com"
                   value={form.email}
                   onChange={handleChange('email')}
                   required

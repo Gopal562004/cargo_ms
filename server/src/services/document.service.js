@@ -58,7 +58,7 @@ export async function createDocument({ documentType, title, documentNumber, data
         where: { documentType: 'TAX_INVOICE', createdById: userId },
       });
       const seqStr = (count + 1).toString().padStart(3, '0');
-      docNumber = `DGR/${seqStr}/${fyStr}`;
+      docNumber = `INV/${seqStr}/${fyStr}`;
     } else {
       docNumber = autoGenerateNumber(documentType, data);
     }

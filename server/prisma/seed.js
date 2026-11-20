@@ -18,10 +18,10 @@ async function main() {
     },
     create: {
       username: 'admin',
-      email: 'admin@dgrlogistics.com',
+      email: 'admin@cargologistics.com',
       passwordHash: adminPasswordHash,
-      name: 'DGR Master Administrator',
-      company: 'DGR GLOBAL LOGISTICS',
+      name: 'Master Administrator',
+      company: 'Global Cargo Logistics',
       department: 'Management',
       role: 'ADMIN',
       isActive: true,
@@ -50,12 +50,12 @@ async function main() {
     },
     create: {
       username: 'mayur52004',
-      email: 'mayur@dgrlogistics.com',
+      email: 'mayur@cargologistics.com',
       passwordHash: mayurPasswordHash,
-      name: 'Mayur Kadam',
-      company: 'DGR GLOBAL LOGISTICS',
+      name: 'Demo Operator',
+      company: 'Global Cargo Logistics',
       department: 'Accounts & Billing',
-      phone: '9028345261',
+      phone: '+91 98000 00000',
       role: 'OPERATOR',
       isActive: true,
       allowedServices: [
@@ -67,7 +67,7 @@ async function main() {
     },
   });
 
-  console.log(`👤 Master Admin Account: username=admin / email=admin@dgrlogistics.com (Password: Admin@2004)`);
+  console.log(`👤 Master Admin Account: username=admin / email=admin@cargologistics.com (Password: Admin@2004)`);
   console.log(`👤 Operator Account: username=mayur52004 (Password: Mayur@2004)`);
 
   // Clean existing demo documents for fresh seed
@@ -281,8 +281,8 @@ async function main() {
       data: {
         awbNumber: '176-6507 5415',
         carrierName: 'EMIRATES',
-        shipperName: 'AADISH IMPEX PVT LTD.',
-        shipperAddress: 'GNP SOLITAIRE INDUSTRIAL ESTATE,UNIT NO : 12\nFIRST FLOOR MIDC,DOMBIVLI - 421203,\nMAHARASHTRA INDIA',
+        shipperName: 'STANDARD CARGO EXPORTS PVT LTD',
+        shipperAddress: 'INDUSTRIAL ESTATE, UNIT NO. 12, FIRST FLOOR MIDC, DOMBIVLI - 421203, MAHARASHTRA INDIA',
         consigneeName: 'PROXA PAARL',
         consigneeAddress: 'NO 1 ZANDWYK PARK OLD PAARL ROAD, SOUTH AFRICA.',
         aircraftType: 'CAO',
@@ -296,8 +296,8 @@ async function main() {
         quantity: '01 Fibreboard Box\nx 0.1 kg',
         packingInstructions: '670',
         authorization: '',
-        additionalInfo: 'KIND ATTN : MR. RISHIKESH GAWDE- 24-HOURS EMERGENCY CONTACT TELEPHONE NUMBER: +91-9702163540',
-        signatoryName: 'MR. SUGEN (DGR EXECUTIVE)',
+        additionalInfo: '24-HOURS EMERGENCY CONTACT TELEPHONE NUMBER: +91-9800000000',
+        signatoryName: 'AUTHORISED SIGNATORY',
         signatoryPlaceDate: 'MUMBAI /31.07.2026',
       },
       createdById: user.id,

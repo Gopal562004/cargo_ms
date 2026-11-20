@@ -50,9 +50,11 @@ import {
 } from '../services/billingProfileService';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
+import { useThemeStore } from '../store/themeStore';
 
 export default function BillingTemplatesPage() {
   const navigate = useNavigate();
+  const { theme } = useThemeStore();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Active Main Tab: 'TEMPLATES' | 'ITEMS' | 'PARTIES' | 'NUMBERING'
@@ -120,13 +122,13 @@ export default function BillingTemplatesPage() {
     name: '',
     category: 'Full Invoice Template',
     companyLogo: null,
-    companyName: 'DGR PACKAGING COMPANY',
-    companyAddress: 'SHOP NO.2, OPP. BLUE DART, NEAR, SAHAR CARGO COMPLEX, ANDHERI (E)',
+    companyName: 'STANDARD PACKAGING CO',
+    companyAddress: 'CARGO COMPLEX, SAHAR ROAD, ANDHERI (E)',
     companyCityPin: 'MUMBAI - 400 099',
-    companyPan: 'CBKPK7600K',
-    companyGstin: '27CBKPK7600K1ZE',
-    companyTel: '022 - 26828108',
-    companyEmail: 'dgrpackaging@gmail.com',
+    companyPan: 'ABCDE1234F',
+    companyGstin: '27ABCDE1234F1Z5',
+    companyTel: '022 - 28000000',
+    companyEmail: 'billing@company.com',
     buyerName: '',
     buyerAddress: '',
     buyerState: 'Maharashtra (27)',
@@ -185,7 +187,7 @@ export default function BillingTemplatesPage() {
   };
 
   const handleResetNumbering = () => {
-    if (window.confirm('Reset numbering settings to default (DGR/001/2026-27)?')) {
+    if (window.confirm('Reset numbering settings to default (INV/001/2026-27)?')) {
       saveNumberingSettings(DEFAULT_NUMBERING_SETTINGS);
       setNumberingForm(DEFAULT_NUMBERING_SETTINGS);
       showNotification('Numbering settings restored to default.');
@@ -325,13 +327,13 @@ export default function BillingTemplatesPage() {
       name: '',
       category: 'Full Invoice Template',
       companyLogo: null,
-      companyName: 'DGR PACKAGING COMPANY',
-      companyAddress: 'SHOP NO.2, OPP. BLUE DART, NEAR, SAHAR CARGO COMPLEX, ANDHERI (E)',
+      companyName: 'STANDARD PACKAGING CO',
+      companyAddress: 'CARGO COMPLEX, SAHAR ROAD, ANDHERI (E)',
       companyCityPin: 'MUMBAI - 400 099',
-      companyPan: 'CBKPK7600K',
-      companyGstin: '27CBKPK7600K1ZE',
-      companyTel: '022 - 26828108',
-      companyEmail: 'dgrpackaging@gmail.com',
+      companyPan: 'ABCDE1234F',
+      companyGstin: '27ABCDE1234F1Z5',
+      companyTel: '022 - 28000000',
+      companyEmail: 'billing@company.com',
       buyerName: '',
       buyerAddress: '',
       buyerState: 'Maharashtra (27)',
@@ -484,7 +486,7 @@ export default function BillingTemplatesPage() {
           ...p.consignee,
           companyLogo: p.companyLogo,
           items: p.items,
-          invoiceNumber: p.invoiceNumber || 'DGR/0466/26-27',
+          invoiceNumber: p.invoiceNumber || 'INV/001/26-27',
           invoiceDate: p.invoiceDate || '27-06-2026',
         },
       },
@@ -719,7 +721,7 @@ export default function BillingTemplatesPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Input
                       label="Template Name / Preset Label *"
-                      placeholder="e.g. Standard DG Export / Celebi DGD Invoice"
+                      placeholder="e.g. Standard DG Export / Air Cargo Invoice"
                       value={templateForm.name}
                       onChange={(e) => setTemplateForm({ ...templateForm, name: e.target.value })}
                       required
@@ -1524,7 +1526,7 @@ export default function BillingTemplatesPage() {
                   <div className="sm:col-span-2">
                     <Input
                       label="Company Name *"
-                      placeholder="e.g. DGR GLOBAL LOGISTICS / TAKAI CHEMTECH / CELEBI"
+                      placeholder="e.g. ACME GLOBAL LOGISTICS / APEX FREIGHT / AIRPORT CARGO"
                       value={partyForm.name}
                       onChange={(e) => setPartyForm({ ...partyForm, name: e.target.value })}
                       required
@@ -1532,7 +1534,7 @@ export default function BillingTemplatesPage() {
                   </div>
                   <Input
                     label="GSTIN (Optional)"
-                    placeholder="e.g. 27NSAPK0224B1Z7"
+                    placeholder="e.g. 27AAAAA0000A1Z5"
                     value={partyForm.gstin}
                     onChange={(e) => {
                       const val = e.target.value.toUpperCase();
@@ -1568,13 +1570,13 @@ export default function BillingTemplatesPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <Input
                     label="Contact Person"
-                    placeholder="e.g. Mr Sunil / Rajesh"
+                    placeholder="e.g. Operations Desk / Accounts"
                     value={partyForm.contactPerson}
                     onChange={(e) => setPartyForm({ ...partyForm, contactPerson: e.target.value })}
                   />
                   <Input
                     label="Phone / Mobile"
-                    placeholder="e.g. +91 9326392294"
+                    placeholder="e.g. +91 98000 00000"
                     value={partyForm.phone}
                     onChange={(e) => setPartyForm({ ...partyForm, phone: e.target.value })}
                   />
@@ -1734,7 +1736,7 @@ export default function BillingTemplatesPage() {
       {activeTab === 'NUMBERING' && (() => {
         const activeProfile = numberingForm;
         const fyCode = activeProfile.financialYear || '2026-27';
-        const prefix = activeProfile.prefix || 'DGR/';
+        const prefix = activeProfile.prefix || 'INV/';
         const padding = parseInt(activeProfile.paddingDigits, 10) || 3;
         const startSeq = parseInt(activeProfile.startSequence, 10) || 1;
         const suffix = activeProfile.suffix ? `/${activeProfile.suffix}` : '';
@@ -1745,21 +1747,35 @@ export default function BillingTemplatesPage() {
 
         return (
           <div className="animate-fade-in max-w-4xl">
-            <div className="p-4 bg-white border border-slate-200 rounded-lg shadow-xs space-y-3.5">
+            <div className={`p-4 rounded-lg shadow-xs space-y-3.5 border ${
+              theme === 'light'
+                ? 'bg-white border-slate-200 text-slate-900'
+                : 'bg-slate-900 border-slate-800 text-slate-100'
+            }`}>
               {/* Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+              <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b ${
+                theme === 'light' ? 'border-slate-100' : 'border-slate-800'
+              }`}>
                 <div className="flex items-center gap-2.5">
-                  <span className="p-1.5 rounded-md bg-indigo-50 text-indigo-600">
+                  <span className={`p-1.5 rounded-md ${
+                    theme === 'light' ? 'bg-indigo-50 text-indigo-600' : 'bg-indigo-950/60 text-indigo-400 border border-indigo-800/50'
+                  }`}>
                     <SlidersHorizontal size={16} />
                   </span>
                   <div>
-                    <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <h2 className={`text-sm font-bold flex items-center gap-2 ${
+                      theme === 'light' ? 'text-slate-900' : 'text-slate-100'
+                    }`}>
                       <span>Active Financial Year & Invoice Series</span>
-                      <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 border border-emerald-300 rounded text-[10px] font-bold font-mono">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono border ${
+                        theme === 'light'
+                          ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                          : 'bg-emerald-950/60 text-emerald-300 border-emerald-800/60'
+                      }`}>
                         FY {fyCode}
                       </span>
                     </h2>
-                    <p className="text-[11px] text-slate-500">
+                    <p className={`text-[11px] ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>
                       Standard GST tax invoice sequence configured for this accounting period.
                     </p>
                   </div>
@@ -1768,7 +1784,11 @@ export default function BillingTemplatesPage() {
                 <button
                   type="button"
                   onClick={() => navigate('/settings')}
-                  className="text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 font-semibold px-3 py-1.5 rounded border border-indigo-200 transition-colors flex items-center gap-1.5 self-start sm:self-auto"
+                  className={`text-xs font-semibold px-3 py-1.5 rounded border transition-colors flex items-center gap-1.5 self-start sm:self-auto ${
+                    theme === 'light'
+                      ? 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 border-indigo-200'
+                      : 'text-indigo-400 hover:text-indigo-300 hover:bg-slate-800 border-slate-700'
+                  }`}
                 >
                   <Settings size={13} />
                   <span>Manage / Switch in Settings &rarr;</span>
@@ -1777,39 +1797,57 @@ export default function BillingTemplatesPage() {
 
               {/* Compact Metrics Row */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
-                <div className="p-2.5 rounded bg-slate-50 border border-slate-100">
-                  <span className="text-[10px] text-slate-500 font-medium block">Financial Year:</span>
-                  <span className="font-bold text-slate-900 font-mono">FY {fyCode}</span>
+                <div className={`p-2.5 rounded border ${
+                  theme === 'light' ? 'bg-slate-50 border-slate-100' : 'bg-slate-950/60 border-slate-800'
+                }`}>
+                  <span className={`text-[10px] font-medium block ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>Financial Year:</span>
+                  <span className={`font-bold font-mono ${theme === 'light' ? 'text-slate-900' : 'text-slate-200'}`}>FY {fyCode}</span>
                 </div>
-                <div className="p-2.5 rounded bg-slate-50 border border-slate-100">
-                  <span className="text-[10px] text-slate-500 font-medium block">Invoice Prefix:</span>
-                  <span className="font-bold text-indigo-700 font-mono">{prefix}</span>
+                <div className={`p-2.5 rounded border ${
+                  theme === 'light' ? 'bg-slate-50 border-slate-100' : 'bg-slate-950/60 border-slate-800'
+                }`}>
+                  <span className={`text-[10px] font-medium block ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>Invoice Prefix:</span>
+                  <span className="font-bold text-indigo-400 font-mono">{prefix}</span>
                 </div>
-                <div className="p-2.5 rounded bg-slate-50 border border-slate-100">
-                  <span className="text-[10px] text-slate-500 font-medium block">Padding:</span>
-                  <span className="font-bold text-slate-800 font-mono">{padding} Digits</span>
+                <div className={`p-2.5 rounded border ${
+                  theme === 'light' ? 'bg-slate-50 border-slate-100' : 'bg-slate-950/60 border-slate-800'
+                }`}>
+                  <span className={`text-[10px] font-medium block ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>Padding:</span>
+                  <span className={`font-bold font-mono ${theme === 'light' ? 'text-slate-800' : 'text-slate-200'}`}>{padding} Digits</span>
                 </div>
-                <div className="p-2.5 rounded bg-slate-50 border border-slate-100">
-                  <span className="text-[10px] text-slate-500 font-medium block">Next Number:</span>
-                  <span className="font-bold text-emerald-700 font-mono">{sample1}</span>
+                <div className={`p-2.5 rounded border ${
+                  theme === 'light' ? 'bg-slate-50 border-slate-100' : 'bg-slate-950/60 border-slate-800'
+                }`}>
+                  <span className={`text-[10px] font-medium block ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>Next Number:</span>
+                  <span className="font-bold text-emerald-400 font-mono">{sample1}</span>
                 </div>
               </div>
 
               {/* Compact Sequence Preview */}
-              <div className="p-2.5 bg-indigo-50/40 border border-indigo-100 rounded flex flex-wrap items-center justify-between gap-2 text-xs">
-                <span className="text-[11px] font-bold text-slate-600 flex items-center gap-1">
-                  <Sparkles size={12} className="text-indigo-600" /> Series Progression:
+              <div className={`p-2.5 border rounded flex flex-wrap items-center justify-between gap-2 text-xs ${
+                theme === 'light' ? 'bg-indigo-50/40 border-indigo-100' : 'bg-slate-950/80 border-slate-800'
+              }`}>
+                <span className={`text-[11px] font-bold flex items-center gap-1 ${
+                  theme === 'light' ? 'text-slate-600' : 'text-slate-300'
+                }`}>
+                  <Sparkles size={12} className="text-indigo-400" /> Series Progression:
                 </span>
                 <div className="flex items-center gap-2 font-mono text-[11px] font-bold">
-                  <span className="px-2 py-0.5 bg-white border border-indigo-200 rounded text-indigo-700 shadow-2xs">
+                  <span className={`px-2 py-0.5 border rounded shadow-2xs ${
+                    theme === 'light' ? 'bg-white border-indigo-200 text-indigo-700' : 'bg-slate-900 border-indigo-900/60 text-indigo-300'
+                  }`}>
                     1st: {sample1}
                   </span>
-                  <span className="text-slate-400">&rarr;</span>
-                  <span className="px-2 py-0.5 bg-white border border-slate-200 rounded text-slate-700">
+                  <span className="text-slate-500">&rarr;</span>
+                  <span className={`px-2 py-0.5 border rounded ${
+                    theme === 'light' ? 'bg-white border-slate-200 text-slate-700' : 'bg-slate-900 border-slate-800 text-slate-300'
+                  }`}>
                     2nd: {sample2}
                   </span>
-                  <span className="text-slate-400">&rarr;</span>
-                  <span className="px-2 py-0.5 bg-white border border-slate-200 rounded text-slate-700">
+                  <span className="text-slate-500">&rarr;</span>
+                  <span className={`px-2 py-0.5 border rounded ${
+                    theme === 'light' ? 'bg-white border-slate-200 text-slate-700' : 'bg-slate-900 border-slate-800 text-slate-300'
+                  }`}>
                     3rd: {sample3}
                   </span>
                 </div>

@@ -128,7 +128,7 @@ export default function SettingsPage() {
     label: '',
     startDate: '',
     endDate: '',
-    prefix: 'DGR/',
+    prefix: 'INV/',
     startSequence: 1,
     paddingDigits: 3,
     suffix: '',
@@ -161,7 +161,7 @@ export default function SettingsPage() {
       label: fy.label || `FY ${fy.code}`,
       startDate: fy.startDate || '',
       endDate: fy.endDate || '',
-      prefix: fy.prefix || 'DGR/',
+      prefix: fy.prefix || 'INV/',
       startSequence: fy.startSequence || 1,
       paddingDigits: fy.paddingDigits || 3,
       suffix: fy.suffix || '',
@@ -183,7 +183,7 @@ export default function SettingsPage() {
       label: `FY ${nextCode}`,
       startDate: `${nextStart}-04-01`,
       endDate: `${nextStart + 1}-03-31`,
-      prefix: 'DGR/',
+      prefix: 'INV/',
       startSequence: 1,
       paddingDigits: 3,
       suffix: '',
@@ -472,7 +472,7 @@ export default function SettingsPage() {
             }`}>
               <div className="flex items-center justify-between text-slate-500">
                 <span className="flex items-center gap-1.5"><Building size={13} /> Company</span>
-                <span className={`font-medium ${theme === 'light' ? 'text-slate-800' : 'text-slate-200'}`}>{user?.company || 'DGR GLOBAL LOGISTICS'}</span>
+                <span className={`font-medium ${theme === 'light' ? 'text-slate-800' : 'text-slate-200'}`}>{user?.company || 'Your Company Name'}</span>
               </div>
 
               <div className="flex items-center justify-between text-slate-500">
@@ -663,7 +663,7 @@ export default function SettingsPage() {
                 .sort((a, b) => (parseInt(a.code.split('-')[0], 10) || 0) - (parseInt(b.code.split('-')[0], 10) || 0))
                 .map((fy) => {
                   const isActive = activeFY === fy.code;
-                  const prefix = fy.prefix || 'DGR/';
+                  const prefix = fy.prefix || 'INV/';
                   const padding = parseInt(fy.paddingDigits, 10) || 3;
                   const startSeq = parseInt(fy.startSequence, 10) || 1;
                   const suffix = fy.suffix ? `/${fy.suffix}` : '';
@@ -1190,7 +1190,7 @@ function FinancialYearEditModal({ isOpen, isAddingNew, formData, setFormData, on
 
   if (!isOpen) return null;
 
-  const prefix = formData.prefix || 'DGR/';
+  const prefix = formData.prefix || 'INV/';
   const padding = parseInt(formData.paddingDigits, 10) || 3;
   const startSeq = parseInt(formData.startSequence, 10) || 1;
   const suffix = formData.suffix ? `/${formData.suffix}` : '';
@@ -1266,7 +1266,7 @@ function FinancialYearEditModal({ isOpen, isAddingNew, formData, setFormData, on
                 type="text"
                 value={formData.prefix}
                 onChange={(e) => setFormData((p) => ({ ...p, prefix: e.target.value }))}
-                placeholder="DGR/"
+                placeholder="INV/"
                 className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded text-xs font-mono font-bold text-slate-100 focus:outline-none focus:border-indigo-500"
                 required
               />

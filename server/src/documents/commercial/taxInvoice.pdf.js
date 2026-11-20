@@ -82,18 +82,18 @@ function drawHeaderLogo(doc, x, y, customLogoBase64) {
     }
   }
 
-  // Tilted stylized DGR Oval Badge matching INV DGR- 0466-26-27.pdf
+  // Default clean geometric company monogram
   doc.save();
   doc.ellipse(x + 28, y + 25, 26, 18).lineWidth(1.2).strokeColor('#2c3e50').stroke();
   doc.ellipse(x + 28, y + 25, 23, 15).lineWidth(0.6).strokeColor('#4b6584').stroke();
-  doc.font('Helvetica-BoldOblique').fontSize(15).fillColor('#1a252f');
-  doc.text('DGR', x + 6, y + 17, { width: 44, align: 'center' });
+  doc.font('Helvetica-BoldOblique').fontSize(11).fillColor('#1a252f');
+  doc.text('INV', x + 6, y + 20, { width: 44, align: 'center' });
   doc.restore();
 }
 
 /**
  * Exact Tax Invoice / Billing PDF Generator
- * Matches INV DGR- 0466-26-27.pdf & BILLING.xlsx pixel-for-pixel
+ * Professional standard GST Tax Invoice format
  */
 export function generateTaxInvoicePDF(document) {
   return new Promise((resolve, reject) => {
@@ -159,21 +159,24 @@ export function generateTaxInvoicePDF(document) {
       doc.text(d.docTitle || 'TAX INVOICE', headerCenter, top + 5, { width: headerWidth, align: 'center' });
 
       doc.font('Helvetica-Bold').fontSize(14.5);
-      doc.text(d.companyName || 'DGR PACKAGING COMPANY', headerCenter, top + 19, { width: headerWidth, align: 'center' });
+      doc.text(d.companyName || 'COMPANY NAME', headerCenter, top + 19, { width: headerWidth, align: 'center' });
 
       doc.font('Helvetica').fontSize(8);
-      const companyAddr = `${d.companyAddress || 'SHOP NO.2, OPP. BLUE DART, NEAR, SAHAR CARGO COMPLEX, ANDHERI (E)'}\n${d.companyCityPin || 'MUMBAI - 400 099'}`;
+      const companyAddr = `${d.companyAddress || 'OFFICE / WAREHOUSE PREMISES'}\n${d.companyCityPin || 'MUMBAI - 400 099'}`;
       doc.text(companyAddr, headerCenter, top + 36, { width: headerWidth, align: 'center', lineGap: 1 });
 
       const midY = top + 57;
       doc.font('Helvetica-Bold').fontSize(8.5);
-      doc.text(`PAN : ${d.companyPan || 'CBKPK7600K'}`, headerCenter, midY, { width: headerWidth, align: 'center' });
+      doc.text(`PAN : ${d.companyPan || 'ABCDE1234F'}`, headerCenter, midY, { width: headerWidth, align: 'center' });
 
       doc.fontSize(9);
-      doc.text(`GSTIN : ${d.companyGstin || '27CBKPK7600K1ZE'}`, headerCenter, midY + 11, { width: headerWidth, align: 'center' });
+      doc.text(`GSTIN : ${d.companyGstin || '27ABCDE1234F1Z5'}`, headerCenter, midY + 11, { width: headerWidth, align: 'center' });
 
       doc.font('Helvetica').fontSize(8);
-      const contactLine = `Tel. : ${d.companyTel || '022 - 26828108'}   email : ${d.companyEmail || 'dgrpackaging@gmail.com'}`;
+      const contactLine = [
+        d.companyTel ? `Tel. : ${d.companyTel}` : '',
+        d.companyEmail ? `email : ${d.companyEmail}` : 'email : billing@company.com'
+      ].filter(Boolean).join('   ');
       doc.text(contactLine, headerCenter, midY + 23, { width: headerWidth, align: 'center' });
 
       let currY = top + 93;
@@ -197,7 +200,7 @@ export function generateTaxInvoicePDF(document) {
 
       doc.font('Helvetica-Bold').fontSize(7.5).fillColor('#000000');
       doc.text('Invoice No.', leftColX, leftY);
-      doc.font('Helvetica-Bold').text(`: ${d.invoiceNumber || 'DGR/0466/26-27'}`, leftValX, leftY);
+      doc.font('Helvetica-Bold').text(`: ${d.invoiceNumber || 'INV/001/26-27'}`, leftValX, leftY);
       leftY += metaLineH;
 
       doc.font('Helvetica').fontSize(7.5);
@@ -282,7 +285,7 @@ export function generateTaxInvoicePDF(document) {
       bY += 13;
 
       doc.font('Helvetica-Bold').fontSize(8.5);
-      doc.text(d.buyerName || 'DGR GLOBAL LOGISTICS', leftColX, bY, { width: midX - leftColX - 6 });
+      doc.text(d.buyerName || 'CLIENT / BUYER NAME', leftColX, bY, { width: midX - leftColX - 6 });
       bY += 11;
 
       doc.font('Helvetica').fontSize(8);
@@ -295,7 +298,7 @@ export function generateTaxInvoicePDF(document) {
 
       doc.text('GSTIN / UIN', leftColX, buyerBtmY + 11);
       doc.font('Helvetica-Bold');
-      doc.text(`: ${d.buyerGstin || '27NSAPK0224B1Z7'}`, leftValX - 15, buyerBtmY + 11);
+      doc.text(`: ${d.buyerGstin || '27ABCDE1234F1Z5'}`, leftValX - 15, buyerBtmY + 11);
 
       // Shipped To (Right)
       let sY = currY + 5;
@@ -304,7 +307,7 @@ export function generateTaxInvoicePDF(document) {
       sY += 13;
 
       doc.font('Helvetica-Bold').fontSize(8.5);
-      doc.text(d.consigneeName || d.buyerName || 'DGR GLOBAL LOGISTICS', rightColX, sY, { width: right - rightColX - 6 });
+      doc.text(d.consigneeName || d.buyerName || 'CONSIGNEE / DESTINATION', rightColX, sY, { width: right - rightColX - 6 });
       sY += 11;
 
       doc.font('Helvetica').fontSize(8);
@@ -656,7 +659,7 @@ export function generateTaxInvoicePDF(document) {
 
       const signBoxBottom = bottom - 5;
       doc.font('Helvetica-Bold').fontSize(8.5);
-      doc.text(`For ${d.companyName || 'DGR PACKAGING COMPANY'}`, sigX, signBoxBottom - 34, { width: right - sigX - 6, align: 'right' });
+      doc.text(`For ${d.companyName || 'AUTHORISED SIGNATORY'}`, sigX, signBoxBottom - 34, { width: right - sigX - 6, align: 'right' });
 
       doc.font('Helvetica-Bold').fontSize(8.5).fillColor('#000000');
       doc.text('Authorised Signatory', sigX, signBoxBottom - 5, { width: right - sigX - 6, align: 'right' });

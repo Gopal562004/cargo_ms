@@ -44,13 +44,13 @@ export default function BillingTemplateManagerModal({ isOpen, onClose, onSelectT
     name: '',
     category: 'Full Invoice Template',
     companyLogo: null,
-    companyName: 'DGR PACKAGING COMPANY',
-    companyAddress: 'SHOP NO.2, OPP. BLUE DART, NEAR, SAHAR CARGO COMPLEX, ANDHERI (E)',
+    companyName: 'STANDARD PACKAGING CO',
+    companyAddress: 'CARGO COMPLEX, SAHAR ROAD, ANDHERI (E)',
     companyCityPin: 'MUMBAI - 400 099',
-    companyPan: 'CBKPK7600K',
-    companyGstin: '27CBKPK7600K1ZE',
-    companyTel: '022 - 26828108',
-    companyEmail: 'dgrpackaging@gmail.com',
+    companyPan: 'ABCDE1234F',
+    companyGstin: '27ABCDE1234F1Z5',
+    companyTel: '022 - 28000000',
+    companyEmail: 'billing@company.com',
     invoiceNumber: '',
     invoiceDate: '',
     placeOfSupply: 'Maharashtra (27)',
@@ -113,13 +113,13 @@ export default function BillingTemplateManagerModal({ isOpen, onClose, onSelectT
       name: '',
       category: 'Full Invoice Template',
       companyLogo: null,
-      companyName: 'DGR PACKAGING COMPANY',
-      companyAddress: 'SHOP NO.2, OPP. BLUE DART, NEAR, SAHAR CARGO COMPLEX, ANDHERI (E)',
+      companyName: 'STANDARD PACKAGING CO',
+      companyAddress: 'CARGO COMPLEX, SAHAR ROAD, ANDHERI (E)',
       companyCityPin: 'MUMBAI - 400 099',
-      companyPan: 'CBKPK7600K',
-      companyGstin: '27CBKPK7600K1ZE',
-      companyTel: '022 - 26828108',
-      companyEmail: 'dgrpackaging@gmail.com',
+      companyPan: 'ABCDE1234F',
+      companyGstin: '27ABCDE1234F1Z5',
+      companyTel: '022 - 28000000',
+      companyEmail: 'billing@company.com',
       invoiceNumber: '',
       invoiceDate: '',
       placeOfSupply: 'Maharashtra (27)',
@@ -413,7 +413,7 @@ export default function BillingTemplateManagerModal({ isOpen, onClose, onSelectT
                       <div className="text-xs space-y-1 text-slate-300 pt-1 border-t border-slate-800/80">
                         <div>
                           <span className="text-slate-500 font-medium">Issuer: </span>
-                          <span className="font-semibold text-slate-200">{comp.companyName || 'DGR PACKAGING COMPANY'}</span>
+                          <span className="font-semibold text-slate-200">{comp.companyName || 'STANDARD PACKAGING CO'}</span>
                         </div>
                         <div>
                           <span className="text-slate-500 font-medium">Billed To: </span>
@@ -470,7 +470,7 @@ export default function BillingTemplateManagerModal({ isOpen, onClose, onSelectT
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input
                     label="Template / Preset Name *"
-                    placeholder="e.g. INV DGR-0466 (PDF Standard)"
+                    placeholder="e.g. INV-0466 (Standard Invoice)"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     required
@@ -656,7 +656,7 @@ export default function BillingTemplateManagerModal({ isOpen, onClose, onSelectT
                       />
                       <Input
                         label="Contact Number"
-                        placeholder="e.g. +91 9326392294"
+                        placeholder="e.g. +91 98000 00000"
                         value={formData.contactNumber}
                         onChange={(e) => setFormData({ ...formData, contactNumber: e.target.value })}
                       />
@@ -702,7 +702,7 @@ export default function BillingTemplateManagerModal({ isOpen, onClose, onSelectT
                     </div>
                     <Input
                       label="Buyer Company Name *"
-                      placeholder="e.g. DGR GLOBAL LOGISTICS"
+                      placeholder="e.g. ACME GLOBAL LOGISTICS"
                       value={formData.buyerName}
                       onChange={(e) => setFormData({ ...formData, buyerName: e.target.value })}
                       required
@@ -781,7 +781,7 @@ export default function BillingTemplateManagerModal({ isOpen, onClose, onSelectT
                     </div>
                     <Input
                       label="Destination Name"
-                      placeholder="e.g. DGR GLOBAL LOGISTICS"
+                      placeholder="e.g. ACME GLOBAL LOGISTICS"
                       value={formData.consigneeName}
                       onChange={(e) => setFormData({ ...formData, consigneeName: e.target.value })}
                     />

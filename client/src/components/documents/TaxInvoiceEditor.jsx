@@ -1091,7 +1091,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
                   <span>Company Logo & Branding</span>
                 </h2>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Upload a custom PNG/JPG logo to show on the top-left of the Tax Invoice, or use the default DGR logo.
+                  Upload a custom PNG/JPG logo to show on the top-left of the Tax Invoice, or use the default monogram logo.
                 </p>
               </div>
 
@@ -1113,7 +1113,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
                     className="px-2.5 py-1.5 bg-slate-800 hover:bg-rose-900/40 text-slate-400 hover:text-rose-300 rounded text-xs border border-slate-700 transition-colors"
                     onClick={handleRemoveLogo}
                   >
-                    Reset to Default DGR Logo
+                    Reset to Default Logo
                   </button>
                 )}
               </div>
@@ -1129,19 +1129,19 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
                   />
                 ) : (
                   <div className="w-12 h-12 rounded-full border border-slate-700 flex items-center justify-center font-bold text-xs text-slate-300 font-mono">
-                    DGR
+                    INV
                   </div>
                 )}
               </div>
 
               <div className="text-xs space-y-0.5">
                 <div className="font-semibold text-slate-200">
-                  {formData.companyLogo ? 'Custom Logo Active' : 'Default DGR Vector Logo'}
+                  {formData.companyLogo ? 'Custom Logo Active' : 'Default Monogram Logo'}
                 </div>
                 <div className="text-slate-400 text-[11px]">
                   {formData.companyLogo
                     ? 'This image will be rendered at the top-left header of the printed PDF invoice.'
-                    : 'The standard circular DGR logo will be drawn on the invoice PDF.'}
+                    : 'The standard circular company monogram will be drawn on the invoice PDF.'}
                 </div>
               </div>
             </div>
@@ -1159,7 +1159,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
                 label="Invoice Number *"
                 value={formData.invoiceNumber}
                 onChange={(e) => handleFieldChange('invoiceNumber', e.target.value)}
-                placeholder="e.g. DGR/0466/26-27"
+                placeholder="e.g. INV/001/26-27"
                 required
               />
               <Input
@@ -1236,7 +1236,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
                 label="Transport Name / Vehicle #"
                 value={formData.transportName}
                 onChange={(e) => handleFieldChange('transportName', e.target.value)}
-                placeholder="e.g. Sai Warehouse & Transport / MH-04-XX-1234"
+                placeholder="e.g. Horizon Logistics / MH-04-XX-1234"
               />
               <Input
                 label="Paid / To-Paid"
@@ -1249,13 +1249,13 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
                 label="Reference Name"
                 value={formData.referenceName}
                 onChange={(e) => handleFieldChange('referenceName', e.target.value)}
-                placeholder="e.g. Mayur Kadam"
+                placeholder="e.g. Operations Coordinator"
               />
               <Input
                 label="Contact Number"
                 value={formData.contactNumber}
                 onChange={(e) => handleFieldChange('contactNumber', e.target.value)}
-                placeholder="e.g. 9028345261"
+                placeholder="e.g. +91 98000 00000"
               />
               <Input
                 label="Copy Type Label"
@@ -1317,7 +1317,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
                 label="Buyer Company Name *"
                 value={formData.buyerName}
                 onChange={(e) => handleFieldChange('buyerName', e.target.value)}
-                placeholder="e.g. TAKAI CHEMTECH / DGR GLOBAL LOGISTICS"
+                placeholder="e.g. ACME CHEMICALS / METRO LOGISTICS"
                 required
               />
               <div className="flex flex-col gap-1">
@@ -1341,7 +1341,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
                   label="GSTIN / UIN"
                   value={formData.buyerGstin}
                   onChange={(e) => handleFieldChange('buyerGstin', e.target.value.toUpperCase())}
-                  placeholder="27AAMCT0922D1Z1"
+                  placeholder="27AAAAA0000A1Z5"
                 />
               </div>
             </div>
@@ -1412,7 +1412,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
                 label="Consignee / Destination Name"
                 value={formData.consigneeName}
                 onChange={(e) => handleFieldChange('consigneeName', e.target.value)}
-                placeholder="e.g. Sai Warehouse & Transport / Bhiwandi"
+                placeholder="e.g. Horizon Warehousing / Bhiwandi"
               />
               <div className="flex flex-col gap-1">
                 <label className="text-xs text-slate-400 font-medium">Delivery Address</label>
@@ -1435,7 +1435,7 @@ export default function TaxInvoiceEditor({ documentId, initialData, currentDocum
                   label="GSTIN / UIN"
                   value={formData.consigneeGstin}
                   onChange={(e) => handleFieldChange('consigneeGstin', e.target.value.toUpperCase())}
-                  placeholder="27AAMCT0922D1Z1"
+                  placeholder="27AAAAA0000A1Z5"
                 />
               </div>
             </div>

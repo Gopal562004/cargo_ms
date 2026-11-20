@@ -287,7 +287,7 @@ export async function syncAllDocumentsToArchive(userId) {
   const { hydrateDocument } = await import('../utils/sqlite-helpers.js');
 
   const user = await prisma.user.findUnique({ where: { id: userId } });
-  const fallbackCompany = user?.companyName || user?.company || 'DGR GLOBAL LOGISTICS';
+  const fallbackCompany = user?.companyName || user?.company || 'Company Name';
 
   const docs = await prisma.document.findMany({
     where: { createdById: userId, status: { not: 'CANCELLED' } },

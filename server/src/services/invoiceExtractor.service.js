@@ -134,7 +134,7 @@ export function extractFieldsFromText(text, fileName = '') {
   // 5. Invoice / Bill Number (e.g. DGR/0495/26-27 or INV-9842)
   const invNumberPatterns = [
     /(?:Invoice\s*No\.?|Bill\s*No\.?|Invoice\s*Number|Inv\s*No\.?|Tax\s*Invoice\s*No\.?)[\s.:\-_]*([A-Z0-9\/\-_]+)/i,
-    /([A-Z]{2,5}\/\d{3,6}\/\d{2}-\d{2})/i, // e.g. DGR/0495/26-27
+    /([A-Z]{2,5}\/\d{3,6}\/\d{2}-\d{2})/i, // e.g. INV/0495/26-27
     /(INV[\-_/]\d{3,8})/i,
     /(?:Invoice|Bill)\s*#\s*([A-Z0-9\/\-_]+)/i,
   ];
@@ -325,8 +325,7 @@ export function extractFieldsFromText(text, fileName = '') {
     lower.includes('packaging') ||
     lower.includes('un 4g') ||
     lower.includes('carton') ||
-    lower.includes('corrugated') ||
-    lower.includes('dgr packaging')
+    lower.includes('corrugated')
   ) {
     result.expenseCategory = 'PACKAGING';
     if (!result.hsnSacCode) result.hsnSacCode = '4819';

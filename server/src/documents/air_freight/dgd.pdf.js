@@ -34,7 +34,7 @@ export function generateExactIataDGDPDF(document) {
       doc.fontSize(6).font('Helvetica-Bold').text('Shipper', x + 4, currY + 4);
       const shpText = data.shipperName
         ? `${data.shipperName}\n${data.shipperAddress || ''}`
-        : 'AADISH IMPEX PVT LTD.\nGNP SOLITAIRE INDUSTRIAL ESTATE,UNIT NO : 12\nFIRST FLOOR MIDC,DOMBIVLI - 421203,\nMAHARASHTRA INDIA';
+        : 'STANDARD CARGO EXPORTS PVT LTD\nINDUSTRIAL ESTATE, UNIT NO. 12\nFIRST FLOOR MIDC, DOMBIVLI - 421203,\nMAHARASHTRA INDIA';
       doc.font('Helvetica-Bold').fontSize(8).text(shpText, x + 4, currY + 14, { width: 295, height: 72 });
 
       // Right Box inside Row 1
@@ -150,7 +150,7 @@ export function generateExactIataDGDPDF(document) {
       doc.moveTo(x, currY + 30).lineTo(x + w, currY + 30).stroke();
 
       doc.fontSize(6.5).font('Helvetica-Bold').text('Additional Handling Information', x + 4, currY + 3);
-      const addInfo = data.additionalInfo || 'KIND ATTN : MR. RISHIKESH GAWDE- 24-HOURS EMERGENCY CONTACT TELEPHONE NUMBER: +91-9702163546';
+      const addInfo = data.additionalInfo || '24-HOURS EMERGENCY CONTACT TELEPHONE NUMBER: +91-9800000000';
       doc.font('Helvetica-Bold').fontSize(7.5).text(addInfo, x + 4, currY + 14, { width: 525, height: 14 });
 
       // --- ROW 6: Signatory Section ---
@@ -163,7 +163,7 @@ export function generateExactIataDGDPDF(document) {
       );
 
       doc.fontSize(6.5).font('Helvetica-Bold').text('Name/Title of Signatory', 315, currY + 5);
-      doc.font('Helvetica-Bold').fontSize(7.5).text(data.signatoryName || 'MR. SUGEN (DGR EXECUTIVE)', 340, currY + 16, { width: 220 });
+      doc.font('Helvetica-Bold').fontSize(7.5).text(data.signatoryName || 'AUTHORISED SIGNATORY', 340, currY + 16, { width: 220 });
 
       doc.fontSize(6.5).font('Helvetica-Bold').text('Place and Date', 315, currY + 32);
       doc.font('Helvetica-Bold').fontSize(7.5).text(data.signatoryPlaceDate || 'MUMBAI /31.07.2026', 340, currY + 44, { width: 220 });

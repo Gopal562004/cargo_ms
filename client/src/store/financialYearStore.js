@@ -20,7 +20,7 @@ export const DEFAULT_FINANCIAL_YEARS = [
     label: 'FY 2026-27',
     startDate: '2026-04-01',
     endDate: '2027-03-31',
-    prefix: 'DGR/',
+    prefix: 'INV/',
     startSequence: 1,
     paddingDigits: 3,
     suffix: '',
@@ -33,7 +33,7 @@ export const DEFAULT_FINANCIAL_YEARS = [
     label: 'FY 2025-26',
     startDate: '2025-04-01',
     endDate: '2026-03-31',
-    prefix: 'DGR/',
+    prefix: 'INV/',
     startSequence: 1,
     paddingDigits: 3,
     suffix: '',
@@ -46,7 +46,7 @@ export const DEFAULT_FINANCIAL_YEARS = [
     label: 'FY 2027-28',
     startDate: '2027-04-01',
     endDate: '2028-03-31',
-    prefix: 'DGR/',
+    prefix: 'INV/',
     startSequence: 1,
     paddingDigits: 3,
     suffix: '',
@@ -118,7 +118,7 @@ export const useFinancialYearStore = create((set, get) => ({
           label: fyData.label || `FY ${cleanCode}`,
           startDate: fyData.startDate || `${cleanCode.split('-')[0]}-04-01`,
           endDate: fyData.endDate || `20${cleanCode.split('-')[1] || '27'}-03-31`,
-          prefix: fyData.prefix || 'DGR/',
+          prefix: fyData.prefix || 'INV/',
           startSequence: parseInt(fyData.startSequence, 10) || 1,
           paddingDigits: parseInt(fyData.paddingDigits, 10) || 3,
           suffix: fyData.suffix || '',
@@ -181,7 +181,7 @@ export function filterDocumentsByFY(documents = [], activeFY) {
     const invNo = doc.documentNumber || d.invoiceNumber || '';
     const dateStr = d.invoiceDate || d.billDate || doc.createdAt;
 
-    // 1. Direct match in invoice number e.g. DGR/001/2026-27 or 26-27
+    // 1. Direct match in invoice number e.g. INV/001/2026-27 or 26-27
     const shortFY = activeFY.split('-')[0].slice(-2) + '-' + activeFY.split('-')[1];
     if (invNo.includes(activeFY) || (shortFY.length >= 5 && invNo.includes(shortFY))) {
       return true;

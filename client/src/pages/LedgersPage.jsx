@@ -37,6 +37,7 @@ import {
 import { useDocumentStore } from '../store/documentStore';
 import { useFinancialYearStore, filterDocumentsByFY } from '../store/financialYearStore';
 import { useThemeStore } from '../store/themeStore';
+import { useAuthStore } from '../store/authStore';
 import { getSavedParties } from '../services/billingProfileService';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
@@ -51,6 +52,7 @@ function formatINR(val) {
 export default function LedgersPage() {
   const navigate = useNavigate();
   const { theme } = useThemeStore();
+  const { user: currentUser } = useAuthStore();
   const { documents, fetchDocuments } = useDocumentStore();
   const { activeFY } = useFinancialYearStore();
 
@@ -101,7 +103,8 @@ export default function LedgersPage() {
       const pNameLower = pName.toLowerCase();
       if (pName && !existingNames.has(pNameLower)) {
         existingNames.add(pNameLower);
-        const isCompanySelf = pNameLower.includes('dgr global logistics');
+        const userCompName = (currentUser?.company || currentUser?.companyName || '').toLowerCase().trim();
+        const isCompanySelf = userCompName ? pNameLower.includes(userCompName) : false;
         const isVendor =
           (Array.isArray(p.roles) && p.roles.includes('VENDOR') && !p.roles.includes('CUSTOMER')) ||
           p.category === 'PACKAGING' ||
@@ -110,7 +113,7 @@ export default function LedgersPage() {
           pNameLower.includes('packaging') ||
           pNameLower.includes('warehouse') ||
           pNameLower.includes('customs') ||
-          pNameLower.includes('celebi');
+          pNameLower.includes('terminal');
 
         list.push({
           id: p.id || 'dir_party_' + pNameLower.replace(/[^a-z0-9]/g, '_'),
@@ -844,9 +847,9 @@ function LedgerCreateEditModal({ isOpen, initialData, onClose, onSave }) {
                 onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
                 placeholder={
                   form.parentGroup === 'SUNDRY_DEBTORS'
-                    ? 'e.g. Efficient Freight Forwarders Pvt Ltd (Client)'
+                    ? 'e.g. Apex Freight Forwarders Pvt Ltd (Client)'
                     : form.parentGroup === 'SUNDRY_CREDITORS'
-                    ? 'e.g. DGR Packaging Company (Supplier)'
+                    ? 'e.g. Packaging Vendor (Supplier)'
                     : form.parentGroup === 'SALES_ACCOUNTS'
                     ? 'e.g. International Air Cargo Sales A/c'
                     : form.parentGroup === 'DIRECT_EXPENSES'

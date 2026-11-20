@@ -109,7 +109,7 @@ export default function VisualTaxInvoiceSheet({
                   ) : (
                     <div className="text-center p-1">
                       <div className="w-16 h-16 rounded-full border border-black flex items-center justify-center">
-                        <span className="font-extrabold text-[15px] tracking-tighter italic">DGR</span>
+                        <span className="font-extrabold text-[15px] tracking-tighter italic">INV</span>
                       </div>
                     </div>
                   )}
@@ -148,7 +148,7 @@ export default function VisualTaxInvoiceSheet({
                   value={formData.companyName}
                   onChange={(e) => handleFieldChange('companyName', e.target.value)}
                   className="w-full text-center font-bold text-[18px] uppercase tracking-tight bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 p-1 rounded outline-none border border-transparent focus:border-indigo-400"
-                  placeholder="DGR PACKAGING COMPANY"
+                  placeholder="COMPANY NAME"
                 />
 
                 <textarea
@@ -156,7 +156,7 @@ export default function VisualTaxInvoiceSheet({
                   value={formData.companyAddress}
                   onChange={(e) => handleFieldChange('companyAddress', e.target.value)}
                   className="w-full text-center text-[10.5px] uppercase bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 p-1 rounded outline-none border border-transparent focus:border-indigo-400 resize-none font-medium leading-snug"
-                  placeholder="SHOP NO.2, OPP. BLUE DART, NEAR, SAHAR CARGO COMPLEX, ANDHERI (E)"
+                  placeholder="CARGO COMPLEX, SAHAR ROAD, ANDHERI (E)"
                 />
 
                 <input
@@ -207,7 +207,7 @@ export default function VisualTaxInvoiceSheet({
                       value={formData.companyEmail}
                       onChange={(e) => handleFieldChange('companyEmail', e.target.value)}
                       className="bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400 w-52"
-                      placeholder="dgrpackaging@gmail.com"
+                      placeholder="billing@company.com"
                     />
                   </div>
                 </div>
@@ -231,7 +231,7 @@ export default function VisualTaxInvoiceSheet({
                   type="text"
                   value={formData.invoiceNumber}
                   onChange={(e) => handleFieldChange('invoiceNumber', e.target.value)}
-                  placeholder="DGR/0466/26-27"
+                  placeholder="INV/001/26-27"
                   className="flex-1 min-w-0 font-extrabold text-indigo-950 bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1.5 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
                 />
               </div>
@@ -354,7 +354,7 @@ export default function VisualTaxInvoiceSheet({
                   type="text"
                   value={formData.transportName}
                   onChange={(e) => handleFieldChange('transportName', e.target.value)}
-                  placeholder="e.g. Sai Warehouse & Transport"
+                  placeholder="e.g. Horizon Warehousing & Logistics"
                   className="flex-1 min-w-0 bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1.5 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
                 />
               </div>
@@ -378,7 +378,7 @@ export default function VisualTaxInvoiceSheet({
                   type="text"
                   value={formData.referenceName}
                   onChange={(e) => handleFieldChange('referenceName', e.target.value)}
-                  placeholder="e.g. Mayur Kadam"
+                  placeholder="e.g. Operations Coordinator"
                   className="flex-1 min-w-0 bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1.5 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400 font-medium"
                 />
               </div>
@@ -390,7 +390,7 @@ export default function VisualTaxInvoiceSheet({
                   type="text"
                   value={formData.contactNumber}
                   onChange={(e) => handleFieldChange('contactNumber', e.target.value)}
-                  placeholder="e.g. 9028345261"
+                  placeholder="e.g. +91 98000 00000"
                   className="flex-1 min-w-0 bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1.5 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400 font-mono"
                 />
               </div>
@@ -458,7 +458,7 @@ export default function VisualTaxInvoiceSheet({
                     type="text"
                     value={formData.buyerGstin}
                     onChange={(e) => handleFieldChange('buyerGstin', e.target.value.toUpperCase())}
-                    placeholder="27AAMCT0922D1Z1"
+                    placeholder="27AAAAA0000A1Z5"
                     className="flex-1 min-w-0 font-bold text-indigo-900 bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1.5 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400 uppercase"
                   />
                 </div>
@@ -540,7 +540,7 @@ export default function VisualTaxInvoiceSheet({
                     type="text"
                     value={formData.consigneeGstin}
                     onChange={(e) => handleFieldChange('consigneeGstin', e.target.value.toUpperCase())}
-                    placeholder="27AAMCT0922D1Z1"
+                    placeholder="27AAAAA0000A1Z5"
                     className="flex-1 min-w-0 font-bold text-indigo-900 bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1.5 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400 uppercase"
                   />
                 </div>
@@ -903,7 +903,7 @@ export default function VisualTaxInvoiceSheet({
             <div className="p-2 flex flex-col justify-between items-end min-h-[90px]">
               <div className="w-full flex justify-between">
                 <span className="font-semibold text-slate-700">Receiver's Signature :</span>
-                <span className="font-bold text-[11px]">For {formData.companyName || 'DGR PACKAGING COMPANY'}</span>
+                <span className="font-bold text-[11px]">For {formData.companyName || 'AUTHORISED SIGNATORY'}</span>
               </div>
               <div className="font-bold text-[11px] pt-4">Authorised Signatory</div>
             </div>

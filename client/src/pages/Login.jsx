@@ -219,7 +219,7 @@ export default function Login() {
                 <Input
                   label="Operator Username / Email"
                   type="text"
-                  placeholder="e.g. operator or admin@dgrlogistics.com"
+                  placeholder="e.g. operator or admin@cargologistics.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required

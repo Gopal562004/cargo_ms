@@ -36,7 +36,7 @@ const ALL_QUICK_ACTIONS = [
   {
     type: 'TAX_INVOICE',
     label: 'Tax Invoice',
-    desc: 'GST Tax Invoice matching DGR layout',
+    desc: 'GST Tax Invoice matching standard format',
     to: '/documents/new/TAX_INVOICE',
     icon: Receipt,
     iconLight: 'bg-emerald-50 text-emerald-600 border-emerald-200',
