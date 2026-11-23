@@ -41,6 +41,7 @@ import {
   HardDrive,
   WifiOff,
   FolderOpen,
+  MessageSquare,
 } from 'lucide-react';
 import { useThemeStore } from '../store/themeStore';
 import { useAuthStore } from '../store/authStore';
@@ -49,15 +50,49 @@ import DownloadModal from '../components/ui/DownloadModal';
 
 const APP_VERSION = '1.0.8';
 
-const MODULES = [
-  { id: 'AIR_FREIGHT', name: 'Air Freight (MAWB / HAWB)', price: 1499, icon: Plane },
-  { id: 'SALES_BILLING', name: 'GST Tax Invoicing', price: 999, icon: Receipt },
-  { id: 'EDI_CARGO', name: 'eAWB / Cargo-IMP EDI', price: 1299, icon: Zap },
-  { id: 'PURCHASE_BILLS', name: 'Carrier Expense Ledger', price: 799, icon: ShoppingBag },
-  { id: 'SEA_FREIGHT', name: 'Ocean Bill of Lading', price: 899, icon: Ship },
-  { id: 'DGD_COMPLIANCE', name: 'Dangerous Goods (DGD)', price: 1199, icon: ShieldCheck },
-  { id: 'BILLING_TEMPLATES', name: 'Party & Tax Profiles', price: 499, icon: Bookmark },
-  { id: 'MASTER_ADMIN', name: 'Multi-User Roles', price: 699, icon: Users },
+const BUILT_FEATURES = [
+  {
+    id: 'AWB',
+    title: 'Air Waybill Management',
+    desc: 'Standard IATA layout, automated volumetric calculation (1:6000 ratio), live preview, and multi-copy PDF print.',
+    icon: Plane,
+    badge: 'Operational',
+  },
+  {
+    id: 'TAX_INVOICE',
+    title: 'GST Freight Tax Invoicing',
+    desc: 'Multi-item billing, split CGST/SGST/IGST tax calculation, reverse charge, bank details, and instant print.',
+    icon: Receipt,
+    badge: 'Operational',
+  },
+  {
+    id: 'DG_PACKAGING',
+    title: 'IATA Dangerous Goods Packaging',
+    desc: 'Pre-configured UN packaging presets (UN Box X3 to X55, UN Drums Y75/Y30), DGD charges, and packing fees.',
+    icon: ShieldCheck,
+    badge: 'Operational',
+  },
+  {
+    id: 'PURCHASE_BILLS',
+    title: 'Purchase Bills & Vendor Ledger',
+    desc: 'Log carrier expenses, terminal/TSP charges, track payables, and manage vendor invoice records.',
+    icon: ShoppingBag,
+    badge: 'Operational',
+  },
+  {
+    id: 'PROFILES',
+    title: 'Custom Billing Profiles & Directory',
+    desc: 'Save buyer and consignee addresses, GSTIN numbers, bank details, and terms for 1-click invoice generation.',
+    icon: Bookmark,
+    badge: 'Operational',
+  },
+  {
+    id: 'DESKTOP',
+    title: 'Offline-First Desktop Vault',
+    desc: 'Standalone Windows & macOS applications with local storage engine, 30-day offline lease, and direct printing.',
+    icon: Monitor,
+    badge: 'Operational',
+  },
 ];
 
 const FLIGHTS = [
@@ -121,24 +156,6 @@ const DOC_TEMPLATES = [
     ],
     status: 'READY FOR DISPATCH',
   },
-  {
-    id: 'BOL',
-    title: 'Ocean Multimodal Bill of Lading',
-    code: 'OCEAN FREIGHT SPEC',
-    badge: 'OCEAN FREIGHT',
-    color: 'border-cyan-500 text-cyan-400 bg-cyan-500/10',
-    icon: Ship,
-    desc: 'Full container load (FCL) and groupage (LCL) bills with container ISO codes, high-security seal numbers, and marine port routing.',
-    fields: [
-      { label: 'B/L Number', val: 'BL-SEA-2026-4401' },
-      { label: 'Port of Loading', val: 'JNPT (Nhava Sheva, Mumbai)' },
-      { label: 'Port of Discharge', val: 'Jebel Ali Port (Dubai, UAE)' },
-      { label: 'Vessel / Voyage', val: 'CMA CGM TITAN / 082W' },
-      { label: 'Container & Seal', val: 'MSKU 928401-2 (40HC) / Seal: IN-99201' },
-      { label: 'Freight Terms', val: 'FREIGHT PREPAID IN USD' },
-    ],
-    status: 'ON BOARD VESSEL',
-  },
 ];
 
 export default function LandingPage() {
@@ -149,12 +166,7 @@ export default function LandingPage() {
   const [flightIdx, setFlightIdx] = useState(0);
   const [activeTemplate, setActiveTemplate] = useState(DOC_TEMPLATES[0]);
 
-  // Modular Pricing State
   const [showDownloadModal, setShowDownloadModal] = useState(false);
-  const [selectedMods, setSelectedMods] = useState(['AIR_FREIGHT', 'SALES_BILLING']);
-  const [volume, setVolume] = useState(150);
-  const [seats, setSeats] = useState(2);
-  const [cycle, setCycle] = useState('monthly');
 
   useEffect(() => {
     const updateTime = () => setLiveUtc(new Date().toUTCString().replace('GMT', 'UTC'));
@@ -175,27 +187,6 @@ export default function LandingPage() {
     });
   };
 
-  const toggleMod = (id) => {
-    if (selectedMods.includes(id)) {
-      if (selectedMods.length > 1) setSelectedMods(selectedMods.filter((m) => m !== id));
-    } else {
-      setSelectedMods([...selectedMods, id]);
-    }
-  };
-
-  const calcPrice = () => {
-    const base = selectedMods.reduce((sum, id) => {
-      const m = MODULES.find((mod) => mod.id === id);
-      return sum + (m ? m.price : 0);
-    }, 0);
-    const volCost = Math.round((volume / 100) * 20);
-    const seatCost = (seats - 1) * 350;
-    const raw = base + volCost + seatCost;
-    const monthly = cycle === 'annual' ? Math.round(raw * 0.8) : raw;
-    return { monthly, annual: monthly * 12, savings: Math.round(raw * 12 - monthly * 12) };
-  };
-
-  const quote = calcPrice();
   const currentFlight = FLIGHTS[flightIdx];
 
   return (
@@ -281,14 +272,13 @@ export default function LandingPage() {
 
           <nav className="hidden md:flex items-center gap-7 text-xs font-mono">
             <a href="#overview" className="hover:text-indigo-500 transition-colors">OPERATIONS</a>
-            <a href="#templates" className="hover:text-indigo-500 transition-colors">TEMPLATES</a>
-            <a href="#dispatch-deck" className="hover:text-indigo-500 transition-colors">DISPATCH</a>
+            <a href="#templates" className="hover:text-indigo-500 transition-colors">DOCUMENTS</a>
+            <a href="#features" className="hover:text-indigo-500 transition-colors">FEATURES</a>
             <a href="#download" className="hover:text-indigo-500 transition-colors flex items-center gap-1">
               <Download size={12} className="text-indigo-500" />
               <span>DESKTOP APP</span>
             </a>
             <Link to="/product-tour" className="hover:text-indigo-500 transition-colors">HOW IT WORKS</Link>
-            <a href="#calculator" className="hover:text-indigo-500 transition-colors">PRICING</a>
             <Link to="/about" className="hover:text-indigo-500 transition-colors font-bold text-indigo-400">ABOUT</Link>
           </nav>
 
@@ -947,183 +937,81 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Spacious Modular Pricing Calculator (Z-10) */}
-      <section id="calculator" className="relative z-10 py-20 lg:py-24 border-b border-slate-800/60">
-        <div className="max-w-6xl mx-auto px-6 space-y-10">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-indigo-500">
-                  MODULAR PRICING
-                </span>
-                <Link
-                  to="/product-tour"
-                  className="text-[11px] font-mono font-bold text-indigo-400 hover:underline flex items-center gap-1"
-                >
-                  (What does each module do? Click to inspect →)
-                </Link>
-              </div>
+      {/* Active Features Section (Z-10) — Minimal & Clean, No Pricing */}
+      <section id="features" className="relative z-10 py-16 lg:py-20 border-b border-slate-800/60">
+        <div className="max-w-6xl mx-auto px-6 space-y-8">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div className="space-y-1">
+              <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-indigo-500">
+                ACTIVE CAPABILITIES
+              </span>
               <h2
-                className={`text-3xl sm:text-4xl font-extrabold tracking-tight ${
+                className={`text-2xl sm:text-3xl font-extrabold tracking-tight ${
                   theme === 'light' ? 'text-slate-900' : 'text-white'
                 }`}
               >
-                Choose only what you need.
+                Features Built in CargoMS
               </h2>
             </div>
-
-            <div className="flex items-center gap-2 p-1 rounded border font-mono text-xs backdrop-blur-md">
-              <button
-                onClick={() => setCycle('monthly')}
-                className={`px-3 py-1.5 rounded transition-colors cursor-pointer ${
-                  cycle === 'monthly' ? 'bg-indigo-600 text-white font-bold' : 'text-slate-400'
-                }`}
-              >
-                Monthly
-              </button>
-              <button
-                onClick={() => setCycle('annual')}
-                className={`px-3 py-1.5 rounded transition-colors cursor-pointer flex items-center gap-1 ${
-                  cycle === 'annual' ? 'bg-indigo-600 text-white font-bold' : 'text-slate-400'
-                }`}
-              >
-                Annual <span className="text-[10px] text-emerald-400">-20%</span>
-              </button>
-            </div>
+            <p className="text-xs sm:text-sm font-mono text-slate-400">
+              Operational modules built and ready in this release.
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-            {/* Module Picker (7 cols) */}
-            <div className="lg:col-span-7 space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {MODULES.map((mod) => {
-                  const active = selectedMods.includes(mod.id);
-                  const Icon = mod.icon;
-
-                  return (
-                    <div
-                      key={mod.id}
-                      onClick={() => toggleMod(mod.id)}
-                      className={`p-4 rounded border backdrop-blur-md transition-all cursor-pointer select-none flex items-center justify-between ${
-                        active
-                          ? theme === 'light'
-                            ? 'bg-white/95 border-indigo-600 text-slate-900 shadow-xs'
-                            : 'bg-[#0f172a]/95 border-indigo-500 text-white shadow-xs'
-                          : theme === 'light'
-                          ? 'bg-white/70 border-slate-200 text-slate-600 hover:bg-white/90'
-                          : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:bg-slate-900/80'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Icon size={18} className={active ? 'text-indigo-500' : 'text-slate-400'} />
-                        <div>
-                          <p className="text-xs font-bold">{mod.name}</p>
-                          <span className="text-[10px] font-mono text-slate-400">+₹{mod.price}/mo</span>
-                        </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {BUILT_FEATURES.map((feat) => {
+              const Icon = feat.icon;
+              return (
+                <div
+                  key={feat.id}
+                  className={`p-5 rounded-sm border flex flex-col justify-between space-y-4 transition-all ${
+                    theme === 'light'
+                      ? 'bg-white border-slate-200 shadow-xs'
+                      : 'bg-slate-900/60 border-slate-800'
+                  }`}
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="w-9 h-9 rounded-sm bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
+                        <Icon size={18} />
                       </div>
-                      <input
-                        type="checkbox"
-                        checked={active}
-                        onChange={() => {}}
-                        className="accent-indigo-600 cursor-pointer"
-                      />
+                      <span className="text-[10px] font-mono font-bold text-emerald-400 px-2 py-0.5 rounded-xs bg-emerald-500/10 border border-emerald-500/20">
+                        {feat.badge}
+                      </span>
                     </div>
-                  );
-                })}
-              </div>
-
-              {/* Sliders */}
-              <div
-                className={`p-6 rounded border backdrop-blur-md space-y-5 ${
-                  theme === 'light' ? 'bg-white/80 border-slate-200' : 'bg-slate-900/60 border-slate-800'
-                }`}
-              >
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs font-mono">
-                    <span className="text-slate-400">Monthly Volume:</span>
-                    <span className="font-bold text-indigo-400">{volume} Waybills</span>
+                    <div>
+                      <h3 className="font-bold text-sm tracking-tight">{feat.title}</h3>
+                      <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                        {feat.desc}
+                      </p>
+                    </div>
                   </div>
-                  <input
-                    type="range"
-                    min="50"
-                    max="2000"
-                    step="50"
-                    value={volume}
-                    onChange={(e) => setVolume(Number(e.target.value))}
-                    className="w-full h-1.5 bg-slate-800 rounded appearance-none cursor-pointer accent-indigo-600"
-                  />
                 </div>
+              );
+            })}
+          </div>
 
-                <div className="space-y-2 pt-3 border-t border-slate-800/40">
-                  <div className="flex justify-between text-xs font-mono">
-                    <span className="text-slate-400">Operator Seats:</span>
-                    <span className="font-bold text-cyan-400">{seats} Operators</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="1"
-                    max="10"
-                    step="1"
-                    value={seats}
-                    onChange={(e) => setSeats(Number(e.target.value))}
-                    className="w-full h-1.5 bg-slate-800 rounded appearance-none cursor-pointer accent-cyan-500"
-                  />
-                </div>
-              </div>
-
-              {/* Callout Link to Product Tour */}
-              <div className="p-4 rounded border border-indigo-500/20 bg-indigo-500/10 font-mono text-xs flex items-center justify-between">
-                <span className="text-slate-300">Need a detailed breakdown of how each module functions?</span>
-                <Link to="/product-tour" className="text-indigo-400 font-bold hover:underline shrink-0 ml-2">
-                  VIEW FULL TOUR →
-                </Link>
-              </div>
+          {/* Minimal Operator Access Card */}
+          <div
+            className={`p-5 rounded-sm border flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-xs ${
+              theme === 'light'
+                ? 'bg-slate-50 border-slate-200 text-slate-700'
+                : 'bg-slate-900/80 border-slate-800 text-slate-300'
+            }`}
+          >
+            <div>
+              <span className="font-bold text-slate-200 block text-sm">Need Operator Access or Custom Features?</span>
+              <span className="text-xs text-slate-400">Direct provisioning via WhatsApp (+91 8237742040) with developer Gopal Gawas.</span>
             </div>
-
-            {/* Calculated Receipt (5 cols) */}
-            <div className="lg:col-span-5 sticky top-24">
-              <div
-                className={`p-6 rounded border backdrop-blur-xl font-mono space-y-6 ${
-                  theme === 'light' ? 'bg-white/95 border-slate-300 shadow-lg' : 'bg-[#0b101c]/95 border-slate-800 shadow-2xl'
-                }`}
-              >
-                <div className="flex justify-between border-b border-slate-800/60 pb-3">
-                  <span className="text-xs font-bold uppercase">Estimated Quote</span>
-                  <span className="text-[10px] text-emerald-400">{selectedMods.length} Modules</span>
-                </div>
-
-                <div className="p-4 rounded bg-slate-950/80 border border-slate-800">
-                  <span className="text-[10px] text-slate-400 uppercase">MONTHLY TOTAL</span>
-                  <div className="flex items-baseline gap-2 mt-1">
-                    <span className="text-3xl font-extrabold text-indigo-400 font-mono">
-                      ₹{quote.monthly.toLocaleString()}
-                    </span>
-                    <span className="text-xs text-slate-400">/ month</span>
-                  </div>
-                  {cycle === 'annual' && (
-                    <p className="text-[10px] text-emerald-400 mt-1">
-                      Annual total ₹{quote.annual.toLocaleString()} · Saved ₹{quote.savings.toLocaleString()}
-                    </p>
-                  )}
-                </div>
-
-                <a
-                  href="https://wa.me/918237742040?text=Hello%20Gopal%2C%20I%20would%20like%20to%20request%20CargoMS%20access%20with%20this%20configuration."
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full py-3 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs text-center block transition-colors shadow-md shadow-indigo-600/20"
-                >
-                  REQUEST ACCESS WITH THIS CONFIG →
-                </a>
-
-                <Link
-                  to="/product-tour"
-                  className="w-full py-2.5 rounded border border-slate-700 hover:border-slate-500 text-slate-300 text-center block text-xs transition-colors"
-                >
-                  SEE HOW EACH SERVICE WORKS →
-                </Link>
-              </div>
-            </div>
+            <a
+              href="https://wa.me/918237742040?text=Hello%20Gopal%2C%20I%20am%20interested%20in%20CargoMS%20operator%20access."
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-5 py-2.5 rounded-sm bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 transition-colors shrink-0"
+            >
+              <MessageSquare size={14} />
+              <span>Request Access via WhatsApp</span>
+            </a>
           </div>
         </div>
       </section>
@@ -1144,8 +1032,8 @@ export default function LandingPage() {
 
           <div className="flex items-center gap-6">
             <a href="#overview" className="hover:text-indigo-400">OPERATIONS</a>
-            <a href="#templates" className="hover:text-indigo-400">TEMPLATES</a>
-            <a href="#dispatch-deck" className="hover:text-indigo-400">DISPATCH</a>
+            <a href="#templates" className="hover:text-indigo-400">DOCUMENTS</a>
+            <a href="#features" className="hover:text-indigo-400">FEATURES</a>
             <button
               type="button"
               onClick={() => setShowDownloadModal(true)}
@@ -1155,7 +1043,6 @@ export default function LandingPage() {
               <span>DOWNLOAD APP</span>
             </button>
             <Link to="/product-tour" className="hover:text-indigo-400">HOW IT WORKS</Link>
-            <a href="#calculator" className="hover:text-indigo-400">PRICING</a>
             <Link to="/about" className="hover:text-indigo-400 font-bold text-indigo-400">ABOUT</Link>
             <Link to="/login" className="hover:text-indigo-400">LOGIN</Link>
             <a

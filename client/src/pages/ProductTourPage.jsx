@@ -384,9 +384,17 @@ export default function ProductTourPage() {
 
           <div className="flex items-center gap-6">
             <Link to="/landing" className="hover:text-indigo-400">LANDING PAGE</Link>
-            <Link to="/landing#calculator" className="hover:text-indigo-400">PRICING</Link>
+            <Link to="/landing#features" className="hover:text-indigo-400">FEATURES</Link>
+            <Link to="/about" className="hover:text-indigo-400">ABOUT</Link>
             <Link to="/login" className="hover:text-indigo-400">OPERATOR SIGN IN</Link>
-            <Link to="/register" className="hover:text-indigo-400">REQUEST ACCESS</Link>
+            <a
+              href="https://wa.me/918237742040?text=Hello%20Gopal%2C%20I%20am%20interested%20in%20CargoMS%20and%20would%20like%20to%20request%20operator%20access."
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-indigo-400"
+            >
+              REQUEST ACCESS
+            </a>
           </div>
 
           <p className="text-[11px] text-slate-400">© {new Date().getFullYear()} CARGOHUB OS</p>
