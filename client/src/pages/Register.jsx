@@ -52,8 +52,8 @@ export default function Register() {
         <div
           className={`absolute inset-0 transition-colors ${
             theme === 'light'
-              ? 'bg-gradient-to-b from-slate-100/95 via-slate-100/90 to-slate-200/98'
-              : 'bg-gradient-to-b from-[#060a12]/95 via-[#060a12]/90 to-[#090d16]/98'
+              ? 'bg-slate-100/95'
+              : 'bg-[#060a12]/95'
           }`}
         />
         <div
@@ -122,7 +122,7 @@ export default function Register() {
                 href="https://wa.me/918237742040?text=Hello%20Gopal%2C%20I%20am%20interested%20in%20CargoMS%20and%20would%20like%20to%20request%20operator%20access."
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`p-3 rounded-md border flex items-center justify-between text-xs font-mono transition-all group ${
+                className={`p-3 rounded-sm border flex items-center justify-between text-xs font-mono transition-all group ${
                   theme === 'light'
                     ? 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100'
                     : 'bg-emerald-950/30 border-emerald-500/30 text-emerald-300 hover:bg-emerald-950/50'

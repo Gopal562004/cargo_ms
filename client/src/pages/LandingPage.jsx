@@ -744,7 +744,7 @@ export default function LandingPage() {
             <button
               type="button"
               onClick={() => setShowDownloadModal(true)}
-              className="px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/25 transition-all shrink-0 cursor-pointer self-start md:self-auto"
+              className="px-5 py-2.5 rounded-sm bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-bold flex items-center gap-2 shadow-md transition-all shrink-0 cursor-pointer self-start md:self-auto"
             >
               <Download size={15} />
               <span>VIEW ALL PLATFORMS & BUILDS</span>
@@ -755,15 +755,15 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Windows */}
             <div
-              className={`p-6 rounded-2xl border transition-all flex flex-col justify-between group hover:border-indigo-500/50 ${
+              className={`p-6 rounded-sm border transition-all flex flex-col justify-between group hover:border-indigo-500/50 ${
                 theme === 'light'
-                  ? 'bg-white/90 border-slate-200 shadow-lg hover:shadow-xl'
-                  : 'bg-slate-900/40 border-slate-800/80 hover:bg-slate-900/70 shadow-xl'
+                  ? 'bg-white border-slate-200 shadow-md hover:shadow-lg'
+                  : 'bg-slate-900/50 border-slate-800/80 hover:bg-slate-900/70 shadow-lg'
               }`}
             >
               <div className="space-y-4">
-                <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-500 flex items-center justify-center">
-                  <Monitor size={24} />
+                <div className="w-10 h-10 rounded-sm bg-blue-500/10 border border-blue-500/20 text-blue-500 flex items-center justify-center">
+                  <Monitor size={22} />
                 </div>
                 <div>
                   <div className="flex items-center justify-between">
@@ -795,7 +795,7 @@ export default function LandingPage() {
                 <button
                   type="button"
                   onClick={() => setShowDownloadModal(true)}
-                  className="w-full py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md shadow-indigo-600/20 cursor-pointer"
+                  className="w-full py-2.5 rounded-sm bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md shadow-indigo-600/20 cursor-pointer"
                 >
                   <Download size={14} />
                   <span>Download for Windows (.exe)</span>
@@ -808,15 +808,15 @@ export default function LandingPage() {
 
             {/* macOS */}
             <div
-              className={`p-6 rounded-2xl border transition-all flex flex-col justify-between group hover:border-indigo-500/50 ${
+              className={`p-6 rounded-sm border transition-all flex flex-col justify-between group hover:border-indigo-500/50 ${
                 theme === 'light'
-                  ? 'bg-white/90 border-slate-200 shadow-lg hover:shadow-xl'
-                  : 'bg-slate-900/40 border-slate-800/80 hover:bg-slate-900/70 shadow-xl'
+                  ? 'bg-white border-slate-200 shadow-md hover:shadow-lg'
+                  : 'bg-slate-900/50 border-slate-800/80 hover:bg-slate-900/70 shadow-lg'
               }`}
             >
               <div className="space-y-4">
-                <div className="w-12 h-12 rounded-xl bg-slate-500/10 border border-slate-500/20 text-slate-300 flex items-center justify-center">
-                  <Apple size={24} />
+                <div className="w-10 h-10 rounded-sm bg-slate-500/10 border border-slate-500/20 text-slate-300 flex items-center justify-center">
+                  <Apple size={22} />
                 </div>
                 <div>
                   <div className="flex items-center justify-between">
@@ -848,7 +848,7 @@ export default function LandingPage() {
                 <button
                   type="button"
                   onClick={() => setShowDownloadModal(true)}
-                  className="w-full py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md shadow-indigo-600/20 cursor-pointer"
+                  className="w-full py-2.5 rounded-sm bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md shadow-indigo-600/20 cursor-pointer"
                 >
                   <Download size={14} />
                   <span>Download for Mac (.dmg)</span>
@@ -861,15 +861,15 @@ export default function LandingPage() {
 
             {/* Linux */}
             <div
-              className={`p-6 rounded-2xl border transition-all flex flex-col justify-between group hover:border-indigo-500/50 ${
+              className={`p-6 rounded-sm border transition-all flex flex-col justify-between group hover:border-indigo-500/50 ${
                 theme === 'light'
-                  ? 'bg-white/90 border-slate-200 shadow-lg hover:shadow-xl'
-                  : 'bg-slate-900/40 border-slate-800/80 hover:bg-slate-900/70 shadow-xl'
+                  ? 'bg-white border-slate-200 shadow-md hover:shadow-lg'
+                  : 'bg-slate-900/50 border-slate-800/80 hover:bg-slate-900/70 shadow-lg'
               }`}
             >
               <div className="space-y-4">
-                <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
-                  <Terminal size={24} />
+                <div className="w-10 h-10 rounded-sm bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
+                  <Terminal size={22} />
                 </div>
                 <div>
                   <div className="flex items-center justify-between">
@@ -901,7 +901,7 @@ export default function LandingPage() {
                 <button
                   type="button"
                   onClick={() => setShowDownloadModal(true)}
-                  className={`w-full py-2.5 rounded-lg border font-mono text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                  className={`w-full py-2.5 rounded-sm border font-mono text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
                     theme === 'light'
                       ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
                       : 'bg-slate-800/80 hover:bg-slate-800 text-slate-200 border-slate-700'
@@ -919,14 +919,14 @@ export default function LandingPage() {
 
           {/* Offline Resiliency Banner */}
           <div
-            className={`p-5 rounded-xl border flex flex-col md:flex-row items-center justify-between gap-4 font-mono text-xs ${
+            className={`p-4 rounded-sm border flex flex-col md:flex-row items-center justify-between gap-4 font-mono text-xs ${
               theme === 'light'
                 ? 'bg-indigo-50/70 border-indigo-200 text-slate-700'
                 : 'bg-indigo-950/20 border-indigo-900/60 text-slate-300'
             }`}
           >
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
+              <div className="w-8 h-8 rounded-sm bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
                 <WifiOff size={16} />
               </div>
               <div>

@@ -106,17 +106,17 @@ export default function DownloadModal({ isOpen, onClose }) {
       onClick={onClose}
     >
       <div
-        className={`relative w-full max-w-2xl max-h-[92vh] flex flex-col rounded-lg border shadow-2xl overflow-hidden transition-all my-auto ${
+        className={`relative w-full max-w-2xl max-h-[92vh] flex flex-col rounded-sm border shadow-xl overflow-hidden transition-all my-auto ${
           isDark
             ? 'bg-[#0b101c] border-slate-800 text-slate-100 shadow-black/60'
             : 'bg-white border-slate-200 text-slate-900 shadow-slate-400/20'
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Modal Header — Crisp & Less Rounded */}
+        {/* Modal Header — Crisp Rectangular */}
         <div
           className={`shrink-0 px-5 py-4 border-b flex items-center justify-between ${
-            isDark ? 'border-slate-800/80 bg-slate-950/60' : 'border-slate-100 bg-slate-50'
+            isDark ? 'border-slate-800 bg-slate-950/70' : 'border-slate-100 bg-slate-50'
           }`}
         >
           <div className="flex items-center gap-3">
@@ -124,7 +124,7 @@ export default function DownloadModal({ isOpen, onClose }) {
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-bold text-base tracking-tight">Download CargoMS Desktop</h3>
-                <span className="px-1.5 py-0.5 rounded-sm text-[10px] font-mono font-bold bg-indigo-500/15 text-indigo-400 border border-indigo-500/30">
+                <span className="px-1.5 py-0.5 rounded-xs text-[10px] font-mono font-bold bg-indigo-500/15 text-indigo-400 border border-indigo-500/30">
                   {releaseTag}
                 </span>
               </div>
@@ -137,7 +137,7 @@ export default function DownloadModal({ isOpen, onClose }) {
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800/80 transition-colors cursor-pointer"
+            className="p-1 rounded-sm text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X size={18} />
           </button>
@@ -146,7 +146,7 @@ export default function DownloadModal({ isOpen, onClose }) {
         {/* Feature Highlights Grid */}
         <div
           className={`shrink-0 grid grid-cols-3 gap-2 px-5 py-3 border-b text-xs font-mono ${
-            isDark ? 'border-slate-800/60 bg-slate-900/30' : 'border-slate-100 bg-slate-50/50'
+            isDark ? 'border-slate-800 bg-slate-900/40' : 'border-slate-100 bg-slate-50'
           }`}
         >
           <div className="flex items-center gap-2 text-slate-300">
@@ -165,7 +165,7 @@ export default function DownloadModal({ isOpen, onClose }) {
 
         {/* Download Started Notice */}
         {downloadNotice && (
-          <div className="mx-5 mt-4 p-3 rounded-md border border-indigo-500/30 bg-indigo-500/10 text-indigo-200 text-xs font-mono space-y-1.5 shrink-0">
+          <div className="mx-5 mt-4 p-3 rounded-sm border border-indigo-500/40 bg-indigo-950/40 text-indigo-200 text-xs font-mono space-y-1.5 shrink-0">
             <div className="flex items-center gap-2">
               <CheckCircle2 size={15} className="text-indigo-400 shrink-0" />
               <span className="font-bold">Download requested for {downloadNotice.file}</span>
@@ -188,13 +188,13 @@ export default function DownloadModal({ isOpen, onClose }) {
         {/* OS Platform Tabs & Content — Crisp Rectangular Structure */}
         <div className="p-5 space-y-5 overflow-y-auto">
           {/* OS Switcher */}
-          <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-950/70 border border-slate-800/80 rounded-md text-xs font-mono">
+          <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-950 border border-slate-800 rounded-sm text-xs font-mono">
             <button
               type="button"
               onClick={() => setActiveTab('windows')}
-              className={`py-1.5 px-3 rounded-md flex items-center justify-center gap-2 font-medium transition-all cursor-pointer ${
+              className={`py-1.5 px-3 rounded-sm flex items-center justify-center gap-2 font-medium transition-all cursor-pointer ${
                 activeTab === 'windows'
-                  ? 'bg-indigo-600 text-white shadow-sm'
+                  ? 'bg-indigo-600 text-white'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -205,9 +205,9 @@ export default function DownloadModal({ isOpen, onClose }) {
             <button
               type="button"
               onClick={() => setActiveTab('mac')}
-              className={`py-1.5 px-3 rounded-md flex items-center justify-center gap-2 font-medium transition-all cursor-pointer ${
+              className={`py-1.5 px-3 rounded-sm flex items-center justify-center gap-2 font-medium transition-all cursor-pointer ${
                 activeTab === 'mac'
-                  ? 'bg-indigo-600 text-white shadow-sm'
+                  ? 'bg-indigo-600 text-white'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -218,9 +218,9 @@ export default function DownloadModal({ isOpen, onClose }) {
             <button
               type="button"
               onClick={() => setActiveTab('linux')}
-              className={`py-1.5 px-3 rounded-md flex items-center justify-center gap-2 font-medium transition-all cursor-pointer ${
+              className={`py-1.5 px-3 rounded-sm flex items-center justify-center gap-2 font-medium transition-all cursor-pointer ${
                 activeTab === 'linux'
-                  ? 'bg-indigo-600 text-white shadow-sm'
+                  ? 'bg-indigo-600 text-white'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -235,16 +235,16 @@ export default function DownloadModal({ isOpen, onClose }) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* NSIS Standard Installer */}
                 <div
-                  className={`p-4 rounded-md border flex flex-col justify-between space-y-3 ${
+                  className={`p-4 rounded-sm border flex flex-col justify-between space-y-3 ${
                     isDark
-                      ? 'bg-slate-900/50 border-slate-800 hover:border-indigo-500/40'
+                      ? 'bg-slate-900/60 border-slate-800 hover:border-indigo-500/50'
                       : 'bg-slate-50 border-slate-200'
                   }`}
                 >
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-sm">NSIS Setup Installer</span>
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-sm bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
                         RECOMMENDED
                       </span>
                     </div>
@@ -260,7 +260,7 @@ export default function DownloadModal({ isOpen, onClose }) {
                     type="button"
                     onClick={() => handleDownload('windows', `CargoMS-Desktop-Setup-${appVersion}.exe`)}
                     disabled={downloadingFile === `CargoMS-Desktop-Setup-${appVersion}.exe`}
-                    className="w-full py-2 px-3 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow cursor-pointer disabled:opacity-50"
+                    className="w-full py-2 px-3 rounded-sm bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
                   >
                     <Download size={13} />
                     <span>
@@ -273,16 +273,16 @@ export default function DownloadModal({ isOpen, onClose }) {
 
                 {/* Portable Standalone */}
                 <div
-                  className={`p-4 rounded-md border flex flex-col justify-between space-y-3 ${
+                  className={`p-4 rounded-sm border flex flex-col justify-between space-y-3 ${
                     isDark
-                      ? 'bg-slate-900/50 border-slate-800 hover:border-slate-700'
+                      ? 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
                       : 'bg-slate-50 border-slate-200'
                   }`}
                 >
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-sm">Portable Executable</span>
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-sm bg-slate-800 text-slate-300 border border-slate-700 font-semibold">
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-xs bg-slate-800 text-slate-300 border border-slate-700 font-semibold">
                         NO INSTALL
                       </span>
                     </div>
@@ -298,7 +298,7 @@ export default function DownloadModal({ isOpen, onClose }) {
                     type="button"
                     onClick={() => handleDownload('windows', `CargoMS-Desktop-${appVersion}.exe`)}
                     disabled={downloadingFile === `CargoMS-Desktop-${appVersion}.exe`}
-                    className="w-full py-2 px-3 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 font-mono text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+                    className="w-full py-2 px-3 rounded-sm bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 font-mono text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
                   >
                     <Download size={13} />
                     <span>
@@ -318,14 +318,14 @@ export default function DownloadModal({ isOpen, onClose }) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* Apple Silicon */}
                 <div
-                  className={`p-4 rounded-md border flex flex-col justify-between space-y-3 ${
-                    isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-200'
+                  className={`p-4 rounded-sm border flex flex-col justify-between space-y-3 ${
+                    isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-slate-50 border-slate-200'
                   }`}
                 >
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-sm">Apple Silicon DMG</span>
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-sm bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-semibold">
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-xs bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-semibold">
                         M1-M4
                       </span>
                     </div>
@@ -340,7 +340,7 @@ export default function DownloadModal({ isOpen, onClose }) {
                   <button
                     type="button"
                     onClick={() => handleDownload('mac', `CargoMS-${appVersion}-arm64.dmg`)}
-                    className="w-full py-2 px-3 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow cursor-pointer"
+                    className="w-full py-2 px-3 rounded-sm bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer"
                   >
                     <Download size={13} />
                     <span>Download DMG (Apple Silicon)</span>
@@ -349,14 +349,14 @@ export default function DownloadModal({ isOpen, onClose }) {
 
                 {/* Intel Mac */}
                 <div
-                  className={`p-4 rounded-md border flex flex-col justify-between space-y-3 ${
-                    isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-200'
+                  className={`p-4 rounded-sm border flex flex-col justify-between space-y-3 ${
+                    isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-slate-50 border-slate-200'
                   }`}
                 >
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-sm">Intel x64 DMG</span>
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-sm bg-slate-800 text-slate-300 border border-slate-700 font-semibold">
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-xs bg-slate-800 text-slate-300 border border-slate-700 font-semibold">
                         INTEL
                       </span>
                     </div>
@@ -371,7 +371,7 @@ export default function DownloadModal({ isOpen, onClose }) {
                   <button
                     type="button"
                     onClick={() => handleDownload('mac', `CargoMS-${appVersion}-x64.dmg`)}
-                    className="w-full py-2 px-3 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 font-mono text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer"
+                    className="w-full py-2 px-3 rounded-sm bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 font-mono text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer"
                   >
                     <Download size={13} />
                     <span>Download DMG (Intel)</span>
@@ -387,8 +387,8 @@ export default function DownloadModal({ isOpen, onClose }) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* AppImage */}
                 <div
-                  className={`p-4 rounded-md border flex flex-col justify-between space-y-3 ${
-                    isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-200'
+                  className={`p-4 rounded-sm border flex flex-col justify-between space-y-3 ${
+                    isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-slate-50 border-slate-200'
                   }`}
                 >
                   <div className="space-y-1.5">
@@ -404,7 +404,7 @@ export default function DownloadModal({ isOpen, onClose }) {
                   <button
                     type="button"
                     onClick={() => handleDownload('linux', `CargoMS-${appVersion}.AppImage`)}
-                    className="w-full py-2 px-3 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer"
+                    className="w-full py-2 px-3 rounded-sm bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer"
                   >
                     <Download size={13} />
                     <span>Download AppImage</span>
@@ -413,8 +413,8 @@ export default function DownloadModal({ isOpen, onClose }) {
 
                 {/* Debian/Ubuntu .deb */}
                 <div
-                  className={`p-4 rounded-md border flex flex-col justify-between space-y-3 ${
-                    isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-200'
+                  className={`p-4 rounded-sm border flex flex-col justify-between space-y-3 ${
+                    isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-slate-50 border-slate-200'
                   }`}
                 >
                   <div className="space-y-1.5">
@@ -430,7 +430,7 @@ export default function DownloadModal({ isOpen, onClose }) {
                   <button
                     type="button"
                     onClick={() => handleDownload('linux', `CargoMS-${appVersion}.deb`)}
-                    className="w-full py-2 px-3 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 font-mono text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer"
+                    className="w-full py-2 px-3 rounded-sm bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 font-mono text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer"
                   >
                     <Download size={13} />
                     <span>Download .deb Package</span>
@@ -440,11 +440,11 @@ export default function DownloadModal({ isOpen, onClose }) {
             </div>
           )}
 
-          {/* Quick Activation Notice — Crisp & Less Rounded */}
+          {/* Quick Activation Notice — Crisp & Rectangular */}
           <div
-            className={`p-3.5 rounded-md border text-xs flex items-start gap-3 ${
+            className={`p-3.5 rounded-sm border text-xs flex items-start gap-3 ${
               isDark
-                ? 'bg-indigo-950/20 border-indigo-500/30 text-indigo-300'
+                ? 'bg-indigo-950/30 border-indigo-500/40 text-indigo-300'
                 : 'bg-indigo-50 border-indigo-200 text-indigo-800'
             }`}
           >

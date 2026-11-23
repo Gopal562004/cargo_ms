@@ -58,8 +58,8 @@ export default function AboutPage() {
         <div
           className={`absolute inset-0 transition-colors ${
             theme === 'light'
-              ? 'bg-gradient-to-b from-slate-100/95 via-slate-100/90 to-slate-200/98'
-              : 'bg-gradient-to-b from-[#060a12]/95 via-[#060a12]/90 to-[#090d16]/98'
+              ? 'bg-slate-100/95'
+              : 'bg-[#060a12]/95'
           }`}
         />
         <div
@@ -159,7 +159,7 @@ export default function AboutPage() {
       <main className="relative z-10 max-w-5xl mx-auto px-6 py-12 md:py-20 space-y-16">
         {/* Hero Title & Mission */}
         <div className="text-center space-y-4 max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500/30 bg-indigo-500/10 text-indigo-400">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-sm text-xs font-mono border border-indigo-500/40 bg-indigo-500/10 text-indigo-400">
             <Sparkles size={13} />
             <span>ENTERPRISE LOGISTICS SOFTWARE & BESPOKE DEVELOPMENT</span>
           </div>
@@ -173,16 +173,16 @@ export default function AboutPage() {
 
         {/* Developer Profile Card */}
         <div
-          className={`p-8 md:p-10 rounded-2xl border transition-all ${
+          className={`p-7 md:p-9 rounded-sm border transition-all ${
             theme === 'light'
-              ? 'bg-white/95 border-slate-200 shadow-xl'
-              : 'bg-slate-900/70 border-slate-800 backdrop-blur-xl shadow-2xl'
+              ? 'bg-white border-slate-200 shadow-md'
+              : 'bg-slate-900/80 border-slate-800 shadow-xl'
           }`}
         >
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
             {/* Left: Avatar & Quick Badges */}
             <div className="md:col-span-4 flex flex-col items-center text-center space-y-4">
-              <div className="w-28 h-28 rounded-2xl bg-gradient-to-tr from-indigo-600 to-indigo-400 text-white flex items-center justify-center font-bold text-3xl shadow-xl shadow-indigo-500/30 ring-4 ring-indigo-500/20">
+              <div className="w-24 h-24 rounded-sm bg-indigo-600 text-white flex items-center justify-center font-bold text-2xl shadow-md border border-indigo-500">
                 GG
               </div>
               <div className="space-y-1">
@@ -201,7 +201,7 @@ export default function AboutPage() {
                   href={PERSONAL_WEBSITE_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-3 py-1.5 rounded-md bg-indigo-600/10 border border-indigo-500/30 text-indigo-400 hover:bg-indigo-600 hover:text-white text-xs font-mono font-medium flex items-center gap-1.5 transition-colors"
+                  className="px-3 py-1.5 rounded-sm bg-indigo-600/10 border border-indigo-500/30 text-indigo-400 hover:bg-indigo-600 hover:text-white text-xs font-mono font-medium flex items-center gap-1.5 transition-colors"
                 >
                   <Globe size={13} />
                   <span>Portfolio Website</span>
@@ -226,14 +226,14 @@ export default function AboutPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                 <a
                   href={`tel:+91${WHATSAPP_NUMBER}`}
-                  className={`p-3 rounded-lg border flex items-center gap-3 transition-colors ${
+                  className={`p-3 rounded-sm border flex items-center gap-3 transition-colors ${
                     theme === 'light'
                       ? 'bg-slate-50 border-slate-200 hover:border-indigo-400 text-slate-800'
                       : 'bg-slate-950/60 border-slate-800 hover:border-indigo-500/40 text-slate-200'
                   }`}
                 >
-                  <div className="w-9 h-9 rounded-md bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0">
-                    <Phone size={16} />
+                  <div className="w-8 h-8 rounded-sm bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0">
+                    <Phone size={15} />
                   </div>
                   <div className="min-w-0">
                     <span className="text-[10px] uppercase font-mono text-slate-400 block">Direct Phone</span>
@@ -245,14 +245,14 @@ export default function AboutPage() {
                   href={WHATSAPP_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`p-3 rounded-lg border flex items-center gap-3 transition-colors ${
+                  className={`p-3 rounded-sm border flex items-center gap-3 transition-colors ${
                     theme === 'light'
                       ? 'bg-slate-50 border-slate-200 hover:border-emerald-400 text-slate-800'
                       : 'bg-slate-950/60 border-slate-800 hover:border-emerald-500/40 text-slate-200'
                   }`}
                 >
-                  <div className="w-9 h-9 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-                    <MessageCircle size={16} />
+                  <div className="w-8 h-8 rounded-sm bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                    <MessageCircle size={15} />
                   </div>
                   <div className="min-w-0">
                     <span className="text-[10px] uppercase font-mono text-slate-400 block">Direct WhatsApp</span>
@@ -264,14 +264,14 @@ export default function AboutPage() {
                   href={PERSONAL_WEBSITE_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`p-3 rounded-lg border flex items-center gap-3 transition-colors sm:col-span-2 ${
+                  className={`p-3 rounded-sm border flex items-center gap-3 transition-colors sm:col-span-2 ${
                     theme === 'light'
                       ? 'bg-slate-50 border-slate-200 hover:border-indigo-400 text-slate-800'
                       : 'bg-slate-950/60 border-slate-800 hover:border-indigo-500/40 text-slate-200'
                   }`}
                 >
-                  <div className="w-9 h-9 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
-                    <Globe size={16} />
+                  <div className="w-8 h-8 rounded-sm bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
+                    <Globe size={15} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <span className="text-[10px] uppercase font-mono text-slate-400 block">Personal Portfolio & Projects</span>
@@ -297,12 +297,12 @@ export default function AboutPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div
-              className={`p-6 rounded-xl border space-y-3 ${
-                theme === 'light' ? 'bg-white border-slate-200' : 'bg-slate-900/50 border-slate-800'
+              className={`p-6 rounded-sm border space-y-3 ${
+                theme === 'light' ? 'bg-white border-slate-200' : 'bg-slate-900/60 border-slate-800'
               }`}
             >
-              <div className="w-10 h-10 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
-                <Laptop size={20} />
+              <div className="w-9 h-9 rounded-sm bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
+                <Laptop size={18} />
               </div>
               <h3 className="font-bold text-base">Custom ERP & Logistics Softwares</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
@@ -311,12 +311,12 @@ export default function AboutPage() {
             </div>
 
             <div
-              className={`p-6 rounded-xl border space-y-3 ${
-                theme === 'light' ? 'bg-white border-slate-200' : 'bg-slate-900/50 border-slate-800'
+              className={`p-6 rounded-sm border space-y-3 ${
+                theme === 'light' ? 'bg-white border-slate-200' : 'bg-slate-900/60 border-slate-800'
               }`}
             >
-              <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                <ShieldCheck size={20} />
+              <div className="w-9 h-9 rounded-sm bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                <ShieldCheck size={18} />
               </div>
               <h3 className="font-bold text-base">GST Billing & Accounting Systems</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
@@ -325,12 +325,12 @@ export default function AboutPage() {
             </div>
 
             <div
-              className={`p-6 rounded-xl border space-y-3 ${
-                theme === 'light' ? 'bg-white border-slate-200' : 'bg-slate-900/50 border-slate-800'
+              className={`p-6 rounded-sm border space-y-3 ${
+                theme === 'light' ? 'bg-white border-slate-200' : 'bg-slate-900/60 border-slate-800'
               }`}
             >
-              <div className="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center">
-                <Cpu size={20} />
+              <div className="w-9 h-9 rounded-sm bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center">
+                <Cpu size={18} />
               </div>
               <h3 className="font-bold text-base">Offline-First Desktop Applications</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
@@ -341,10 +341,10 @@ export default function AboutPage() {
 
           {/* CTA Banner to Discuss Custom Projects */}
           <div
-            className={`p-8 rounded-2xl border text-center space-y-4 max-w-2xl mx-auto ${
+            className={`p-7 rounded-sm border text-center space-y-4 max-w-2xl mx-auto ${
               theme === 'light'
-                ? 'bg-gradient-to-br from-indigo-50 to-indigo-100/60 border-indigo-200'
-                : 'bg-gradient-to-br from-indigo-950/40 to-slate-900/60 border-indigo-800/60'
+                ? 'bg-slate-50 border-indigo-300'
+                : 'bg-slate-900/90 border-indigo-800/80'
             }`}
           >
             <h3 className="text-xl font-bold tracking-tight">Have a Software Requirement or Custom Feature in Mind?</h3>
@@ -356,7 +356,7 @@ export default function AboutPage() {
                 href={WHATSAPP_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full sm:w-auto px-6 py-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-600/25 cursor-pointer"
+                className="w-full sm:w-auto px-6 py-2.5 rounded-sm bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
                 <MessageCircle size={15} />
                 <span>Chat on WhatsApp (+91 {WHATSAPP_NUMBER})</span>
@@ -365,14 +365,14 @@ export default function AboutPage() {
                 href={PERSONAL_WEBSITE_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`w-full sm:w-auto px-5 py-3 rounded-lg border font-mono text-xs font-semibold flex items-center justify-center gap-2 transition-colors ${
+                className={`w-full sm:w-auto px-5 py-2.5 rounded-sm border font-mono text-xs font-semibold flex items-center justify-center gap-2 transition-colors ${
                   theme === 'light'
                     ? 'bg-white border-slate-300 text-slate-800 hover:bg-slate-100'
-                    : 'bg-slate-800/80 border-slate-700 text-slate-200 hover:bg-slate-800'
+                    : 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700'
                 }`}
               >
                 <Globe size={14} />
-                <span>Visit gopalgawas.online</span>
+                <span>Visit Portfolio</span>
               </a>
             </div>
           </div>
