@@ -113,9 +113,32 @@ export default function Register() {
               <div className="space-y-1">
                 <h1 className="text-xl font-bold tracking-tight">Request Operator Access</h1>
                 <p className="text-xs text-slate-400 font-mono">
-                  Accounts are provisioned by the administrator. Submit your details below to receive your operator login.
+                  Accounts are provisioned by the administrator. Submit your details below or connect directly on WhatsApp for instant provisioning.
                 </p>
               </div>
+
+              {/* Direct WhatsApp Callout Banner */}
+              <a
+                href="https://wa.me/918237742040?text=Hello%20Gopal%2C%20I%20am%20interested%20in%20CargoMS%20and%20would%20like%20to%20request%20operator%20access."
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`p-3 rounded-md border flex items-center justify-between text-xs font-mono transition-all group ${
+                  theme === 'light'
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100'
+                    : 'bg-emerald-950/30 border-emerald-500/30 text-emerald-300 hover:bg-emerald-950/50'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <MessageSquare size={16} className="text-emerald-500 shrink-0" />
+                  <div>
+                    <span className="font-bold block text-[11px]">Instant WhatsApp Onboarding</span>
+                    <span className="text-[10px] opacity-80">+91 8237742040 (Gopal Gawas)</span>
+                  </div>
+                </div>
+                <span className="text-[10px] font-bold text-emerald-500 group-hover:translate-x-0.5 transition-transform">
+                  MESSAGE →
+                </span>
+              </a>
 
               <form className="space-y-3.5" onSubmit={handleSubmit}>
                 <Input
@@ -198,10 +221,21 @@ export default function Register() {
                 </p>
               </div>
 
-              <div className="pt-4 border-t border-slate-800/40">
+              <div className="pt-4 border-t border-slate-800/40 space-y-2">
+                <a
+                  href={`https://wa.me/918237742040?text=${encodeURIComponent(
+                    `Hello Gopal, I have submitted an operator access request for ${form.company} (Contact: ${form.name}, Phone: ${form.phone}, Email: ${form.email}).`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-2.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                >
+                  <MessageSquare size={14} />
+                  <span>Notify via WhatsApp (+91 8237742040)</span>
+                </a>
                 <Link
                   to="/login"
-                  className="w-full py-2.5 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs block transition-colors"
+                  className="w-full py-2.5 rounded border border-slate-700 hover:border-slate-500 text-slate-300 font-bold text-xs block text-center transition-colors"
                 >
                   GO TO OPERATOR SIGN IN →
                 </Link>

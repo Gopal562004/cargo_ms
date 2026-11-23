@@ -155,7 +155,7 @@ export default function DownloadModal({ isOpen, onClose }) {
           </div>
           <div className="flex items-center gap-2 text-slate-300">
             <HardDrive size={14} className="text-indigo-400 shrink-0" />
-            <span className="truncate">Local SQLite Engine</span>
+            <span className="truncate">Secure Offline Vault</span>
           </div>
           <div className="flex items-center gap-2 text-slate-300">
             <FolderOpen size={14} className="text-emerald-400 shrink-0" />
@@ -252,7 +252,7 @@ export default function DownloadModal({ isOpen, onClose }) {
                       Standard Windows 64-bit installer with desktop shortcut and auto-update capability.
                     </p>
                     <div className="text-[11px] font-mono text-slate-500">
-                      Windows 10 / 11 (64-bit) · ~240 MB
+                      Windows 10 / 11 (64-bit) · ~174 MB
                     </div>
                   </div>
 
@@ -290,7 +290,7 @@ export default function DownloadModal({ isOpen, onClose }) {
                       Zero installation required. Run directly from a USB drive or any local folder.
                     </p>
                     <div className="text-[11px] font-mono text-slate-500">
-                      Standalone Portable (64-bit) · ~240 MB
+                      Standalone Portable (64-bit) · ~174 MB
                     </div>
                   </div>
 

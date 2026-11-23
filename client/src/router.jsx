@@ -5,6 +5,7 @@ import { hasServiceAccess, isSubscriptionExpired } from './utils/permissions';
 import AppLayout from './components/layout/AppLayout';
 import LandingPage from './pages/LandingPage';
 import ProductTourPage from './pages/ProductTourPage';
+import AboutPage from './pages/AboutPage';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -103,6 +104,10 @@ const routes = [
   {
     path: '/how-it-works',
     element: isElectron ? <Navigate to="/login" replace /> : <ProductTourPage />,
+  },
+  {
+    path: '/about',
+    element: isElectron ? <Navigate to="/login" replace /> : <AboutPage />,
   },
 
   // Public Auth routes

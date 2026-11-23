@@ -74,7 +74,7 @@ const DOC_TEMPLATES = [
     badge: 'AIR FREIGHT',
     color: 'border-indigo-500 text-indigo-400 bg-indigo-500/10',
     icon: Plane,
-    desc: 'Standardized layout with automated Modulus-7 validation, volumetric weight calculation (1:6000 ratio), and multi-copy printing.',
+    desc: 'Standardized layout with automated Air Waybill validation, volumetric weight calculation (1:6000 ratio), and multi-copy printing.',
     fields: [
       { label: 'AWB Prefix & Number', val: '098 - 4820 1920' },
       { label: 'Airport of Departure', val: 'DEL (Indira Gandhi Intl, New Delhi)' },
@@ -279,7 +279,7 @@ export default function LandingPage() {
             </div>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-8 text-xs font-mono">
+          <nav className="hidden md:flex items-center gap-7 text-xs font-mono">
             <a href="#overview" className="hover:text-indigo-500 transition-colors">OPERATIONS</a>
             <a href="#templates" className="hover:text-indigo-500 transition-colors">TEMPLATES</a>
             <a href="#dispatch-deck" className="hover:text-indigo-500 transition-colors">DISPATCH</a>
@@ -289,6 +289,7 @@ export default function LandingPage() {
             </a>
             <Link to="/product-tour" className="hover:text-indigo-500 transition-colors">HOW IT WORKS</Link>
             <a href="#calculator" className="hover:text-indigo-500 transition-colors">PRICING</a>
+            <Link to="/about" className="hover:text-indigo-500 transition-colors font-bold text-indigo-400">ABOUT</Link>
           </nav>
 
           <div className="flex items-center gap-3 font-mono text-xs">
@@ -326,12 +327,14 @@ export default function LandingPage() {
                 >
                   SIGN IN
                 </Link>
-                <Link
-                  to="/register"
-                  className="px-4 py-2 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-colors shadow-md shadow-indigo-600/20"
+                <a
+                  href="https://wa.me/918237742040?text=Hello%20Gopal%2C%20I%20am%20interested%20in%20CargoMS%20and%20would%20like%20to%20request%20operator%20access."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-colors shadow-md shadow-indigo-600/20 inline-flex items-center gap-1.5"
                 >
                   REQUEST ACCESS
-                </Link>
+                </a>
               </>
             )}
           </div>
@@ -370,8 +373,10 @@ export default function LandingPage() {
                 <Download size={15} />
                 <span>DOWNLOAD SOFTWARE (WIN / MAC)</span>
               </button>
-              <Link
-                to="/register"
+              <a
+                href="https://wa.me/918237742040?text=Hello%20Gopal%2C%20I%20am%20interested%20in%20CargoMS%20and%20would%20like%20to%20request%20dispatch%20access."
+                target="_blank"
+                rel="noopener noreferrer"
                 className={`px-5 py-3 rounded border font-mono text-xs font-bold backdrop-blur-md transition-colors flex items-center gap-2 ${
                   theme === 'light'
                     ? 'bg-white/90 border-slate-300 hover:bg-white text-slate-800'
@@ -379,7 +384,7 @@ export default function LandingPage() {
                 }`}
               >
                 REQUEST DISPATCH ACCESS <ArrowRight size={14} />
-              </Link>
+              </a>
               <a
                 href="#download"
                 className={`px-4 py-3 rounded border font-mono text-xs font-bold backdrop-blur-md transition-colors flex items-center gap-1.5 ${
@@ -732,7 +737,7 @@ export default function LandingPage() {
                 Zero-Latency Desktop Engine.
               </h2>
               <p className="text-sm sm:text-base text-slate-400 max-w-xl">
-                Installed natively on Windows, Mac, or Linux. Features an embedded SQLite database engine with a 30-day offline lease and high-speed direct thermal barcode printer integration.
+                Installed natively on Windows, Mac, or Linux. Features an offline-first high-speed local engine with a 30-day offline lease and high-speed direct thermal barcode printer integration.
               </p>
             </div>
 
@@ -777,11 +782,11 @@ export default function LandingPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Check size={12} className="text-emerald-500" />
-                    <span>USB Thermal Printer Raw Passthrough</span>
+                    <span>Direct High-Speed Thermal & Laser Printing</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Check size={12} className="text-emerald-500" />
-                    <span>Silent Background SQLite Daemon</span>
+                    <span>Offline-First Secure Local Storage Engine</span>
                   </div>
                 </div>
               </div>
@@ -796,7 +801,7 @@ export default function LandingPage() {
                   <span>Download for Windows (.exe)</span>
                 </button>
                 <p className="text-[10px] text-center text-slate-400 font-mono">
-                  v{APP_VERSION} · ~168 MB · Win 10/11
+                  v{APP_VERSION} · ~174 MB · Win 10/11
                 </p>
               </div>
             </div>
@@ -1102,12 +1107,14 @@ export default function LandingPage() {
                   )}
                 </div>
 
-                <Link
-                  to="/register"
+                <a
+                  href="https://wa.me/918237742040?text=Hello%20Gopal%2C%20I%20would%20like%20to%20request%20CargoMS%20access%20with%20this%20configuration."
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="w-full py-3 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs text-center block transition-colors shadow-md shadow-indigo-600/20"
                 >
                   REQUEST ACCESS WITH THIS CONFIG →
-                </Link>
+                </a>
 
                 <Link
                   to="/product-tour"
@@ -1149,8 +1156,16 @@ export default function LandingPage() {
             </button>
             <Link to="/product-tour" className="hover:text-indigo-400">HOW IT WORKS</Link>
             <a href="#calculator" className="hover:text-indigo-400">PRICING</a>
+            <Link to="/about" className="hover:text-indigo-400 font-bold text-indigo-400">ABOUT</Link>
             <Link to="/login" className="hover:text-indigo-400">LOGIN</Link>
-            <Link to="/register" className="hover:text-indigo-400">REQUEST ACCESS</Link>
+            <a
+              href="https://wa.me/918237742040?text=Hello%20Gopal%2C%20I%20am%20interested%20in%20CargoMS%20and%20would%20like%20to%20request%20operator%20access."
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-indigo-400"
+            >
+              REQUEST ACCESS
+            </a>
           </div>
 
           <p className="text-[11px] text-slate-400">© {new Date().getFullYear()} CARGOHUB OS</p>
