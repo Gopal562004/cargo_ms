@@ -160,7 +160,7 @@ export default function AboutPage() {
         {/* Hero Title & Mission */}
         <div className="text-center space-y-4 max-w-3xl mx-auto">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-sm text-xs font-mono border border-indigo-500/40 bg-indigo-500/10 text-indigo-400">
-            <Sparkles size={13} />
+            <ShieldCheck size={13} />
             <span>ENTERPRISE LOGISTICS SOFTWARE & BESPOKE DEVELOPMENT</span>
           </div>
           <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight">
@@ -182,10 +182,38 @@ export default function AboutPage() {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
             {/* Left: Avatar & Quick Badges */}
             <div className="md:col-span-4 flex flex-col items-center text-center space-y-4">
-              <div className="w-24 h-24 rounded-sm bg-indigo-600 text-white flex items-center justify-center font-bold text-2xl shadow-md border border-indigo-500">
-                GG
+              {/* Executive Developer & Solutions Architect Emblem */}
+              <div className="relative">
+                <div
+                  className={`w-24 h-24 rounded-sm flex flex-col items-center justify-center relative shadow-lg transition-all ${
+                    theme === 'light'
+                      ? 'bg-slate-900 text-slate-100 border border-slate-800'
+                      : 'bg-[#080d19] text-slate-100 border border-slate-700/80 shadow-black/80'
+                  }`}
+                >
+                  {/* Precision Corner Tech Brackets */}
+                  <div className="absolute top-1 left-1 w-2 h-2 border-t-2 border-l-2 border-indigo-500" />
+                  <div className="absolute top-1 right-1 w-2 h-2 border-t-2 border-r-2 border-indigo-500" />
+                  <div className="absolute bottom-1 left-1 w-2 h-2 border-b-2 border-l-2 border-indigo-500" />
+                  <div className="absolute bottom-1 right-1 w-2 h-2 border-b-2 border-r-2 border-indigo-500" />
+
+                  {/* Core Icon Mark */}
+                  <div className="w-11 h-11 rounded-sm bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400 mb-1">
+                    <Code2 size={24} />
+                  </div>
+                  <span className="font-mono text-[9px] font-bold text-slate-300 tracking-widest uppercase">
+                    ARCHITECT
+                  </span>
+                </div>
+
+                {/* Verified Status Badge */}
+                <div className="absolute -bottom-2 inset-x-0 mx-auto w-fit px-2 py-0.5 rounded-xs bg-[#0b101c] border border-emerald-500/40 flex items-center gap-1 text-[9px] font-mono text-emerald-400 shadow-sm">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="font-bold">VERIFIED</span>
+                </div>
               </div>
-              <div className="space-y-1">
+
+              <div className="space-y-1 pt-1">
                 <h2 className="text-xl font-bold tracking-tight">Gopal Gawas</h2>
                 <p className="text-xs font-mono text-indigo-400 font-semibold uppercase">
                   Software Developer & Solutions Architect
