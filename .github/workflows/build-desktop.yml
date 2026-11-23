@@ -49,29 +49,9 @@ jobs:
         env:
           DESKTOP_DATABASE_URL: "file:./desktop.db"
 
-      - name: Build Electron App
+      - name: Build & Publish Electron App
         run: |
-          npx electron-builder
+          npx electron-builder --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Publish Public GitHub Release
-        uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: CargoMS Desktop ${{ github.ref_name }}
-          draft: false
-          prerelease: false
-          make_latest: "true"
-          generate_release_notes: true
-          files: |
-            dist-electron/CargoMS-Desktop-Setup-*.exe
-            dist-electron/CargoMS-Desktop-*.exe
-            dist-electron/CargoMS Desktop Setup *.exe
-            dist-electron/CargoMS Desktop *.exe
-            dist-electron/*.exe
-            dist-electron/latest.yml
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

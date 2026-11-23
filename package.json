@@ -25,6 +25,7 @@
   "build": {
     "appId": "com.cargoms.desktop",
     "productName": "CargoMS Desktop",
+    "artifactName": "CargoMS-Desktop-${version}.${ext}",
     "publish": [
       {
         "provider": "github",
@@ -98,6 +99,7 @@
       "category": "public.app-category.business"
     },
     "nsis": {
+      "artifactName": "CargoMS-Desktop-Setup-${version}.${ext}",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
