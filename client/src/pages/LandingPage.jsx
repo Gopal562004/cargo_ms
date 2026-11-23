@@ -48,7 +48,7 @@ import { useAuthStore } from '../store/authStore';
 import { getApiBaseUrl } from '../services/api';
 import DownloadModal from '../components/ui/DownloadModal';
 
-const APP_VERSION = '1.0.8';
+const APP_VERSION = '1.0.9';
 
 const BUILT_FEATURES = [
   {
