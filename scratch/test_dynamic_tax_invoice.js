@@ -26,10 +26,10 @@ async function test() {
       companyTel: '022 - 28000000',
       companyEmail: 'billing@company.com',
       bankName: 'HDFC BANK LTD',
-      accountNumber: '06687630000070',
-      ifscCode: 'HDFC0003126',
+      accountNumber: '9876XXXXX0012',
+      ifscCode: 'HDFC0000XXX',
       swiftCode: 'HDFCINBBXXX',
-      branchName: 'MAHAD-4',
+      branchName: 'AIRPORT CARGO ROAD',
       items: [
         { sn: 1, description: 'UN APPROVED BOX X3', subText: 'UN 3465/6.1/III, Box specs', hsnCode: '48191010', qty: 1, unit: 'Pcs', price: 110, gstRate: 5, cgstRate: 2.5, sgstRate: 2.5, igstRate: 0 },
         { sn: 2, description: 'UN APPROVED BOX X6', subText: '', hsnCode: '48191010', qty: 1, unit: 'Pcs', price: 160, gstRate: 5, cgstRate: 2.5, sgstRate: 2.5, igstRate: 0 },

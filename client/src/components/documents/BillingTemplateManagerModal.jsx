@@ -74,10 +74,10 @@ export default function BillingTemplateManagerModal({ isOpen, onClose, onSelectT
     consigneeState: 'Maharashtra (27)',
     consigneeGstin: '',
     bankName: 'HDFC BANK LTD',
-    accountNumber: '06687630000070',
-    ifscCode: 'HDFC0003126',
+    accountNumber: '9876XXXXX0012',
+    ifscCode: 'HDFC0000XXX',
     swiftCode: 'HDFCINBBXXX',
-    branchName: 'MAHAD-4',
+    branchName: 'AIRPORT CARGO ROAD',
     termsAndConditions: 'Goods once sold will not be taken back.\nInterest @ 18% p.a. will be charged if payment is not made within stipulated time.\nDiscrepancy if any, in billed item must be communicated within 7 Days.\nSubject to \'Maharashtra\' Jurisdiction only.',
     items: [
       { sn: 1, description: 'UN APPROVED BOX X3', subText: '', hsnCode: '48191010', qty: 1, unit: 'Pcs', price: 110, gstRate: 5, cgstRate: 2.5, sgstRate: 2.5, igstRate: 0 },
@@ -143,10 +143,10 @@ export default function BillingTemplateManagerModal({ isOpen, onClose, onSelectT
       consigneeState: 'Maharashtra (27)',
       consigneeGstin: '',
       bankName: 'HDFC BANK LTD',
-      accountNumber: '06687630000070',
-      ifscCode: 'HDFC0003126',
+      accountNumber: '9876XXXXX0012',
+      ifscCode: 'HDFC0000XXX',
       swiftCode: 'HDFCINBBXXX',
-      branchName: 'MAHAD-4',
+      branchName: 'AIRPORT CARGO ROAD',
       termsAndConditions: `1. Goods once sold will not be taken back.\n2. Interest @ 18% p.a. will be charged if the payment is not made within the stipulated time.\n3. Discrepancy if any, in billed item must be communicated within 7 days.\n4. Subject to 'Maharashtra' Jurisdiction only.`,
       items: [
         { sn: 1, description: 'UN APPROVED BOX X3', subText: '', hsnCode: '48191010', qty: 1, unit: 'Pcs', price: 110, gstRate: 5, cgstRate: 2.5, sgstRate: 2.5, igstRate: 0 },
@@ -712,7 +712,7 @@ export default function BillingTemplateManagerModal({ isOpen, onClose, onSelectT
                       <textarea
                         rows={3}
                         className="w-full p-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200"
-                        placeholder="e.g. GROUND FLOOR ROOM -003\nG M NAGAR NARANGI BAYPASS ROAD\nVIRAR EAST VASAI VIRAR PALGHAR -401305"
+                        placeholder="e.g. AIR CARGO TERMINAL COMPLEX, GATE NO. XX\nSAHAR ROAD, ANDHERI EAST\nMUMBAI - 400099"
                         value={formData.buyerAddress}
                         onChange={(e) => setFormData({ ...formData, buyerAddress: e.target.value })}
                       />

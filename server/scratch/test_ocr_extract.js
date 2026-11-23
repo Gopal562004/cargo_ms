@@ -19,7 +19,7 @@ Billed to : Shipped to :
 GLOBAL CARGO & LOGISTICS HORIZON WAREHOUSING & LOGISTICS 
 GROUND FLOOR ROOM -003 Gala no 2 Industrial Estate, Compound 
 G M NAGAR NARANGI BAYPASS ROAD Compound , Behind Preeti Petrol Pump 
-VIRAR EAST VASAI VIRAR PALGHAR -401305 Near Ganesh Compound, PURNA BHIWANDI 
+AIR CARGO TERMINAL COMPLEX, ANDHERI EAST, MUMBAI - 400099 Near Ganesh Compound, PURNA BHIWANDI 
  
 State : Maharashtra (27) State : Maharashtra (27) 
 GSTIN / UIN : 27ABCDE1234F1Z5 GSTIN / UIN : 27ABCDE1234F1Z5 
@@ -34,7 +34,7 @@ Tax Rate Taxable Amt. CGST Amt. SGST Amt. Total Tax
 18% 1,19,000.00 10,710.00 10,710.00 21,420.00
 RupeesOne Lakh Forty Thousand Four Hundred Twenty Only 
  Bank Details
-Bank name : HDFC BANK LTD A/c No: 06687630000070 RTGS / NEFT no:HDFC0003126 Swift code for HDFC Bank : HDFCINBBXXX Branch :MAHAD-4
+Bank name : HDFC BANK LTD A/c No: 9876XXXXX0012 RTGS / NEFT no:HDFC0000XXX Swift code for HDFC Bank : HDFCINBBXXX Branch :AIRPORT CARGO ROAD
 Terms & Conditions Receiver's Signature :
 1. Goods once sold will not be taken back. 
 2. Interest @ 18% p.a. will be charged if the payment 

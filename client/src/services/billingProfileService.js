@@ -31,29 +31,29 @@ export const DEFAULT_BILLING_PROFILES = [
     companyLogo: null,
     companyDetails: {
       companyName: 'STANDARD PACKAGING CO',
-      companyAddress: 'CARGO COMPLEX, SAHAR ROAD, ANDHERI (E)',
+      companyAddress: 'CARGO COMPLEX, GATE NO. XX, SAHAR ROAD, ANDHERI (E)',
       companyCityPin: 'MUMBAI - 400 099',
-      companyPan: 'ABCDE1234F',
-      companyGstin: '27ABCDE1234F1Z5',
-      companyTel: '022 - 28000000',
-      companyEmail: 'billing@company.com',
+      companyPan: 'XXXXX1234X',
+      companyGstin: '27XXXXX1234X1Z5',
+      companyTel: '+91 22-XXXX 8800',
+      companyEmail: 'billing@sample-logistics.test',
       bankName: 'HDFC BANK LTD',
-      accountNumber: '06687630000070',
-      ifscCode: 'HDFC0003126',
+      accountNumber: '9876XXXXX0012',
+      ifscCode: 'HDFC0000XXX',
       swiftCode: 'HDFCINBBXXX',
-      branchName: 'MAHAD-4',
+      branchName: 'AIRPORT CARGO ROAD',
     },
     buyer: {
       buyerName: 'GLOBAL CARGO & LOGISTICS',
-      buyerAddress: 'GROUND FLOOR, AIR CARGO TERMINAL COMPLEX\nSAHAR ANDHERI EAST MUMBAI - 400099',
+      buyerAddress: 'GROUND FLOOR, AIR CARGO TERMINAL COMPLEX, GATE NO. XX\nSAHAR ANDHERI EAST MUMBAI - 400099',
       buyerState: 'Maharashtra (27)',
-      buyerGstin: '27ABCDE1234F1Z5',
+      buyerGstin: '27XXXXX2222X1Z5',
     },
     consignee: {
       consigneeName: 'GLOBAL CARGO & LOGISTICS',
-      consigneeAddress: 'GROUND FLOOR, AIR CARGO TERMINAL COMPLEX\nSAHAR ANDHERI EAST MUMBAI - 400099',
+      consigneeAddress: 'GROUND FLOOR, AIR CARGO TERMINAL COMPLEX, GATE NO. XX\nSAHAR ANDHERI EAST MUMBAI - 400099',
       consigneeState: 'Maharashtra (27)',
-      consigneeGstin: '27ABCDE1234F1Z5',
+      consigneeGstin: '27XXXXX2222X1Z5',
     },
     invoiceNumber: 'INV/001/26-27',
     invoiceDate: '27-06-2026',
@@ -74,29 +74,29 @@ export const DEFAULT_BILLING_PROFILES = [
     companyLogo: null,
     companyDetails: {
       companyName: 'GLOBAL CARGO & LOGISTICS',
-      companyAddress: 'GROUND FLOOR, AIR CARGO TERMINAL COMPLEX, SAHAR ROAD',
+      companyAddress: 'GROUND FLOOR, AIR CARGO TERMINAL COMPLEX, GATE NO. XX, SAHAR ROAD',
       companyCityPin: 'MUMBAI - 400 099, MAHARASHTRA, INDIA.',
-      companyPan: 'ABCDE1234F',
-      companyGstin: '27ABCDE1234F1Z5',
-      companyTel: '+91 9800000000',
-      companyEmail: 'billing@company.com',
+      companyPan: 'XXXXX1234X',
+      companyGstin: '27XXXXX1234X1Z5',
+      companyTel: '+91 98XXX XXXXX',
+      companyEmail: 'billing@sample-logistics.test',
       bankName: 'HDFC BANK LTD',
-      accountNumber: '5020 0112 5568 92',
-      ifscCode: 'HDFC0000994',
+      accountNumber: '5020XXXX5568',
+      ifscCode: 'HDFC0000XXX',
       swiftCode: 'HDFCINBBXXX',
-      branchName: 'AIRPORT ROAD - STATION ROAD',
+      branchName: 'AIRPORT CARGO ROAD',
     },
     buyer: {
       buyerName: 'ACME CHEMICALS INTERNATIONAL PVT LTD',
-      buyerAddress: 'UNIT 218, METRO TECH PARK, SAKI NAKA, ANDHERI EAST, MUMBAI - 400072',
+      buyerAddress: 'UNIT NO. XXX, METRO TECH PARK, SAKI NAKA, ANDHERI EAST, MUMBAI - 400072',
       buyerState: 'Maharashtra (27)',
-      buyerGstin: '27AAAAA0000A1Z5',
+      buyerGstin: '27AAAAX0000X1Z5',
     },
     consignee: {
       consigneeName: 'ACME CHEMICALS INTERNATIONAL PVT LTD',
-      consigneeAddress: 'UNIT 218, METRO TECH PARK, SAKI NAKA, ANDHERI EAST, MUMBAI - 400072',
+      consigneeAddress: 'UNIT NO. XXX, METRO TECH PARK, SAKI NAKA, ANDHERI EAST, MUMBAI - 400072',
       consigneeState: 'Maharashtra (27)',
-      consigneeGstin: '27AAAAA0000A1Z5',
+      consigneeGstin: '27AAAAX0000X1Z5',
     },
     invoiceNumber: 'INV/007/2026-27',
     invoiceDate: '17/07/2026',
@@ -104,7 +104,7 @@ export const DEFAULT_BILLING_PROFILES = [
     poNumberAndDate: 'INV NO-ACI/26-27/002',
     noOfPackages: '02 (01 BOX DG, 01 NON DG)',
     referenceName: 'ACME CHEMICALS INTERNATIONAL PVT LTD',
-    contactNumber: '+91 9800000000',
+    contactNumber: '+91 98XXX XXXXX',
     items: [
       { sn: 1, description: 'DG Documentation Charges', subText: 'UN NUMBER: UN 3465/6.1/III', hsnCode: '996713', qty: 1, unit: 'Pcs', price: 1200, gstRate: 18, cgstRate: 9, sgstRate: 9, igstRate: 0 },
       { sn: 2, description: 'Packing Charges', subText: '01 Box X3 & 01 Non haz box', hsnCode: '996713', qty: 1, unit: 'Pcs', price: 800, gstRate: 18, cgstRate: 9, sgstRate: 9, igstRate: 0 },
@@ -118,29 +118,29 @@ export const DEFAULT_BILLING_PROFILES = [
     companyLogo: null,
     companyDetails: {
       companyName: 'GLOBAL CARGO & LOGISTICS',
-      companyAddress: 'GROUND FLOOR, AIR CARGO TERMINAL COMPLEX, SAHAR ROAD',
+      companyAddress: 'GROUND FLOOR, AIR CARGO TERMINAL COMPLEX, GATE NO. XX, SAHAR ROAD',
       companyCityPin: 'MUMBAI - 400 099, MAHARASHTRA, INDIA.',
-      companyPan: 'ABCDE1234F',
-      companyGstin: '27ABCDE1234F1Z5',
-      companyTel: '+91 9800000000',
-      companyEmail: 'billing@company.com',
+      companyPan: 'XXXXX1234X',
+      companyGstin: '27XXXXX1234X1Z5',
+      companyTel: '+91 98XXX XXXXX',
+      companyEmail: 'billing@sample-logistics.test',
       bankName: 'HDFC BANK LTD',
-      accountNumber: '5020 0112 5568 92',
-      ifscCode: 'HDFC0000994',
+      accountNumber: '5020XXXX5568',
+      ifscCode: 'HDFC0000XXX',
       swiftCode: 'HDFCINBBXXX',
-      branchName: 'AIRPORT ROAD - STATION ROAD',
+      branchName: 'AIRPORT CARGO ROAD',
     },
     buyer: {
       buyerName: 'APEX FREIGHT FORWARDERS PVT LTD',
-      buyerAddress: '2ND FLOOR, CORPORATE SQUARE, GHATKOPAR ANDHERI LINK ROAD, MUMBAI - 400077',
+      buyerAddress: 'SUITE NO. XXX, 2ND FLOOR, CORPORATE SQUARE, GHATKOPAR LINK ROAD, MUMBAI - 400077',
       buyerState: 'Maharashtra (27)',
-      buyerGstin: '27BBBBB0000B1Z5',
+      buyerGstin: '27BBBBX0000X1Z5',
     },
     consignee: {
       consigneeName: 'HORIZON WAREHOUSING & LOGISTICS',
-      consigneeAddress: 'GALA NO. 2, INDUSTRIAL ESTATE, BHIWANDI, MAHARASHTRA - 421302',
+      consigneeAddress: 'GALA NO. XX, INDUSTRIAL ESTATE, BHIWANDI, MAHARASHTRA - 421302',
       consigneeState: 'Maharashtra (27)',
-      consigneeGstin: '27BBBBB0000B1Z5',
+      consigneeGstin: '27BBBBX0000X1Z5',
     },
     invoiceNumber: 'INV/013/2026-27',
     invoiceDate: '06/08/2026',
@@ -149,7 +149,7 @@ export const DEFAULT_BILLING_PROFILES = [
     transportName: 'HORIZON LOGISTICS',
     paidToPaid: 'PAID',
     referenceName: 'Logistics Desk',
-    contactNumber: '+91 9800000000',
+    contactNumber: '+91 98XXX XXXXX',
     items: [
       { sn: 1, description: 'UN APP MC Y 30 KG OPEN TOP PLASTIC DRUMS', subText: '', hsnCode: '39233090', qty: 50, unit: 'Drum', price: 600, gstRate: 18, cgstRate: 9, sgstRate: 9, igstRate: 0 },
       { sn: 2, description: 'Transport Charges', subText: 'Delivery to Bhiwandi', hsnCode: '996791', qty: 1, unit: 'Trip', price: 2800, gstRate: 18, cgstRate: 9, sgstRate: 9, igstRate: 0 },
@@ -163,29 +163,29 @@ export const DEFAULT_BILLING_PROFILES = [
     companyLogo: null,
     companyDetails: {
       companyName: 'GLOBAL CARGO & LOGISTICS',
-      companyAddress: 'GROUND FLOOR, AIR CARGO TERMINAL COMPLEX, SAHAR ROAD',
+      companyAddress: 'GROUND FLOOR, AIR CARGO TERMINAL COMPLEX, GATE NO. XX, SAHAR ROAD',
       companyCityPin: 'MUMBAI - 400 099, MAHARASHTRA, INDIA.',
-      companyPan: 'ABCDE1234F',
-      companyGstin: '27ABCDE1234F1Z5',
-      companyTel: '+91 9800000000',
-      companyEmail: 'billing@company.com',
+      companyPan: 'XXXXX1234X',
+      companyGstin: '27XXXXX1234X1Z5',
+      companyTel: '+91 98XXX XXXXX',
+      companyEmail: 'billing@sample-logistics.test',
       bankName: 'HDFC BANK LTD',
-      accountNumber: '5020 0112 5568 92',
-      ifscCode: 'HDFC0000994',
+      accountNumber: '5020XXXX5568',
+      ifscCode: 'HDFC0000XXX',
       swiftCode: 'HDFCINBBXXX',
-      branchName: 'AIRPORT ROAD - STATION ROAD',
+      branchName: 'AIRPORT CARGO ROAD',
     },
     buyer: {
       buyerName: 'METRO CARGO LOGISTICS LLP',
-      buyerAddress: 'SUITE 402, AIRPORT INDUSTRIAL ESTATE, ANDHERI EAST, MUMBAI - 400072',
+      buyerAddress: 'SUITE NO. XXX, AIRPORT INDUSTRIAL ESTATE, ANDHERI EAST, MUMBAI - 400072',
       buyerState: 'Maharashtra (27)',
-      buyerGstin: '27CCCCC0000C1Z5',
+      buyerGstin: '27CCCCX0000X1Z5',
     },
     consignee: {
       consigneeName: 'METRO CARGO LOGISTICS LLP',
-      consigneeAddress: 'SUITE 402, AIRPORT INDUSTRIAL ESTATE, ANDHERI EAST, MUMBAI - 400072',
+      consigneeAddress: 'SUITE NO. XXX, AIRPORT INDUSTRIAL ESTATE, ANDHERI EAST, MUMBAI - 400072',
       consigneeState: 'Maharashtra (27)',
-      consigneeGstin: '27CCCCC0000C1Z5',
+      consigneeGstin: '27CCCCX0000X1Z5',
     },
     invoiceNumber: 'INV/015/2026-27',
     invoiceDate: '07/08/2026',
@@ -194,7 +194,7 @@ export const DEFAULT_BILLING_PROFILES = [
     poNumberAndDate: 'EXP/26-27/075 DT. 30-JULY-2026',
     noOfPackages: '01 PKG',
     referenceName: 'EXPORT LOGISTICS DESK',
-    contactNumber: '+91 9800000000',
+    contactNumber: '+91 98XXX XXXXX',
     items: [
       { sn: 1, description: 'DGD Charges', subText: 'UN 1549/6.1/III', hsnCode: '996713', qty: 1, unit: 'Pcs', price: 2000, gstRate: 18, cgstRate: 9, sgstRate: 9, igstRate: 0 },
       { sn: 2, description: 'Packing Charges', subText: '01 Box X3 Rs. 850/-', hsnCode: '996713', qty: 1, unit: 'Box', price: 850, gstRate: 18, cgstRate: 9, sgstRate: 9, igstRate: 0 },
@@ -208,29 +208,29 @@ export const DEFAULT_BILLING_PROFILES = [
     companyLogo: null,
     companyDetails: {
       companyName: 'GLOBAL CARGO & LOGISTICS',
-      companyAddress: 'GROUND FLOOR, AIR CARGO TERMINAL COMPLEX, SAHAR ROAD',
+      companyAddress: 'GROUND FLOOR, AIR CARGO TERMINAL COMPLEX, GATE NO. XX, SAHAR ROAD',
       companyCityPin: 'MUMBAI - 400 099, MAHARASHTRA, INDIA.',
-      companyPan: 'ABCDE1234F',
-      companyGstin: '27ABCDE1234F1Z5',
-      companyTel: '+91 9800000000',
-      companyEmail: 'billing@company.com',
+      companyPan: 'XXXXX1234X',
+      companyGstin: '27XXXXX1234X1Z5',
+      companyTel: '+91 98XXX XXXXX',
+      companyEmail: 'billing@sample-logistics.test',
       bankName: 'HDFC BANK LTD',
-      accountNumber: '5020 0112 5568 92',
-      ifscCode: 'HDFC0000994',
+      accountNumber: '5020XXXX5568',
+      ifscCode: 'HDFC0000XXX',
       swiftCode: 'HDFCINBBXXX',
-      branchName: 'AIRPORT ROAD - STATION ROAD',
+      branchName: 'AIRPORT CARGO ROAD',
     },
     buyer: {
       buyerName: 'APEX FREIGHT FORWARDERS PVT LTD',
-      buyerAddress: '2ND FLOOR, CORPORATE SQUARE, GHATKOPAR ANDHERI LINK ROAD, MUMBAI - 400077',
+      buyerAddress: 'SUITE NO. XXX, 2ND FLOOR, CORPORATE SQUARE, GHATKOPAR LINK ROAD, MUMBAI - 400077',
       buyerState: 'Maharashtra (27)',
-      buyerGstin: '27BBBBB0000B1Z5',
+      buyerGstin: '27BBBBX0000X1Z5',
     },
     consignee: {
       consigneeName: 'PACIFIC INDUSTRIAL CHEMICALS LTD',
-      consigneeAddress: 'PLOT L-15, INDUSTRIAL MIDC AREA, TARAPUR, MAHARASHTRA - 401506',
+      consigneeAddress: 'PLOT NO. XX-XXX, INDUSTRIAL MIDC AREA, TARAPUR, MAHARASHTRA - 401506',
       consigneeState: 'Maharashtra (27)',
-      consigneeGstin: '27BBBBB0000B1Z5',
+      consigneeGstin: '27BBBBX0000X1Z5',
     },
     invoiceNumber: 'INV/010/2026-27',
     invoiceDate: '25/07/2026',
@@ -239,7 +239,7 @@ export const DEFAULT_BILLING_PROFILES = [
     transportName: 'COURIER',
     paidToPaid: 'PAID',
     referenceName: 'Dispatch Coordinator',
-    contactNumber: '+91 9800000000',
+    contactNumber: '+91 98XXX XXXXX',
     items: [
       { sn: 1, description: 'UN APPROVED BOX X55', subText: '', hsnCode: '48191010', qty: 2, unit: 'Box', price: 630, gstRate: 5, cgstRate: 2.5, sgstRate: 2.5, igstRate: 0 },
       { sn: 2, description: 'COURIER CHARGES', subText: 'To Tarapur MIDC', hsnCode: '996713', qty: 1, unit: 'Trip', price: 500, gstRate: 18, cgstRate: 9, sgstRate: 9, igstRate: 0 },
@@ -273,25 +273,33 @@ export async function syncOnlineTemplates() {
   return getSavedBillingProfiles();
 }
 
+export function hasLegacySensitiveData(str) {
+  if (!str) return false;
+  const s = typeof str === 'string' ? str : JSON.stringify(str);
+  const legacyRegex = /DGR PACKAGING|DGR GLOBAL|Takai Chemtech|Efficient Freight|Manifest Express|CBKPK7600K|27CBKPK|27NSAPK|06687630000070|HDFC0003126|MAHAD-4|NARANGI BAYPASS|VIRAR EAST/i;
+  return legacyRegex.test(s);
+}
+
 /**
- * Load all billing profiles
+ * Load all billing profiles with automatic self-healing legacy data migration
  */
 export function getSavedBillingProfiles() {
   const key = getUserScopedKey(STORAGE_KEY_BASE);
   try {
     const raw = localStorage.getItem(key);
-    if (raw === null) {
+    if (raw === null || hasLegacySensitiveData(raw)) {
       localStorage.setItem(key, JSON.stringify(DEFAULT_BILLING_PROFILES));
       return DEFAULT_BILLING_PROFILES;
     }
     const profiles = JSON.parse(raw);
-    if (!Array.isArray(profiles)) {
-      return [];
+    if (!Array.isArray(profiles) || profiles.length === 0) {
+      localStorage.setItem(key, JSON.stringify(DEFAULT_BILLING_PROFILES));
+      return DEFAULT_BILLING_PROFILES;
     }
     return profiles;
   } catch (err) {
     console.error('Error loading billing profiles:', err);
-    return [];
+    return DEFAULT_BILLING_PROFILES;
   }
 }
 
@@ -585,6 +593,33 @@ export function profileToEditorState(profile, overrideData = {}, existingDocumen
     termsAndConditions: profile.termsAndConditions || '',
   };
 
+  // Instant on-the-fly self-healing for legacy sensitive strings
+  if (hasLegacySensitiveData(baseFormData)) {
+    const cleanDefault = DEFAULT_BILLING_PROFILES[0];
+    baseFormData.companyName = cleanDefault.companyDetails.companyName;
+    baseFormData.companyAddress = cleanDefault.companyDetails.companyAddress;
+    baseFormData.companyCityPin = cleanDefault.companyDetails.companyCityPin;
+    baseFormData.companyPan = cleanDefault.companyDetails.companyPan;
+    baseFormData.companyGstin = cleanDefault.companyDetails.companyGstin;
+    baseFormData.companyTel = cleanDefault.companyDetails.companyTel;
+    baseFormData.companyEmail = cleanDefault.companyDetails.companyEmail;
+    baseFormData.bankName = cleanDefault.companyDetails.bankName;
+    baseFormData.accountNumber = cleanDefault.companyDetails.accountNumber;
+    baseFormData.ifscCode = cleanDefault.companyDetails.ifscCode;
+    baseFormData.swiftCode = cleanDefault.companyDetails.swiftCode;
+    baseFormData.branchName = cleanDefault.companyDetails.branchName;
+    if (hasLegacySensitiveData(baseFormData.buyerAddress) || hasLegacySensitiveData(baseFormData.buyerName)) {
+      baseFormData.buyerName = cleanDefault.buyer.buyerName;
+      baseFormData.buyerAddress = cleanDefault.buyer.buyerAddress;
+      baseFormData.buyerGstin = cleanDefault.buyer.buyerGstin;
+    }
+    if (hasLegacySensitiveData(baseFormData.consigneeAddress) || hasLegacySensitiveData(baseFormData.consigneeName)) {
+      baseFormData.consigneeName = cleanDefault.consignee.consigneeName;
+      baseFormData.consigneeAddress = cleanDefault.consignee.consigneeAddress;
+      baseFormData.consigneeGstin = cleanDefault.consignee.consigneeGstin;
+    }
+  }
+
   let finalItems = [];
   if (Array.isArray(overrideData?.items) && overrideData.items.length > 0) {
     finalItems = overrideData.items;
@@ -640,149 +675,150 @@ export const DEFAULT_PARTIES = [
     id: 'party_global_logistics',
     name: 'GLOBAL CARGO & LOGISTICS',
     roles: ['CUSTOMER', 'DESTINATION', 'VENDOR'],
-    address: 'GROUND FLOOR, AIR CARGO TERMINAL COMPLEX, SAHAR ANDHERI EAST, MUMBAI - 400099',
+    address: 'GROUND FLOOR, AIR CARGO TERMINAL COMPLEX, GATE NO. XX, SAHAR ANDHERI EAST, MUMBAI - 400099',
     state: 'Maharashtra (27)',
-    gstin: '27ABCDE1234F1Z5',
+    gstin: '27XXXXX1234X1Z5',
     category: 'DGD',
     defaultGstRate: 18,
     defaultDescription: 'DGD Documentation Charges, DG Certification, Inspection & UN Packaging',
     contactPerson: 'Operations Desk',
-    phone: '+91 9800000000',
-    email: 'operations@cargologistics.com',
+    phone: '+91 98XXX XXXXX',
+    email: 'operations@sample-logistics.test',
   },
   {
     id: 'party_packaging_vendor',
     name: 'STANDARD PACKAGING CO',
     roles: ['VENDOR'],
-    address: 'CARGO COMPLEX, SAHAR ROAD, ANDHERI (E), MUMBAI - 400 099',
+    address: 'CARGO COMPLEX, GATE NO. XX, SAHAR ROAD, ANDHERI (E), MUMBAI - 400 099',
     state: 'Maharashtra (27)',
-    gstin: '27ABCDE1234F1Z5',
+    gstin: '27XXXXX1234X1Z5',
     category: 'PACKAGING',
     defaultGstRate: 18,
     defaultDescription: 'UN Approved 4G Fibreboard Boxes, DG Packaging & Labeling Materials',
     contactPerson: 'Packaging Coordinator',
-    phone: '+91 022-28000000',
-    email: 'billing@company.com',
+    phone: '+91 22-XXXX 8800',
+    email: 'billing@sample-logistics.test',
   },
   {
     id: 'party_acme_chem',
     name: 'ACME CHEMICALS INTERNATIONAL PVT LTD',
     roles: ['CUSTOMER', 'DESTINATION', 'VENDOR'],
-    address: 'Unit 218, Metro Tech Park, Saki Naka, Andheri East, Mumbai - 400072',
+    address: 'UNIT NO. XXX, METRO TECH PARK, SAKI NAKA, ANDHERI EAST, MUMBAI - 400072',
     state: 'Maharashtra (27)',
-    gstin: '27AAAAA0000A1Z5',
+    gstin: '27AAAAX0000X1Z5',
     category: 'DGD',
     defaultGstRate: 18,
     defaultDescription: 'MSDS Verification & Dangerous Goods Testing Charges',
     contactPerson: 'Accounts Dept',
-    phone: '+91 98000 00000',
-    email: 'accounts@acmechem.example.com',
+    phone: '+91 98XXX XXXXX',
+    email: 'accounts@sample-acmechem.test',
   },
   {
     id: 'party_apex_freight',
     name: 'APEX FREIGHT FORWARDERS PVT LTD',
     roles: ['CUSTOMER', 'DESTINATION', 'VENDOR'],
-    address: '2nd Floor, Corporate Square, Ghatkopar East, Mumbai - 400077',
+    address: 'SUITE NO. XXX, 2ND FLOOR, CORPORATE SQUARE, GHATKOPAR EAST, MUMBAI - 400077',
     state: 'Maharashtra (27)',
-    gstin: '27BBBBB0000B1Z5',
+    gstin: '27BBBBX0000X1Z5',
     category: 'TRANSPORT',
     defaultGstRate: 18,
     defaultDescription: 'Airport Cartage, Local Transport & Cargo Handling Charges',
     contactPerson: 'Operations Desk',
-    phone: '+91 98000 00000',
-    email: 'ops@apexfreight.example.com',
+    phone: '+91 98XXX XXXXX',
+    email: 'ops@sample-apexfreight.test',
   },
   {
     id: 'party_metro_cargo',
     name: 'METRO CARGO LOGISTICS LLP',
     roles: ['CUSTOMER', 'DESTINATION'],
-    address: 'Suite 402, Airport Industrial Estate, Andheri East, Mumbai - 400072',
+    address: 'SUITE NO. XXX, AIRPORT INDUSTRIAL ESTATE, ANDHERI EAST, MUMBAI - 400072',
     state: 'Maharashtra (27)',
-    gstin: '27CCCCC0000C1Z5',
+    gstin: '27CCCCX0000X1Z5',
     category: 'TRANSPORT',
     defaultGstRate: 18,
     defaultDescription: 'Express Cargo & Logistics Forwarding',
     contactPerson: 'Cargo Operations',
-    phone: '+91 98000 00000',
-    email: 'manifest@metrocargo.example.com',
+    phone: '+91 98XXX XXXXX',
+    email: 'manifest@sample-metrocargo.test',
   },
   {
     id: 'party_horizon_warehouse',
     name: 'HORIZON WAREHOUSING & LOGISTICS',
     roles: ['DESTINATION', 'VENDOR'],
-    address: 'Gala No. 2, Industrial Estate, Bhiwandi, Maharashtra - 421302',
+    address: 'GALA NO. XX, INDUSTRIAL ESTATE, BHIWANDI, MAHARASHTRA - 421302',
     state: 'Maharashtra (27)',
-    gstin: '27DDDDD0000D1Z5',
+    gstin: '27DDDDX0000X1Z5',
     category: 'WAREHOUSE',
     defaultGstRate: 18,
     defaultDescription: 'DG Storage, Palletization & Secure Strapping Charges',
     contactPerson: 'Warehouse Manager',
-    phone: '+91 98000 00000',
-    email: 'warehouse@horizonlogistics.example.com',
+    phone: '+91 98XXX XXXXX',
+    email: 'warehouse@sample-horizonlogistics.test',
   },
   {
     id: 'party_pacific_chem',
     name: 'PACIFIC INDUSTRIAL CHEMICALS LTD',
     roles: ['DESTINATION'],
-    address: 'Plot L-15, Industrial MIDC Area, Tarapur, Maharashtra - 401506',
+    address: 'PLOT NO. XX-XXX, INDUSTRIAL MIDC AREA, TARAPUR, MAHARASHTRA - 401506',
     state: 'Maharashtra (27)',
-    gstin: '27EEEEE0000E1Z5',
+    gstin: '27EEEEX0000X1Z5',
     category: 'OTHER',
     defaultGstRate: 18,
     defaultDescription: '',
     contactPerson: 'Dispatch Lead',
-    phone: '+91 98000 00000',
-    email: 'contact@pacificchem.example.com',
+    phone: '+91 98XXX XXXXX',
+    email: 'contact@sample-pacificchem.test',
   },
   {
     id: 'party_airport_cargo',
     name: 'AIRPORT CARGO TERMINAL SERVICES',
     roles: ['VENDOR'],
-    address: 'Cargo Terminal 2, Air Cargo Complex, New Delhi - 110037',
+    address: 'CARGO TERMINAL ZONE XX, AIR CARGO COMPLEX, NEW DELHI - 110037',
     state: 'Delhi (07)',
-    gstin: '07FFFFF0000F1Z5',
+    gstin: '07FFFFX0000X1Z5',
     category: 'AIR_FREIGHT',
     defaultGstRate: 18,
     defaultDescription: 'Terminal Handling Charges (THC) & Airline Cargo Security Screening',
     contactPerson: 'Terminal Operations',
-    phone: '+91 11-28000000',
-    email: 'cargo@airterminal.example.com',
+    phone: '+91 11-XXXX 8800',
+    email: 'cargo@sample-airterminal.test',
   },
   {
     id: 'party_customs_clear',
     name: 'SAHAR CUSTOMS CLEARING & BROKERAGE',
     roles: ['VENDOR'],
-    address: 'Air Cargo Complex, Sahar, Andheri (E), Mumbai - 400 099',
+    address: 'EDI DESK NO. XX, AIR CARGO COMPLEX, SAHAR, ANDHERI (E), MUMBAI - 400 099',
     state: 'Maharashtra (27)',
-    gstin: '27AAACR1234F1Z5',
+    gstin: '27AAACX1234X1Z5',
     category: 'CUSTOMS',
     defaultGstRate: 18,
     defaultDescription: 'Customs DG Examination, EDI Assessment & Shipping Bill Clearance',
     contactPerson: 'Customs Executive',
-    phone: '+91 9820123456',
-    email: 'customs.sahar@clearance.in',
+    phone: '+91 98XXX XXXXX',
+    email: 'customs@sample-clearance.test',
   },
 ];
 
 /**
- * Load all Parties (Customers, Destinations, Vendors) from unified directory
+ * Load all Parties (Customers, Destinations, Vendors) from unified directory with self-healing migration
  */
 export function getSavedParties() {
   const key = getUserScopedKey(PARTIES_STORAGE_KEY_BASE);
   try {
     const raw = localStorage.getItem(key);
-    if (raw === null) {
+    if (raw === null || hasLegacySensitiveData(raw)) {
       localStorage.setItem(key, JSON.stringify(DEFAULT_PARTIES));
       return DEFAULT_PARTIES;
     }
     const parties = JSON.parse(raw);
-    if (!Array.isArray(parties)) {
-      return [];
+    if (!Array.isArray(parties) || parties.length === 0) {
+      localStorage.setItem(key, JSON.stringify(DEFAULT_PARTIES));
+      return DEFAULT_PARTIES;
     }
     return parties;
   } catch (err) {
     console.error('Error loading parties directory:', err);
-    return [];
+    return DEFAULT_PARTIES;
   }
 }
 

@@ -167,10 +167,10 @@ export function generateTaxInvoicePDF(document) {
 
       const midY = top + 57;
       doc.font('Helvetica-Bold').fontSize(8.5);
-      doc.text(`PAN : ${d.companyPan || 'ABCDE1234F'}`, headerCenter, midY, { width: headerWidth, align: 'center' });
+      doc.text(`PAN : ${d.companyPan || 'XXXXX1234X'}`, headerCenter, midY, { width: headerWidth, align: 'center' });
 
       doc.fontSize(9);
-      doc.text(`GSTIN : ${d.companyGstin || '27ABCDE1234F1Z5'}`, headerCenter, midY + 11, { width: headerWidth, align: 'center' });
+      doc.text(`GSTIN : ${d.companyGstin || '27XXXXX1234X1Z5'}`, headerCenter, midY + 11, { width: headerWidth, align: 'center' });
 
       doc.font('Helvetica').fontSize(8);
       const contactLine = [
@@ -265,7 +265,7 @@ export function generateTaxInvoicePDF(document) {
       // ==========================================
       // 3. BILLED TO & SHIPPED TO SECTION
       // ==========================================
-      const buyerAddr = d.buyerAddress || 'GROUND FLOOR ROOM -003\nG M NAGAR NARANGI BAYPASS ROAD\nVIRAR EAST VASAI VIRAR PALGHAR -401305';
+      const buyerAddr = d.buyerAddress || 'AIR CARGO TERMINAL COMPLEX, GATE NO. XX\nSAHAR ROAD, ANDHERI EAST\nMUMBAI - 400099';
       const shipAddr = d.consigneeAddress || buyerAddr;
 
       doc.font('Helvetica').fontSize(8);
@@ -298,7 +298,7 @@ export function generateTaxInvoicePDF(document) {
 
       doc.text('GSTIN / UIN', leftColX, buyerBtmY + 11);
       doc.font('Helvetica-Bold');
-      doc.text(`: ${d.buyerGstin || '27ABCDE1234F1Z5'}`, leftValX - 15, buyerBtmY + 11);
+      doc.text(`: ${d.buyerGstin || '27XXXXX2222X1Z5'}`, leftValX - 15, buyerBtmY + 11);
 
       // Shipped To (Right)
       let sY = currY + 5;
@@ -320,7 +320,7 @@ export function generateTaxInvoicePDF(document) {
 
       doc.text('GSTIN / UIN', rightColX, shipBtmY + 11);
       doc.font('Helvetica-Bold');
-      doc.text(`: ${d.consigneeGstin || d.buyerGstin || '27NSAPK0224B1Z7'}`, rightValX - 15, shipBtmY + 11);
+      doc.text(`: ${d.consigneeGstin || d.buyerGstin || '27XXXXX2222X1Z5'}`, rightValX - 15, shipBtmY + 11);
 
       currY = addrBottom;
       doc.moveTo(left, currY).lineTo(right, currY).lineWidth(0.8).stroke();
@@ -607,11 +607,11 @@ export function generateTaxInvoicePDF(document) {
 
       const bankParts = [
         `Bank name : ${d.bankName || 'HDFC BANK LTD'}`,
-        `A/c No: ${d.accountNumber || '06687630000070'}`,
-        `RTGS / NEFT no: ${d.ifscCode || 'HDFC0003126'}`,
+        `A/c No: ${d.accountNumber || '9876XXXXX0012'}`,
+        `RTGS / NEFT no: ${d.ifscCode || 'HDFC0000XXX'}`,
       ];
-      if (d.swiftCode) bankParts.push(`Swift code : ${d.swiftCode}`);
-      if (d.branchName) bankParts.push(`Branch : ${d.branchName}`);
+      if (d.swiftCode) bankParts.push(`Swift code : ${d.swiftCode || 'HDFCINBBXXX'}`);
+      if (d.branchName) bankParts.push(`Branch : ${d.branchName || 'AIRPORT CARGO ROAD'}`);
 
       doc.font('Helvetica').fontSize(7.5);
       doc.text(bankParts.join('   '), left + 4, currY + 13, { width: width - 8, align: 'center' });

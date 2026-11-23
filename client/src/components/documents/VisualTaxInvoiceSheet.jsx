@@ -174,7 +174,7 @@ export default function VisualTaxInvoiceSheet({
                     value={formData.companyPan}
                     onChange={(e) => handleFieldChange('companyPan', e.target.value.toUpperCase())}
                     className="font-bold uppercase w-32 text-center bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
-                    placeholder="CBKPK7600K"
+                    placeholder="XXXXX1234X"
                   />
                 </div>
 
@@ -185,7 +185,7 @@ export default function VisualTaxInvoiceSheet({
                     value={formData.companyGstin}
                     onChange={(e) => handleFieldChange('companyGstin', e.target.value.toUpperCase())}
                     className="font-extrabold uppercase w-44 text-center bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400 text-indigo-950"
-                    placeholder="27CBKPK7600K1ZE"
+                    placeholder="27XXXXX1234X1Z5"
                   />
                 </div>
 
@@ -197,7 +197,7 @@ export default function VisualTaxInvoiceSheet({
                       value={formData.companyTel}
                       onChange={(e) => handleFieldChange('companyTel', e.target.value)}
                       className="bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400 w-32"
-                      placeholder="022 - 26828108"
+                      placeholder="+91 22-XXXX 8800"
                     />
                   </div>
                   <div className="flex items-center gap-1">
@@ -844,7 +844,7 @@ export default function VisualTaxInvoiceSheet({
                   value={formData.accountNumber}
                   onChange={(e) => handleFieldChange('accountNumber', e.target.value)}
                   className="font-bold font-mono bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
-                  placeholder="06687630000070"
+                  placeholder="9876XXXXX0012"
                 />
               </div>
               <div className="flex items-center gap-1">
@@ -854,7 +854,7 @@ export default function VisualTaxInvoiceSheet({
                   value={formData.ifscCode}
                   onChange={(e) => handleFieldChange('ifscCode', e.target.value.toUpperCase())}
                   className="font-bold font-mono bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400 uppercase"
-                  placeholder="HDFC0003126"
+                  placeholder="HDFC0000XXX"
                 />
               </div>
               {formData.swiftCode && (
@@ -877,7 +877,7 @@ export default function VisualTaxInvoiceSheet({
                     value={formData.branchName}
                     onChange={(e) => handleFieldChange('branchName', e.target.value)}
                     className="font-bold uppercase bg-transparent hover:bg-slate-100 focus:bg-indigo-50/70 px-1 py-0.5 rounded outline-none border border-transparent focus:border-indigo-400"
-                    placeholder="MAHAD-4"
+                    placeholder="AIRPORT CARGO ROAD"
                   />
                 </div>
               )}

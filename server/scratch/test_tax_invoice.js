@@ -86,10 +86,10 @@ async function testPdf() {
         }
       ],
       bankName: 'HDFC BANK LTD',
-      accountNumber: '06687630000070',
-      ifscCode: 'HDFC0003126',
+      accountNumber: '9876XXXXX0012',
+      ifscCode: 'HDFC0000XXX',
       swiftCode: 'HDFCINBBXXX',
-      branchName: 'MAHAD-4'
+      branchName: 'AIRPORT CARGO ROAD'
     }
   };
 

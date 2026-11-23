@@ -2019,7 +2019,7 @@ export default function PurchaseBillsPage() {
                           ...calculations,
                         });
                       }}
-                      placeholder="e.g. 27CBKPK7600K1ZE"
+                      placeholder="e.g. 27XXXXX1234X1Z5"
                       maxLength={15}
                       className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono transition-colors uppercase"
                     />
@@ -2033,7 +2033,7 @@ export default function PurchaseBillsPage() {
                       type="text"
                       value={formData.vendorPan}
                       onChange={(e) => setFormData({ ...formData, vendorPan: e.target.value.toUpperCase() })}
-                      placeholder="e.g. CBKPK7600K"
+                      placeholder="e.g. XXXXX1234X"
                       maxLength={10}
                       className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono uppercase"
                     />
@@ -2049,7 +2049,7 @@ export default function PurchaseBillsPage() {
                       type="text"
                       value={formData.vendorAddress}
                       onChange={(e) => setFormData({ ...formData, vendorAddress: e.target.value })}
-                      placeholder="e.g. Shop No. 2, Near Sahar Cargo Complex, Andheri (E), Mumbai"
+                      placeholder="e.g. Unit 12, Air Cargo Complex, Sahar Road, Andheri (E), Mumbai"
                       className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
                     />
                   </div>
@@ -2099,7 +2099,7 @@ export default function PurchaseBillsPage() {
                         type="text"
                         value={formData.vendorBankAccount}
                         onChange={(e) => setFormData({ ...formData, vendorBankAccount: e.target.value })}
-                        placeholder="e.g. 06687630000070"
+                        placeholder="e.g. 9876XXXXX0012"
                         className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded text-xs text-slate-100 focus:outline-none focus:border-indigo-500 font-mono"
                       />
                     </div>
@@ -2109,7 +2109,7 @@ export default function PurchaseBillsPage() {
                         type="text"
                         value={formData.vendorBankIfsc}
                         onChange={(e) => setFormData({ ...formData, vendorBankIfsc: e.target.value.toUpperCase() })}
-                        placeholder="e.g. HDFC0003126"
+                        placeholder="e.g. HDFC0000XXX"
                         className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded text-xs text-slate-100 focus:outline-none focus:border-indigo-500 font-mono uppercase"
                       />
                     </div>
@@ -2119,7 +2119,7 @@ export default function PurchaseBillsPage() {
                         type="text"
                         value={formData.vendorBankBranch}
                         onChange={(e) => setFormData({ ...formData, vendorBankBranch: e.target.value })}
-                        placeholder="e.g. MAHAD-4"
+                        placeholder="e.g. AIRPORT CARGO ROAD"
                         className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
                       />
                     </div>
