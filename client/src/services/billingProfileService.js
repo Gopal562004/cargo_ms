@@ -281,13 +281,14 @@ export function hasLegacySensitiveData(str) {
 }
 
 /**
- * Load all billing profiles with automatic self-healing legacy data migration
+ * Load all billing profiles with automatic self-healing legacy data migration.
+ * Preserves user-created custom templates while replacing legacy built-ins.
  */
 export function getSavedBillingProfiles() {
   const key = getUserScopedKey(STORAGE_KEY_BASE);
   try {
     const raw = localStorage.getItem(key);
-    if (raw === null || hasLegacySensitiveData(raw)) {
+    if (raw === null) {
       localStorage.setItem(key, JSON.stringify(DEFAULT_BILLING_PROFILES));
       return DEFAULT_BILLING_PROFILES;
     }
@@ -296,6 +297,38 @@ export function getSavedBillingProfiles() {
       localStorage.setItem(key, JSON.stringify(DEFAULT_BILLING_PROFILES));
       return DEFAULT_BILLING_PROFILES;
     }
+
+    // If legacy sensitive templates are present in the cached array
+    if (hasLegacySensitiveData(raw)) {
+      // 1. Preserve any user-created custom templates
+      const userCustomProfiles = profiles.filter((p) => {
+        const isBuiltInId = ['tpl_standard_invoice', 'tpl_acme_chem', 'tpl_apex_freight', 'tpl_metro_cargo', 'tpl_multi_gst', 'tpl_dgr_standard', 'tpl_takai_doc', 'tpl_efficient_drums', 'tpl_manifest_express'].includes(p.id);
+        const isBuiltInName = /INV DGR|Takai Chemtech|Efficient Freight|Manifest Express|Standard Tax Invoice/i.test(p.name || '');
+        return !p.isBuiltIn && !isBuiltInId && !isBuiltInName;
+      });
+
+      // 2. Sanitize any legacy fields inside user custom templates (if they based it on old DGR)
+      const sanitizedUserProfiles = userCustomProfiles.map((p) => {
+        if (!hasLegacySensitiveData(p)) return p;
+        return {
+          ...p,
+          companyDetails: {
+            ...p.companyDetails,
+            companyName: hasLegacySensitiveData(p.companyDetails?.companyName) ? 'STANDARD PACKAGING CO' : p.companyDetails?.companyName,
+            companyPan: hasLegacySensitiveData(p.companyDetails?.companyPan) ? 'XXXXX1234X' : p.companyDetails?.companyPan,
+            companyGstin: hasLegacySensitiveData(p.companyDetails?.companyGstin) ? '27XXXXX1234X1Z5' : p.companyDetails?.companyGstin,
+            accountNumber: hasLegacySensitiveData(p.companyDetails?.accountNumber) ? '9876XXXXX0012' : p.companyDetails?.accountNumber,
+            ifscCode: hasLegacySensitiveData(p.companyDetails?.ifscCode) ? 'HDFC0000XXX' : p.companyDetails?.ifscCode,
+          },
+        };
+      });
+
+      // 3. Merge clean built-in templates with the preserved user custom templates
+      const merged = [...DEFAULT_BILLING_PROFILES, ...sanitizedUserProfiles];
+      localStorage.setItem(key, JSON.stringify(merged));
+      return merged;
+    }
+
     return profiles;
   } catch (err) {
     console.error('Error loading billing profiles:', err);
@@ -800,13 +833,14 @@ export const DEFAULT_PARTIES = [
 ];
 
 /**
- * Load all Parties (Customers, Destinations, Vendors) from unified directory with self-healing migration
+ * Load all Parties (Customers, Destinations, Vendors) from unified directory with self-healing migration.
+ * Preserves user-created custom parties while replacing legacy defaults.
  */
 export function getSavedParties() {
   const key = getUserScopedKey(PARTIES_STORAGE_KEY_BASE);
   try {
     const raw = localStorage.getItem(key);
-    if (raw === null || hasLegacySensitiveData(raw)) {
+    if (raw === null) {
       localStorage.setItem(key, JSON.stringify(DEFAULT_PARTIES));
       return DEFAULT_PARTIES;
     }
@@ -815,6 +849,17 @@ export function getSavedParties() {
       localStorage.setItem(key, JSON.stringify(DEFAULT_PARTIES));
       return DEFAULT_PARTIES;
     }
+
+    if (hasLegacySensitiveData(raw)) {
+      // Keep all user-created parties
+      const defaultIds = new Set(DEFAULT_PARTIES.map((p) => p.id));
+      const legacyNames = /DGR GLOBAL|DGR PACKAGING|Takai Chemtech|Efficient Freight|Manifest Express/i;
+      const userCustomParties = parties.filter((p) => !defaultIds.has(p.id) && !legacyNames.test(p.name || ''));
+      const merged = [...DEFAULT_PARTIES, ...userCustomParties];
+      localStorage.setItem(key, JSON.stringify(merged));
+      return merged;
+    }
+
     return parties;
   } catch (err) {
     console.error('Error loading parties directory:', err);
