@@ -1178,7 +1178,10 @@ Please keep your credentials secure.`;
       </div>
 
       {/* ─── COMPLETE USER PROFILE & SUBSCRIPTION INFO MODAL ─────────────────── */}
-      {isInfoModalOpen && infoTargetUser && (
+      {isInfoModalOpen && infoTargetUser && (() => {
+        const isInfoSuspended = !infoTargetUser.isActive || infoTargetUser.subscriptionStatus === 'SUSPENDED';
+        const isInfoMasked = maskSensitive && !revealedRows[infoTargetUser.id];
+        return (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-md animate-fade-in overflow-y-auto"
           onClick={() => setIsInfoModalOpen(false)}
@@ -1190,7 +1193,11 @@ Please keep your credentials secure.`;
             {/* Modal Header */}
             <div className="flex items-start justify-between border-b border-slate-800 pb-4 shrink-0">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-lg bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center font-bold text-lg text-indigo-400 uppercase font-mono">
+                <div className={`w-11 h-11 rounded-lg border flex items-center justify-center font-bold text-lg uppercase font-mono ${
+                  isInfoSuspended
+                    ? 'bg-slate-800 border-slate-700 text-slate-400'
+                    : 'bg-indigo-600/20 border-indigo-500/40 text-indigo-400'
+                }`}>
                   {infoTargetUser.name.charAt(0)}
                 </div>
                 <div>
@@ -1201,8 +1208,10 @@ Please keep your credentials secure.`;
                     </span>
                   </div>
                   <p className="text-xs text-slate-400 font-mono flex items-center gap-2 mt-0.5">
-                    <span>@{infoTargetUser.username || infoTargetUser.email}</span>
-                    {infoTargetUser.email && <span>• {infoTargetUser.email}</span>}
+                    <span>@{infoTargetUser.username || (isInfoMasked ? maskEmail(infoTargetUser.email) : infoTargetUser.email)}</span>
+                    {infoTargetUser.email && (
+                      <span>• {isInfoMasked ? maskEmail(infoTargetUser.email) : infoTargetUser.email}</span>
+                    )}
                   </p>
                 </div>
               </div>
@@ -1215,22 +1224,31 @@ Please keep your credentials secure.`;
               </button>
             </div>
 
+            {isInfoSuspended && (
+              <div className="px-3.5 py-2.5 rounded border border-rose-500/30 bg-rose-500/10 text-rose-300 text-xs font-mono flex items-center justify-between gap-2 shrink-0">
+                <span className="flex items-center gap-2">
+                  <Lock size={14} className="text-rose-400 shrink-0" />
+                  Account is suspended — extensions, edits, and key actions are locked.
+                </span>
+              </div>
+            )}
+
             {/* Scrollable Body */}
             <div className="flex-1 overflow-y-auto space-y-4 pr-1 text-xs">
               {/* 1. Subscription & Plan Live Status Card */}
-              <div className="p-4 bg-slate-950 border border-slate-800 rounded space-y-3">
+              <div className={`p-4 bg-slate-950 border border-slate-800 rounded space-y-3 ${isInfoSuspended ? 'opacity-65' : ''}`}>
                 <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                   <div className="font-bold text-slate-200 flex items-center gap-2">
                     <CreditCard size={15} className="text-emerald-400" />
                     <span>Current Subscription & Plan Details</span>
                   </div>
-                  {infoTargetUser.isExpired ? (
+                  {isInfoSuspended ? (
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                      SUSPENDED
+                    </span>
+                  ) : infoTargetUser.isExpired ? (
                     <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse">
                       EXPIRED
-                    </span>
-                  ) : !infoTargetUser.isActive ? (
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700">
-                      SUSPENDED
                     </span>
                   ) : (
                     <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
@@ -1260,14 +1278,18 @@ Please keep your credentials secure.`;
                     <span className="text-[10px] text-slate-400 block uppercase font-mono">Remaining Validity</span>
                     <span
                       className={`font-bold font-mono text-xs ${
-                        infoTargetUser.isExpired
+                        isInfoSuspended
+                          ? 'text-slate-400'
+                          : infoTargetUser.isExpired
                           ? 'text-rose-400'
                           : infoTargetUser.daysRemaining <= 15
                           ? 'text-amber-400'
                           : 'text-emerald-400'
                       }`}
                     >
-                      {infoTargetUser.isExpired
+                      {isInfoSuspended
+                        ? 'Paused (Suspended)'
+                        : infoTargetUser.isExpired
                         ? 'Expired'
                         : `${infoTargetUser.daysRemaining ?? 365} Days Left`}
                     </span>
@@ -1286,24 +1308,44 @@ Please keep your credentials secure.`;
                   <div className="flex items-center gap-2">
                     <span className="text-[11px] text-slate-400 font-mono">License Key:</span>
                     <span className="font-mono font-bold text-xs text-indigo-300 px-2 py-1 rounded bg-slate-900 border border-slate-800 select-all">
-                      {infoTargetUser.licenseKey || 'CRGO-2026-LEGACY'}
+                      {isInfoMasked
+                        ? maskLicenseKey(infoTargetUser.licenseKey || 'CRGO-2026-LEGACY')
+                        : infoTargetUser.licenseKey || 'CRGO-2026-LEGACY'}
                     </span>
+                    {maskSensitive && !isInfoSuspended && (
+                      <button
+                        type="button"
+                        onClick={() => toggleRowReveal(infoTargetUser.id)}
+                        className="p-1 rounded text-slate-400 hover:text-indigo-300 hover:bg-slate-800 transition-colors cursor-pointer"
+                        title={revealedRows[infoTargetUser.id] ? 'Hide Sensitive Info' : 'Reveal Sensitive Info'}
+                      >
+                        {revealedRows[infoTargetUser.id] ? <EyeOff size={13} /> : <Eye size={13} />}
+                      </button>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-2">
                     <Button
                       variant="secondary"
                       size="sm"
-                      onClick={() => handleCopyLicenseKey(infoTargetUser)}
-                      className="text-[11px] py-1 px-2.5 rounded bg-slate-900 border border-slate-800"
+                      disabled={isInfoSuspended}
+                      onClick={() => !isInfoSuspended && handleCopyLicenseKey(infoTargetUser)}
+                      className={`text-[11px] py-1 px-2.5 rounded bg-slate-900 border border-slate-800 ${
+                        isInfoSuspended ? 'opacity-35 cursor-not-allowed pointer-events-none' : ''
+                      }`}
                     >
                       <Copy size={12} className="mr-1" /> Copy Key
                     </Button>
                     <Button
                       variant="secondary"
                       size="sm"
-                      onClick={() => handleRegenerateKey(infoTargetUser)}
-                      className="text-[11px] py-1 px-2.5 rounded text-amber-400 bg-amber-500/10 border border-amber-500/20"
+                      disabled={isInfoSuspended}
+                      onClick={() => !isInfoSuspended && handleRegenerateKey(infoTargetUser)}
+                      className={`text-[11px] py-1 px-2.5 rounded border ${
+                        isInfoSuspended
+                          ? 'text-slate-500 bg-slate-900 border-slate-800 opacity-35 cursor-not-allowed pointer-events-none'
+                          : 'text-amber-400 bg-amber-500/10 border-amber-500/20'
+                      }`}
                     >
                       <RefreshCw size={12} className="mr-1" /> Re-issue Key
                     </Button>
@@ -1312,20 +1354,23 @@ Please keep your credentials secure.`;
               </div>
 
               {/* 2. Quick Plan Extension & Renewal Section */}
-              <div className="p-4 bg-slate-950 border border-slate-800 rounded space-y-3">
+              <div className={`p-4 bg-slate-950 border border-slate-800 rounded space-y-3 ${isInfoSuspended ? 'opacity-45 grayscale pointer-events-none select-none' : ''}`}>
                 <div className="font-bold text-slate-200 flex items-center justify-between border-b border-slate-800 pb-2">
                   <div className="flex items-center gap-2">
                     <PlusCircle size={15} className="text-indigo-400" />
                     <span>Extend Plan / Add Duration</span>
                   </div>
-                  <span className="text-[10px] text-slate-400">1-click instant subscription extension</span>
+                  <span className="text-[10px] text-slate-400">
+                    {isInfoSuspended ? 'Blocked while suspended' : '1-click instant subscription extension'}
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <button
                     type="button"
-                    onClick={() => handleQuickExtend(infoTargetUser, '1_MONTH')}
-                    className="p-2.5 rounded bg-slate-900 border border-slate-800 hover:border-emerald-500/50 hover:bg-emerald-500/10 text-left transition-all cursor-pointer group"
+                    disabled={isInfoSuspended}
+                    onClick={() => !isInfoSuspended && handleQuickExtend(infoTargetUser, '1_MONTH')}
+                    className="p-2.5 rounded bg-slate-900 border border-slate-800 hover:border-emerald-500/50 hover:bg-emerald-500/10 text-left transition-all cursor-pointer group disabled:cursor-not-allowed"
                   >
                     <div className="text-xs font-bold text-slate-200 group-hover:text-emerald-400">+1 Month</div>
                     <div className="text-[10px] text-slate-400">Adds 30 days</div>
@@ -1333,8 +1378,9 @@ Please keep your credentials secure.`;
 
                   <button
                     type="button"
-                    onClick={() => handleQuickExtend(infoTargetUser, '3_MONTHS')}
-                    className="p-2.5 rounded bg-slate-900 border border-slate-800 hover:border-emerald-500/50 hover:bg-emerald-500/10 text-left transition-all cursor-pointer group"
+                    disabled={isInfoSuspended}
+                    onClick={() => !isInfoSuspended && handleQuickExtend(infoTargetUser, '3_MONTHS')}
+                    className="p-2.5 rounded bg-slate-900 border border-slate-800 hover:border-emerald-500/50 hover:bg-emerald-500/10 text-left transition-all cursor-pointer group disabled:cursor-not-allowed"
                   >
                     <div className="text-xs font-bold text-slate-200 group-hover:text-emerald-400">+3 Months</div>
                     <div className="text-[10px] text-slate-400">Adds 90 days</div>
@@ -1342,8 +1388,9 @@ Please keep your credentials secure.`;
 
                   <button
                     type="button"
-                    onClick={() => handleQuickExtend(infoTargetUser, '6_MONTHS')}
-                    className="p-2.5 rounded bg-slate-900 border border-slate-800 hover:border-emerald-500/50 hover:bg-emerald-500/10 text-left transition-all cursor-pointer group"
+                    disabled={isInfoSuspended}
+                    onClick={() => !isInfoSuspended && handleQuickExtend(infoTargetUser, '6_MONTHS')}
+                    className="p-2.5 rounded bg-slate-900 border border-slate-800 hover:border-emerald-500/50 hover:bg-emerald-500/10 text-left transition-all cursor-pointer group disabled:cursor-not-allowed"
                   >
                     <div className="text-xs font-bold text-slate-200 group-hover:text-emerald-400">+6 Months</div>
                     <div className="text-[10px] text-slate-400">Adds 180 days</div>
@@ -1351,8 +1398,9 @@ Please keep your credentials secure.`;
 
                   <button
                     type="button"
-                    onClick={() => handleQuickExtend(infoTargetUser, '1_YEAR')}
-                    className="p-2.5 rounded bg-slate-900 border border-slate-800 hover:border-indigo-500/50 hover:bg-indigo-500/10 text-left transition-all cursor-pointer group"
+                    disabled={isInfoSuspended}
+                    onClick={() => !isInfoSuspended && handleQuickExtend(infoTargetUser, '1_YEAR')}
+                    className="p-2.5 rounded bg-slate-900 border border-slate-800 hover:border-indigo-500/50 hover:bg-indigo-500/10 text-left transition-all cursor-pointer group disabled:cursor-not-allowed"
                   >
                     <div className="text-xs font-bold text-slate-200 group-hover:text-indigo-400">+1 Full Year</div>
                     <div className="text-[10px] text-slate-400">Adds 365 days</div>
@@ -1363,11 +1411,13 @@ Please keep your credentials secure.`;
                   <span className="text-[11px] text-slate-400">Terminate plan before natural expiration?</span>
                   <button
                     type="button"
+                    disabled={isInfoSuspended}
                     onClick={() => {
+                      if (isInfoSuspended) return;
                       setIsInfoModalOpen(false);
                       handleQuickCancelSubscription(infoTargetUser);
                     }}
-                    className="px-2.5 py-1 text-xs rounded font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500 hover:text-white transition-colors cursor-pointer"
+                    className="px-2.5 py-1 text-xs rounded font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500 hover:text-white transition-colors cursor-pointer disabled:cursor-not-allowed"
                   >
                     🚫 Cancel & Expire Plan
                   </button>
@@ -1392,7 +1442,13 @@ Please keep your credentials secure.`;
                   </div>
                   <div>
                     <span className="text-[10px] text-slate-400 block uppercase font-mono">Phone Number</span>
-                    <span className="font-medium text-slate-200 font-mono">{infoTargetUser.phone || '—'}</span>
+                    <span className="font-medium text-slate-200 font-mono">
+                      {infoTargetUser.phone
+                        ? isInfoMasked
+                          ? `••••••${String(infoTargetUser.phone).slice(-4)}`
+                          : infoTargetUser.phone
+                        : '—'}
+                    </span>
                   </div>
                 </div>
 
@@ -1407,7 +1463,7 @@ Please keep your credentials secure.`;
               </div>
 
               {/* 4. Active Modular Services */}
-              <div className="p-4 bg-slate-950 border border-slate-800 rounded space-y-2.5">
+              <div className={`p-4 bg-slate-950 border border-slate-800 rounded space-y-2.5 ${isInfoSuspended ? 'opacity-50 grayscale' : ''}`}>
                 <div className="font-bold text-slate-200 text-xs border-b border-slate-800 pb-1.5 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Sliders size={14} className="text-indigo-400" />
@@ -1415,11 +1471,17 @@ Please keep your credentials secure.`;
                   </div>
                   <button
                     type="button"
+                    disabled={isInfoSuspended}
                     onClick={() => {
+                      if (isInfoSuspended) return;
                       setIsInfoModalOpen(false);
                       handleOpenEditModal(infoTargetUser);
                     }}
-                    className="text-[11px] text-indigo-400 hover:underline cursor-pointer"
+                    className={`text-[11px] ${
+                      isInfoSuspended
+                        ? 'text-slate-500 cursor-not-allowed opacity-40'
+                        : 'text-indigo-400 hover:underline cursor-pointer'
+                    }`}
                   >
                     Edit Permissions
                   </button>
@@ -1458,11 +1520,17 @@ Please keep your credentials secure.`;
                 <Button
                   variant="secondary"
                   size="sm"
+                  disabled={isInfoSuspended}
                   onClick={() => {
+                    if (isInfoSuspended) return;
                     setIsInfoModalOpen(false);
                     handleOpenActivityModal(infoTargetUser);
                   }}
-                  className="rounded text-xs bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700"
+                  className={`rounded text-xs bg-slate-800 border border-slate-700 ${
+                    isInfoSuspended
+                      ? 'text-slate-500 opacity-35 cursor-not-allowed pointer-events-none'
+                      : 'hover:bg-slate-700 text-cyan-300'
+                  }`}
                 >
                   <Activity size={13} className="mr-1" /> View Audit Trail
                 </Button>
@@ -1470,11 +1538,17 @@ Please keep your credentials secure.`;
                 <Button
                   variant="secondary"
                   size="sm"
+                  disabled={isInfoSuspended}
                   onClick={() => {
+                    if (isInfoSuspended) return;
                     setIsInfoModalOpen(false);
                     handleOpenPasswordModal(infoTargetUser);
                   }}
-                  className="rounded text-xs bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700"
+                  className={`rounded text-xs bg-slate-800 border border-slate-700 ${
+                    isInfoSuspended
+                      ? 'text-slate-500 opacity-35 cursor-not-allowed pointer-events-none'
+                      : 'hover:bg-slate-700 text-amber-300'
+                  }`}
                 >
                   <KeyRound size={13} className="mr-1" /> Reset Password
                 </Button>
@@ -1484,30 +1558,51 @@ Please keep your credentials secure.`;
                 <Button
                   variant="primary"
                   size="sm"
+                  disabled={isInfoSuspended}
                   onClick={() => {
+                    if (isInfoSuspended) return;
                     setIsInfoModalOpen(false);
                     handleOpenEditModal(infoTargetUser);
                   }}
-                  className="rounded text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold"
+                  className={`rounded text-xs font-semibold ${
+                    isInfoSuspended
+                      ? 'bg-slate-800 text-slate-500 opacity-35 cursor-not-allowed pointer-events-none'
+                      : 'bg-indigo-600 hover:bg-indigo-500 text-white'
+                  }`}
                 >
                   <Pencil size={13} className="mr-1" /> Edit Profile & Plan
                 </Button>
 
                 {currentUser?.id !== infoTargetUser.id && (
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => handleDeleteUser(infoTargetUser)}
-                    className="rounded text-xs"
-                  >
-                    <Trash2 size={13} className="mr-1" /> Deactivate
-                  </Button>
+                  isInfoSuspended ? (
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => {
+                        setIsInfoModalOpen(false);
+                        handleToggleStatus(infoTargetUser);
+                      }}
+                      className="rounded text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-semibold"
+                    >
+                      <CheckCircle2 size={13} className="mr-1" /> Reactivate
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={() => handleDeleteUser(infoTargetUser)}
+                      className="rounded text-xs"
+                    >
+                      <Trash2 size={13} className="mr-1" /> Deactivate
+                    </Button>
+                  )
                 )}
               </div>
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* ─── CREATE / EDIT USER MODAL ───────────────────────────────────────── */}
       {isUserModalOpen && (

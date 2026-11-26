@@ -45,7 +45,7 @@ const NAV_SECTIONS = [
       { path: '/', label: 'Dashboard', icon: LayoutDashboard },
       { path: '/new', label: 'New Document', icon: Plus },
       { path: '/documents', label: 'All Documents', icon: FileText },
-      { path: '/archive', label: 'Local Archive', icon: HardDrive, desktopOnly: true },
+      { path: '/archive', label: 'Local Archive', icon: HardDrive },
     ],
   },
   {
