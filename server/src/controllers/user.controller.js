@@ -335,6 +335,7 @@ export async function updateUser(req, res, next) {
       subscriptionPlan,
       subscriptionDuration,
       subscriptionExpiresAt,
+      customExpiresAt,
       subscriptionStatus,
       maxSeats,
       notes,
