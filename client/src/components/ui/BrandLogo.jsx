@@ -1,9 +1,14 @@
 import React from 'react';
-import { Package } from 'lucide-react';
 import { useThemeStore } from '../../store/themeStore';
 
+const isElectron =
+  typeof window !== 'undefined' &&
+  (Boolean(window.electronAPI) ||
+    Boolean(window.__ELECTRON_API_PORT__) ||
+    window.location.protocol === 'file:');
+
 /**
- * Minimal & Modern Square Brand Logo for CargoHub Logistics OS
+ * Minimal & Modern Brand Logo for CargoHub Logistics OS (uses favicon.svg)
  */
 export default function BrandLogo({
   size = 'md', // 'sm' (28px) | 'md' (36px) | 'lg' (44px) | 'xl' (56px)
@@ -14,30 +19,23 @@ export default function BrandLogo({
   const { theme } = useThemeStore();
 
   const sizeClasses = {
-    sm: { box: 'w-7 h-7 rounded', iconSize: 15, text: 'text-xs', sub: 'text-[9px]' },
-    md: { box: 'w-8.5 h-8.5 rounded', iconSize: 18, text: 'text-sm', sub: 'text-[10px]' },
-    lg: { box: 'w-11 h-11 rounded', iconSize: 22, text: 'text-base', sub: 'text-xs' },
-    xl: { box: 'w-14 h-14 rounded-md', iconSize: 28, text: 'text-lg', sub: 'text-xs' },
+    sm: { box: 'w-7 h-7', text: 'text-xs', sub: 'text-[9px]' },
+    md: { box: 'w-8.5 h-8.5', text: 'text-sm', sub: 'text-[10px]' },
+    lg: { box: 'w-11 h-11', text: 'text-base', sub: 'text-xs' },
+    xl: { box: 'w-14 h-14', text: 'text-lg', sub: 'text-xs' },
   };
 
   const config = sizeClasses[size] || sizeClasses.md;
+  const iconSrc = isElectron ? './favicon.svg' : '/favicon.svg';
 
   return (
     <div className={`inline-flex items-center gap-2.5 select-none ${className}`}>
-      {/* Square Brand Icon */}
-      <div
-        className={`${config.box} flex items-center justify-center shrink-0 transition-all ${
-          theme === 'light'
-            ? 'bg-gradient-to-b from-indigo-500 to-indigo-700 text-white shadow-xs border border-indigo-400/25'
-            : 'bg-gradient-to-b from-indigo-500 to-indigo-800 text-white border border-indigo-400/30 shadow-indigo-950/40 shadow-sm'
-        }`}
-      >
-        <Package
-          size={config.iconSize}
-          strokeWidth={2}
-          className="text-white shrink-0 drop-shadow-xs"
-        />
-      </div>
+      {/* Brand Icon matching favicon.svg */}
+      <img
+        src={iconSrc}
+        alt="CargoHub"
+        className={`${config.box} shrink-0 select-none object-contain`}
+      />
 
       {showText && (
         <div className="flex flex-col min-w-0">
