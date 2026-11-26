@@ -7,6 +7,11 @@ import { getDocumentSchema } from '../schemas/registry';
 import { downloadDocumentPDF, previewDocumentPDF } from '../services/documentService';
 import { isDocumentTypeAllowed } from '../utils/permissions';
 import TaxInvoiceEditor from '../components/documents/TaxInvoiceEditor';
+import AirWaybillEditor from '../components/documents/AirWaybillEditor';
+import CargoManifestEditor from '../components/documents/CargoManifestEditor';
+import AirFreightDocEditor from '../components/documents/AirFreightDocEditor';
+import EdiDocEditor from '../components/documents/EdiDocEditor';
+import SeaFreightDocEditor from '../components/documents/SeaFreightDocEditor';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Badge from '../components/ui/Badge';
@@ -82,6 +87,65 @@ export default function DocumentEditorPage() {
     return (
       <TaxInvoiceEditor
         key={id || 'new-tax-invoice'}
+        documentId={id}
+        initialData={isEdit ? (formData && Object.keys(formData).length > 0 ? formData : null) : location.state?.templateData}
+        currentDocument={isEdit ? currentDocument : null}
+      />
+    );
+  }
+
+  if (documentType === 'MAWB' || documentType === 'HAWB') {
+    return (
+      <AirWaybillEditor
+        key={id || `new-${documentType}`}
+        documentType={documentType}
+        documentId={id}
+        initialData={isEdit ? (formData && Object.keys(formData).length > 0 ? formData : null) : location.state?.templateData}
+        currentDocument={isEdit ? currentDocument : null}
+      />
+    );
+  }
+
+  if (documentType === 'MANIFEST') {
+    return (
+      <CargoManifestEditor
+        key={id || 'new-MANIFEST'}
+        documentId={id}
+        initialData={isEdit ? (formData && Object.keys(formData).length > 0 ? formData : null) : location.state?.templateData}
+        currentDocument={isEdit ? currentDocument : null}
+      />
+    );
+  }
+
+  if (['DGD', 'LABEL', 'CARGO_POUCH_LABEL', 'CSD'].includes(documentType)) {
+    return (
+      <AirFreightDocEditor
+        key={id || `new-${documentType}`}
+        documentType={documentType}
+        documentId={id}
+        initialData={isEdit ? (formData && Object.keys(formData).length > 0 ? formData : null) : location.state?.templateData}
+        currentDocument={isEdit ? currentDocument : null}
+      />
+    );
+  }
+
+  if (['FWB', 'FHL', 'XFWB', 'XFZB', 'FFR', 'HAWB_FHL'].includes(documentType)) {
+    return (
+      <EdiDocEditor
+        key={id || `new-${documentType}`}
+        documentType={documentType}
+        documentId={id}
+        initialData={isEdit ? (formData && Object.keys(formData).length > 0 ? formData : null) : location.state?.templateData}
+        currentDocument={isEdit ? currentDocument : null}
+      />
+    );
+  }
+
+  if (['BILL_OF_LADING', 'BOL_MANIFEST', 'IMO_DGD', 'SOLAS_VGM'].includes(documentType)) {
+    return (
+      <SeaFreightDocEditor
+        key={id || `new-${documentType}`}
+        documentType={documentType}
         documentId={id}
         initialData={isEdit ? (formData && Object.keys(formData).length > 0 ? formData : null) : location.state?.templateData}
         currentDocument={isEdit ? currentDocument : null}

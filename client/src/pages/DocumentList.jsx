@@ -15,6 +15,7 @@ import {
   X,
   Layers,
   ArrowUpDown,
+  Filter,
 } from 'lucide-react';
 import { useDocumentStore } from '../store/documentStore';
 import { useAuthStore } from '../store/authStore';
@@ -24,6 +25,7 @@ import ConfirmDialog from '../components/ui/ConfirmDialog';
 import { hasServiceAccess, isDocumentTypeAllowed, isSubscriptionExpired } from '../utils/permissions';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
+import Breadcrumbs from '../components/ui/Breadcrumbs';
 import ImportExportModal from '../components/migration/ImportExportModal';
 
 const ALL_CATEGORY_OPTIONS = [
@@ -46,15 +48,17 @@ const STATUS_OPTIONS = [
 ];
 
 export default function DocumentList() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuthStore();
   const { theme } = useThemeStore();
   const isExpired = isSubscriptionExpired(user);
   const { documents, pagination, fetchDocuments, isLoading, deleteDocument, updateStatus } = useDocumentStore();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState(searchParams.get('category') || '');
+  const [documentType, setDocumentType] = useState(searchParams.get('type') || '');
   const [status, setStatus] = useState('');
-  const [pageSize, setPageSize] = useState(50);
+  const [pageSize, setPageSize] = useState(10);
+  const [showFilters, setShowFilters] = useState(true);
   const [showMigrationModal, setShowMigrationModal] = useState(false);
   const isElectron = typeof window !== 'undefined' && Boolean(window.electronAPI?.isElectron);
 
@@ -72,18 +76,21 @@ export default function DocumentList() {
   useEffect(() => {
     const params = { search, page: 1, limit: pageSize };
     if (category) params.category = category;
+    if (documentType) params.documentType = documentType;
     if (status) params.status = status;
     fetchDocuments(params);
     setSelectedIds([]);
-  }, [search, category, status, pageSize]);
+  }, [search, category, documentType, status, pageSize]);
 
   useEffect(() => {
-    const cat = searchParams.get('category');
-    if (cat) setCategory(cat);
+    const cat = searchParams.get('category') || '';
+    const typ = searchParams.get('type') || '';
+    setCategory(cat);
+    setDocumentType(typ);
   }, [searchParams]);
 
   const handlePageChange = (page) => {
-    fetchDocuments({ search, category, status, page, limit: pageSize });
+    fetchDocuments({ search, category, documentType, status, page, limit: pageSize });
     setSelectedIds([]);
   };
 
@@ -194,18 +201,49 @@ export default function DocumentList() {
 
   return (
     <div className="space-y-4 animate-fade-in">
+      <Breadcrumbs
+        items={[
+          { label: 'Documents', to: '/documents' },
+          ...(documentType ? [{ label: documentType.replace(/_/g, ' ') }] : []),
+        ]}
+      />
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/60 pb-3">
         <div>
-          <h1 className={`text-xl font-bold tracking-tight ${theme === 'light' ? 'text-slate-900' : 'text-slate-100'}`}>
-            Documents
-          </h1>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className={`text-xl font-bold tracking-tight ${theme === 'light' ? 'text-slate-900' : 'text-slate-100'}`}>
+              {documentType ? `${documentType.replace(/_/g, ' ')} Documents` : 'Documents'}
+            </h1>
+            {documentType && (
+              <button
+                type="button"
+                onClick={() => {
+                  const next = new URLSearchParams(searchParams);
+                  next.delete('type');
+                  setSearchParams(next);
+                  setDocumentType('');
+                }}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 hover:bg-indigo-500/25 cursor-pointer"
+                title="Clear document type filter"
+              >
+                <span>{documentType}</span>
+                <X size={11} />
+              </button>
+            )}
+          </div>
           <p className={`text-xs mt-0.5 ${theme === 'light' ? 'text-slate-600' : 'text-slate-400'}`}>
             {pagination.total || visibleDocuments.length} total accessible documents
             {pagination.totalPages > 1 && ` (Showing page ${pagination.page} of ${pagination.totalPages})`}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            variant="secondary"
+            className="rounded text-xs"
+            onClick={() => setShowFilters((prev) => !prev)}
+          >
+            <Filter size={13} className="mr-1.5 inline" /> {showFilters ? 'Hide Filters' : 'Show Filters'}
+          </Button>
           <Button
             variant="secondary"
             className="rounded text-xs"
@@ -223,9 +261,10 @@ export default function DocumentList() {
               <Plus size={13} className="mr-1.5 inline" /> New Document (Locked)
             </Button>
           ) : (
-            <Link to="/new">
+            <Link to={documentType ? `/documents/new/${documentType}` : '/new'}>
               <Button variant="primary" className="rounded text-xs">
-                <Plus size={13} className="mr-1.5 inline" /> New Document
+                <Plus size={13} className="mr-1.5 inline" />
+                {documentType ? `Create ${documentType.replace(/_/g, ' ')}` : 'New Document'}
               </Button>
             </Link>
           )}
@@ -245,7 +284,8 @@ export default function DocumentList() {
         </div>
       )}
 
-      {/* Filters & Page Size */}
+      {/* Filters & Page Size (Toggleable) */}
+      {showFilters && (
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
         <div className="relative flex items-center sm:col-span-2">
           <Search size={13} className={`absolute left-3 pointer-events-none ${theme === 'light' ? 'text-slate-400' : 'text-slate-500'}`} />
@@ -292,6 +332,7 @@ export default function DocumentList() {
           ))}
         </select>
       </div>
+      )}
 
       {/* ─── Bulk Action Bar ───────────────────────────────── */}
       {selectedIds.length > 0 && (
@@ -541,6 +582,8 @@ export default function DocumentList() {
                 : 'bg-slate-900 border-slate-800 text-slate-200'
             }`}
           >
+            <option value={5}>5</option>
+            <option value={10}>10</option>
             <option value={20}>20</option>
             <option value={50}>50</option>
             <option value={100}>100</option>

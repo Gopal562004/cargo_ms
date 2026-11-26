@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import * as authService from '../services/authService';
+import api from '../services/api';
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -70,6 +71,16 @@ export const useAuthStore = create((set, get) => ({
       console.warn('Subscription sync failed:', err.message);
       throw err;
     }
+  },
+
+  updateProfile: async (profileData) => {
+    const res = await api.patch('/auth/profile', profileData);
+    const updatedUser = res?.data?.data?.user || res?.data?.user;
+    if (updatedUser) {
+      localStorage.setItem('cached_user', JSON.stringify(updatedUser));
+      set({ user: updatedUser });
+    }
+    return updatedUser;
   },
 
   checkAuth: async () => {

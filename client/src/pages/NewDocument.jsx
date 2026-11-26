@@ -32,6 +32,7 @@ import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 import { isDocumentTypeAllowed, hasServiceAccess } from '../utils/permissions';
 import Input from '../components/ui/Input';
+import Breadcrumbs from '../components/ui/Breadcrumbs';
 
 const DOCUMENT_CATEGORIES = [
   {
@@ -140,6 +141,7 @@ export default function NewDocument() {
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
+      <Breadcrumbs items={[{ label: 'New Document' }]} />
       {/* Top Header & Search */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -255,7 +257,7 @@ export default function NewDocument() {
                           ? 'bg-white border-slate-200 hover:bg-indigo-50/40 hover:border-indigo-300 shadow-xs hover:shadow-md'
                           : 'bg-slate-900/60 border-slate-800/80 hover:bg-slate-800/60 hover:border-indigo-500/40 shadow-sm'
                       }`}
-                      onClick={() => item.linkTo ? navigate(item.linkTo) : navigate(`/documents/new/${item.type}`)}
+                      onClick={() => item.linkTo ? navigate(item.linkTo) : navigate(`/documents?type=${item.type}`)}
                     >
                       <div className={`w-9 h-9 rounded flex items-center justify-center shrink-0 mt-0.5 transition-colors border ${
                         theme === 'light'

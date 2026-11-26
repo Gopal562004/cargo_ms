@@ -195,3 +195,33 @@ export async function syncSubscription(req, res, next) {
   }
 }
 
+/**
+ * PATCH /api/auth/profile
+ * Allow authenticated user to customize their own profile company / department / name
+ */
+export async function updateProfile(req, res, next) {
+  try {
+    const { company, department, name, phone } = req.body;
+    const data = {};
+    if (company !== undefined) data.company = company ? String(company).trim() : null;
+    if (department !== undefined) data.department = department ? String(department).trim() : null;
+    if (name !== undefined && String(name).trim()) data.name = String(name).trim();
+    if (phone !== undefined) data.phone = phone ? String(phone).trim() : null;
+
+    const updated = await prisma.user.update({
+      where: { id: req.user.id },
+      data,
+    });
+    const hydrated = hydrateUser(updated);
+    const { passwordHash, ...safeUser } = hydrated;
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: { user: safeUser },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+

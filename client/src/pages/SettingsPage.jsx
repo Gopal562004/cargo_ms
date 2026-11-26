@@ -61,7 +61,11 @@ import ImportExportModal from '../components/migration/ImportExportModal';
 
 export default function SettingsPage() {
   const navigate = useNavigate();
-  const { user, checkAuth, syncWithCloud } = useAuthStore();
+  const { user, checkAuth, syncWithCloud, updateProfile } = useAuthStore();
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [profileCompany, setProfileCompany] = useState(user?.company || '');
+  const [profileDepartment, setProfileDepartment] = useState(user?.department || 'Operations');
+  const [savingProfile, setSavingProfile] = useState(false);
   const { theme } = useThemeStore();
   const {
     activeFY,
@@ -470,15 +474,93 @@ export default function SettingsPage() {
             <div className={`pt-2 border-t space-y-2 text-xs ${
               theme === 'light' ? 'border-slate-100' : 'border-slate-800/80'
             }`}>
-              <div className="flex items-center justify-between text-slate-500">
-                <span className="flex items-center gap-1.5"><Building size={13} /> Company</span>
-                <span className={`font-medium ${theme === 'light' ? 'text-slate-800' : 'text-slate-200'}`}>{user?.company || 'Your Company Name'}</span>
+              <div className="flex items-center justify-between text-slate-500 gap-2">
+                <span className="flex items-center gap-1.5 shrink-0"><Building size={13} /> Company</span>
+                {editingProfile ? (
+                  <input
+                    type="text"
+                    value={profileCompany}
+                    onChange={(e) => setProfileCompany(e.target.value)}
+                    placeholder="Enter your company name"
+                    className={`flex-1 max-w-[180px] px-2 py-1 rounded border text-xs outline-none ${
+                      theme === 'light'
+                        ? 'bg-white border-slate-300 text-slate-900 focus:border-indigo-500'
+                        : 'bg-slate-950 border-slate-700 text-slate-100 focus:border-indigo-500'
+                    }`}
+                  />
+                ) : (
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className={`font-medium truncate ${theme === 'light' ? 'text-slate-800' : 'text-slate-200'}`}>
+                      {user?.company || 'Your Company Name'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProfileCompany(user?.company || '');
+                        setProfileDepartment(user?.department || 'Operations');
+                        setEditingProfile(true);
+                      }}
+                      className="p-1 rounded text-slate-400 hover:text-indigo-400 hover:bg-slate-800/50 transition-colors cursor-pointer"
+                      title="Edit Company & Department"
+                    >
+                      <Pencil size={11} />
+                    </button>
+                  </div>
+                )}
               </div>
 
-              <div className="flex items-center justify-between text-slate-500">
-                <span className="flex items-center gap-1.5"><Briefcase size={13} /> Department</span>
-                <span className={`font-medium ${theme === 'light' ? 'text-slate-800' : 'text-slate-200'}`}>{user?.department || 'Operations'}</span>
+              <div className="flex items-center justify-between text-slate-500 gap-2">
+                <span className="flex items-center gap-1.5 shrink-0"><Briefcase size={13} /> Department</span>
+                {editingProfile ? (
+                  <input
+                    type="text"
+                    value={profileDepartment}
+                    onChange={(e) => setProfileDepartment(e.target.value)}
+                    placeholder="Operations / Billing"
+                    className={`flex-1 max-w-[180px] px-2 py-1 rounded border text-xs outline-none ${
+                      theme === 'light'
+                        ? 'bg-white border-slate-300 text-slate-900 focus:border-indigo-500'
+                        : 'bg-slate-950 border-slate-700 text-slate-100 focus:border-indigo-500'
+                    }`}
+                  />
+                ) : (
+                  <span className={`font-medium ${theme === 'light' ? 'text-slate-800' : 'text-slate-200'}`}>{user?.department || 'Operations'}</span>
+                )}
               </div>
+
+              {editingProfile && (
+                <div className="flex items-center justify-end gap-1.5 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setEditingProfile(false)}
+                    className="px-2 py-1 rounded border border-slate-700 text-[11px] text-slate-400 hover:text-white cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={savingProfile}
+                    onClick={async () => {
+                      setSavingProfile(true);
+                      try {
+                        await updateProfile({
+                          company: profileCompany,
+                          department: profileDepartment,
+                        });
+                        setEditingProfile(false);
+                        setSuccessMsg('Operator profile company updated!');
+                      } catch (err) {
+                        setErrorMsg(err?.response?.data?.message || err.message || 'Failed to update profile');
+                      } finally {
+                        setSavingProfile(false);
+                      }
+                    }}
+                    className="px-2.5 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-semibold flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                  >
+                    <Save size={11} /> {savingProfile ? 'Saving...' : 'Save'}
+                  </button>
+                </div>
+              )}
 
               {user?.email && (
                 <div className="flex items-center justify-between text-slate-500">

@@ -46,7 +46,7 @@ export default function AppLayout() {
   }, [user]);
 
   return (
-    <div className={`flex min-h-screen transition-colors ${theme === 'light' ? 'bg-slate-100 text-slate-900' : 'bg-slate-950 text-slate-100'}`}>
+    <div className={`flex min-h-screen transition-colors print:bg-white print:text-black print:min-h-0 print:block ${theme === 'light' ? 'bg-slate-100 text-slate-900' : 'bg-slate-950 text-slate-100'}`}>
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <UpdateBanner />
@@ -56,7 +56,7 @@ export default function AppLayout() {
         {/* Subscription Expiry Alert Banner */}
         {expiryInfo && (
           <div
-            className={`px-4 py-2 text-xs font-medium flex items-center justify-between border-b shrink-0 ${
+            className={`print:hidden px-4 py-2 text-xs font-medium flex items-center justify-between border-b shrink-0 ${
               expiryInfo.isExpired
                 ? theme === 'light'
                   ? 'bg-rose-50 border-rose-200 text-rose-700'
@@ -80,8 +80,8 @@ export default function AppLayout() {
           </div>
         )}
 
-        <main className="flex-1 p-4 sm:p-6 overflow-y-auto">
-          <div className="w-full max-w-[1920px] mx-auto">
+        <main className="flex-1 p-4 sm:p-6 overflow-y-auto print:p-0 print:overflow-visible">
+          <div className="w-full max-w-[1920px] mx-auto print:max-w-full">
             <Outlet />
           </div>
         </main>

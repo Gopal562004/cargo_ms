@@ -8,6 +8,7 @@ import {
   desktopVerify,
   desktopSync,
   syncSubscription,
+  updateProfile,
 } from '../controllers/auth.controller.js';
 import { validate } from '../middleware/validate.middleware.js';
 import { authenticate } from '../middleware/auth.middleware.js';
@@ -22,6 +23,7 @@ router.post('/desktop-sync', desktopSync);
 router.post('/sync-subscription', authenticate, syncSubscription);
 router.post('/logout', logout);
 router.get('/me', authenticate, getMe);
+router.patch('/profile', authenticate, updateProfile);
 router.post('/refresh', refresh);
 
 export default router;
