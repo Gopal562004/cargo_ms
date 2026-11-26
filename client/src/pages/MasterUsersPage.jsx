@@ -40,6 +40,7 @@ import {
   HelpCircle,
   Info,
   ExternalLink,
+  ChevronLeft,
   ChevronRight,
   RefreshCw,
   PlusCircle,
@@ -64,6 +65,23 @@ import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import useBodyScrollLock from '../hooks/useBodyScrollLock';
 
+const maskLicenseKey = (key) => {
+  if (!key) return 'CRGO-••••-••••-••••';
+  const parts = String(key).split('-');
+  if (parts.length >= 3) {
+    return `${parts[0]}-${parts.slice(1, -1).map(() => '••••').join('-')}-${parts[parts.length - 1]}`;
+  }
+  if (key.length <= 6) return '••••••';
+  return `${key.slice(0, 3)}••••${key.slice(-3)}`;
+};
+
+const maskEmail = (email) => {
+  if (!email || !String(email).includes('@')) return '••••••';
+  const [local, domain] = String(email).split('@');
+  const visible = local.slice(0, Math.min(2, local.length));
+  return `${visible}${'•'.repeat(Math.max(3, Math.min(6, local.length - visible.length)))}@${domain}`;
+};
+
 export default function MasterUsersPage() {
   const { user: currentUser } = useAuthStore();
   const { theme } = useThemeStore();
@@ -74,6 +92,10 @@ export default function MasterUsersPage() {
   const [planFilter, setPlanFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [roleFilter, setRoleFilter] = useState('ALL');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
+  const [maskSensitive, setMaskSensitive] = useState(true);
+  const [revealedRows, setRevealedRows] = useState({});
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -602,6 +624,21 @@ Please keep your credentials secure.`;
     });
   }, [users, search, planFilter, statusFilter, roleFilter]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, planFilter, statusFilter, roleFilter, pageSize]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedUsers = useMemo(() => {
+    const start = (safePage - 1) * pageSize;
+    return filteredUsers.slice(start, start + pageSize);
+  }, [filteredUsers, safePage, pageSize]);
+
+  const toggleRowReveal = (userId) => {
+    setRevealedRows((prev) => ({ ...prev, [userId]: !prev[userId] }));
+  };
+
   return (
     <div className="space-y-6 animate-fade-in pb-16">
       {/* Top Header */}
@@ -752,6 +789,21 @@ Please keep your credentials secure.`;
               <option value="OPERATOR">OPERATOR</option>
               <option value="VIEWER">VIEWER</option>
             </select>
+
+            {/* Sensitive Data Masking Toggle */}
+            <button
+              type="button"
+              onClick={() => setMaskSensitive((prev) => !prev)}
+              className={`px-2.5 py-2 rounded border text-xs font-mono flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap ${
+                maskSensitive
+                  ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/20'
+                  : 'bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20'
+              }`}
+              title={maskSensitive ? 'Keys & Emails are masked. Click to reveal all.' : 'Keys & Emails are visible. Click to mask all.'}
+            >
+              {maskSensitive ? <EyeOff size={13} /> : <Eye size={13} />}
+              <span>{maskSensitive ? 'Masked' : 'Revealed'}</span>
+            </button>
           </div>
         </div>
       </div>
@@ -786,17 +838,24 @@ Please keep your credentials secure.`;
                   </td>
                 </tr>
               ) : (
-                filteredUsers.map((u) => {
+                paginatedUsers.map((u) => {
                   const isCurrent = currentUser?.id === u.id;
                   const isExpiring = u.daysRemaining !== null && u.daysRemaining <= 15 && u.daysRemaining > 0;
                   const isExpired = u.isExpired;
                   const isSuspended = !u.isActive || u.subscriptionStatus === 'SUSPENDED';
+                  const isRowMasked = maskSensitive && !revealedRows[u.id];
+                  const suspendedCellClass = isSuspended ? 'opacity-45 grayscale select-none' : '';
 
                   return (
-                    <tr key={u.id} className="hover:bg-slate-800/40 transition-colors group">
+                    <tr
+                      key={u.id}
+                      className={`transition-colors group ${
+                        isSuspended ? 'bg-slate-950/60' : 'hover:bg-slate-800/40'
+                      }`}
+                    >
                       {/* 1. User & Credentials — Click to open User Profile Info Modal */}
                       <td
-                        className="py-3 px-3.5 cursor-pointer"
+                        className={`py-3 px-3.5 cursor-pointer ${suspendedCellClass}`}
                         onClick={() => handleOpenInfoModal(u)}
                         title="Click to view complete user & subscription details"
                       >
@@ -810,15 +869,17 @@ Please keep your credentials secure.`;
                           <ExternalLink size={11} className="opacity-0 group-hover:opacity-100 transition-opacity text-indigo-400 ml-0.5" />
                         </div>
                         <div className="text-[11px] font-mono text-indigo-400 flex items-center gap-1 mt-0.5">
-                          <AtSign size={10} /> {u.username || u.email}
+                          <AtSign size={10} /> {u.username || (isRowMasked ? maskEmail(u.email) : u.email)}
                         </div>
                         {u.email && u.email !== u.username && (
-                          <div className="text-[10px] text-slate-400 font-mono truncate max-w-[170px]">{u.email}</div>
+                          <div className="text-[10px] text-slate-400 font-mono truncate max-w-[170px]">
+                            {isRowMasked ? maskEmail(u.email) : u.email}
+                          </div>
                         )}
                       </td>
 
                       {/* 2. Company & Dept */}
-                      <td className="py-3 px-3.5">
+                      <td className={`py-3 px-3.5 ${suspendedCellClass}`}>
                         <div className="font-medium text-slate-200">{u.company || '—'}</div>
                         <div className="text-[10px] text-slate-400">{u.department || 'Operations'}</div>
                         <div className="text-[9px] text-slate-400 font-mono mt-0.5">
@@ -827,19 +888,39 @@ Please keep your credentials secure.`;
                       </td>
 
                       {/* 3. License Key */}
-                      <td className="py-3 px-3.5">
-                        <div className="flex items-center gap-1.5">
+                      <td className={`py-3 px-3.5 ${suspendedCellClass}`}>
+                        <div className="flex items-center gap-1">
                           <span className="font-mono font-bold text-[11px] text-slate-200 px-2 py-1 rounded bg-slate-950 border border-slate-800 select-all">
-                            {u.licenseKey || 'CRGO-2026-LEGACY'}
+                            {isRowMasked
+                              ? maskLicenseKey(u.licenseKey || 'CRGO-2026-LEGACY')
+                              : u.licenseKey || 'CRGO-2026-LEGACY'}
                           </span>
+                          {maskSensitive && !isSuspended && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleRowReveal(u.id);
+                              }}
+                              className="p-1 rounded text-slate-400 hover:text-indigo-300 hover:bg-slate-800 transition-colors cursor-pointer"
+                              title={revealedRows[u.id] ? 'Hide License Key & Email' : 'Reveal License Key & Email'}
+                            >
+                              {revealedRows[u.id] ? <EyeOff size={13} /> : <Eye size={13} />}
+                            </button>
+                          )}
                           <button
                             type="button"
+                            disabled={isSuspended}
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleCopyLicenseKey(u);
+                              if (!isSuspended) handleCopyLicenseKey(u);
                             }}
-                            className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
-                            title="Copy License Key"
+                            className={`p-1 rounded transition-colors ${
+                              isSuspended
+                                ? 'text-slate-600 cursor-not-allowed opacity-40'
+                                : 'text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer'
+                            }`}
+                            title={isSuspended ? 'Blocked while user is suspended' : 'Copy License Key'}
                           >
                             {copiedKeyId === u.id ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
                           </button>
@@ -850,7 +931,7 @@ Please keep your credentials secure.`;
                       </td>
 
                       {/* 4. Subscription Plan */}
-                      <td className="py-3 px-3.5">
+                      <td className={`py-3 px-3.5 ${suspendedCellClass}`}>
                         <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold border bg-indigo-500/15 text-indigo-300 border-indigo-500/30">
                           {u.subscriptionPlan || 'STARTER'}
                         </span>
@@ -860,7 +941,7 @@ Please keep your credentials secure.`;
                       </td>
 
                       {/* 5. Plan Expiry & Countdown */}
-                      <td className="py-3 px-3.5 font-mono">
+                      <td className={`py-3 px-3.5 font-mono ${suspendedCellClass}`}>
                         {u.subscriptionExpiresAt ? (
                           <>
                             <div className="text-slate-200 font-medium">
@@ -868,14 +949,18 @@ Please keep your credentials secure.`;
                             </div>
                             <div
                               className={`text-[10px] font-bold ${
-                                isExpired
+                                isSuspended
+                                  ? 'text-slate-500'
+                                  : isExpired
                                   ? 'text-rose-400'
                                   : isExpiring
                                   ? 'text-amber-400 animate-pulse'
                                   : 'text-emerald-400'
                               }`}
                             >
-                              {isExpired
+                              {isSuspended
+                                ? 'PAUSED (SUSPENDED)'
+                                : isExpired
                                 ? 'EXPIRED'
                                 : u.daysRemaining !== null
                                 ? `${u.daysRemaining} days remaining`
@@ -907,22 +992,27 @@ Please keep your credentials secure.`;
                       {/* 7. Action Buttons */}
                       <td className="py-3 px-3.5 text-right whitespace-nowrap">
                         <div className="inline-flex items-center gap-1">
-                          {/* Complete User Info Button */}
+                          {/* Complete User Info / View Button — Always enabled */}
                           <button
                             type="button"
                             onClick={() => handleOpenInfoModal(u)}
-                            className="p-1.5 text-slate-400 hover:text-indigo-300 rounded hover:bg-slate-800 transition-colors cursor-pointer"
+                            className="p-1.5 text-slate-300 hover:text-indigo-300 rounded hover:bg-slate-800 transition-colors cursor-pointer"
                             title="View Full User Info & Subscription Card"
                           >
-                            <Info size={13} />
+                            <Eye size={13} />
                           </button>
 
                           {/* Copy Handover Text */}
                           <button
                             type="button"
-                            onClick={() => handleCopyClientHandover(u)}
-                            className="p-1.5 text-slate-400 hover:text-indigo-400 rounded hover:bg-slate-800 transition-colors cursor-pointer"
-                            title="Copy Full Client Handover Details (Credentials + Key)"
+                            disabled={isSuspended}
+                            onClick={() => !isSuspended && handleCopyClientHandover(u)}
+                            className={`p-1.5 rounded transition-colors ${
+                              isSuspended
+                                ? 'text-slate-600 opacity-35 cursor-not-allowed'
+                                : 'text-slate-400 hover:text-indigo-400 hover:bg-slate-800 cursor-pointer'
+                            }`}
+                            title={isSuspended ? 'Blocked while user is suspended' : 'Copy Full Client Handover Details (Credentials + Key)'}
                           >
                             {copiedHandoverId === u.id ? <Check size={13} className="text-emerald-400" /> : <Send size={13} />}
                           </button>
@@ -930,9 +1020,14 @@ Please keep your credentials secure.`;
                           {/* Quick Extend +1 Month */}
                           <button
                             type="button"
-                            onClick={() => handleQuickExtend(u, '1_MONTH')}
-                            className="px-1.5 py-1 text-[10px] font-mono text-emerald-400 hover:bg-emerald-500/10 rounded border border-emerald-500/20 transition-colors cursor-pointer"
-                            title="Quick Extend Subscription (+1 Month)"
+                            disabled={isSuspended}
+                            onClick={() => !isSuspended && handleQuickExtend(u, '1_MONTH')}
+                            className={`px-1.5 py-1 text-[10px] font-mono rounded border transition-colors ${
+                              isSuspended
+                                ? 'text-slate-600 border-slate-800 bg-slate-900/40 opacity-35 cursor-not-allowed'
+                                : 'text-emerald-400 hover:bg-emerald-500/10 border-emerald-500/20 cursor-pointer'
+                            }`}
+                            title={isSuspended ? 'Blocked while user is suspended' : 'Quick Extend Subscription (+1 Month)'}
                           >
                             +1M
                           </button>
@@ -940,9 +1035,14 @@ Please keep your credentials secure.`;
                           {/* Quick Extend +1 Year */}
                           <button
                             type="button"
-                            onClick={() => handleQuickExtend(u, '1_YEAR')}
-                            className="px-1.5 py-1 text-[10px] font-mono text-indigo-400 hover:bg-indigo-500/10 rounded border border-indigo-500/20 transition-colors cursor-pointer"
-                            title="Quick Extend Subscription (+1 Full Year)"
+                            disabled={isSuspended}
+                            onClick={() => !isSuspended && handleQuickExtend(u, '1_YEAR')}
+                            className={`px-1.5 py-1 text-[10px] font-mono rounded border transition-colors ${
+                              isSuspended
+                                ? 'text-slate-600 border-slate-800 bg-slate-900/40 opacity-35 cursor-not-allowed'
+                                : 'text-indigo-400 hover:bg-indigo-500/10 border-indigo-500/20 cursor-pointer'
+                            }`}
+                            title={isSuspended ? 'Blocked while user is suspended' : 'Quick Extend Subscription (+1 Full Year)'}
                           >
                             +1Y
                           </button>
@@ -950,9 +1050,14 @@ Please keep your credentials secure.`;
                           {/* Activity Trail */}
                           <button
                             type="button"
-                            onClick={() => handleOpenActivityModal(u)}
-                            className="p-1.5 text-slate-400 hover:text-cyan-400 rounded hover:bg-slate-800 transition-colors cursor-pointer"
-                            title="View Activity & Audit Trail"
+                            disabled={isSuspended}
+                            onClick={() => !isSuspended && handleOpenActivityModal(u)}
+                            className={`p-1.5 rounded transition-colors ${
+                              isSuspended
+                                ? 'text-slate-600 opacity-35 cursor-not-allowed'
+                                : 'text-slate-400 hover:text-cyan-400 hover:bg-slate-800 cursor-pointer'
+                            }`}
+                            title={isSuspended ? 'Blocked while user is suspended' : 'View Activity & Audit Trail'}
                           >
                             <Activity size={13} />
                           </button>
@@ -960,9 +1065,14 @@ Please keep your credentials secure.`;
                           {/* Reset Password */}
                           <button
                             type="button"
-                            onClick={() => handleOpenPasswordModal(u)}
-                            className="p-1.5 text-slate-400 hover:text-amber-400 rounded hover:bg-slate-800 transition-colors cursor-pointer"
-                            title="Reset Login Password"
+                            disabled={isSuspended}
+                            onClick={() => !isSuspended && handleOpenPasswordModal(u)}
+                            className={`p-1.5 rounded transition-colors ${
+                              isSuspended
+                                ? 'text-slate-600 opacity-35 cursor-not-allowed'
+                                : 'text-slate-400 hover:text-amber-400 hover:bg-slate-800 cursor-pointer'
+                            }`}
+                            title={isSuspended ? 'Blocked while user is suspended' : 'Reset Login Password'}
                           >
                             <KeyRound size={13} />
                           </button>
@@ -970,9 +1080,14 @@ Please keep your credentials secure.`;
                           {/* Edit User & Subscription */}
                           <button
                             type="button"
-                            onClick={() => handleOpenEditModal(u)}
-                            className="p-1.5 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors cursor-pointer"
-                            title="Edit User Profile & Plan"
+                            disabled={isSuspended}
+                            onClick={() => !isSuspended && handleOpenEditModal(u)}
+                            className={`p-1.5 rounded transition-colors ${
+                              isSuspended
+                                ? 'text-slate-600 opacity-35 cursor-not-allowed'
+                                : 'text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer'
+                            }`}
+                            title={isSuspended ? 'Blocked while user is suspended' : 'Edit User Profile & Plan'}
                           >
                             <Pencil size={13} />
                           </button>
@@ -985,9 +1100,9 @@ Please keep your credentials secure.`;
                               className={`p-1.5 rounded transition-colors cursor-pointer ${
                                 u.isActive
                                   ? 'text-slate-400 hover:text-rose-400 hover:bg-rose-500/10'
-                                  : 'text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10'
+                                  : 'text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30'
                               }`}
-                              title={u.isActive ? 'Suspend / Deactivate User' : 'Activate User'}
+                              title={u.isActive ? 'Suspend / Deactivate User' : 'Reactivate / Unsuspend User'}
                             >
                               <Lock size={13} />
                             </button>
@@ -1001,6 +1116,65 @@ Please keep your credentials secure.`;
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Footer */}
+        {!loading && filteredUsers.length > 0 && (
+          <div className="px-4 py-3 border-t border-slate-800 bg-slate-950/40 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-mono text-slate-400">
+            <div className="flex items-center gap-3">
+              <span>
+                Showing <strong className="text-slate-200">{(safePage - 1) * pageSize + 1}</strong>–
+                <strong className="text-slate-200">{Math.min(safePage * pageSize, filteredUsers.length)}</strong> of{' '}
+                <strong className="text-slate-200">{filteredUsers.length}</strong> users
+              </span>
+              <select
+                value={pageSize}
+                onChange={(e) => setPageSize(Number(e.target.value))}
+                className="px-2 py-1 bg-slate-950 border border-slate-800 rounded text-[11px] text-slate-300 focus:outline-none focus:border-indigo-500"
+                title="Rows per page"
+              >
+                <option value={5}>5 / page</option>
+                <option value={10}>10 / page</option>
+                <option value={25}>25 / page</option>
+                <option value={50}>50 / page</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                disabled={safePage <= 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                className="px-2.5 py-1 rounded border border-slate-800 bg-slate-900 hover:bg-slate-800 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 cursor-pointer"
+              >
+                <ChevronLeft size={13} /> Prev
+              </button>
+
+              {Array.from({ length: totalPages }, (_, idx) => idx + 1).map((pageNum) => (
+                <button
+                  key={pageNum}
+                  type="button"
+                  onClick={() => setCurrentPage(pageNum)}
+                  className={`px-2.5 py-1 rounded border text-[11px] transition-colors cursor-pointer ${
+                    pageNum === safePage
+                      ? 'bg-indigo-600 border-indigo-500 text-white font-bold'
+                      : 'border-slate-800 bg-slate-900 hover:bg-slate-800 text-slate-400'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              ))}
+
+              <button
+                type="button"
+                disabled={safePage >= totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                className="px-2.5 py-1 rounded border border-slate-800 bg-slate-900 hover:bg-slate-800 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 cursor-pointer"
+              >
+                Next <ChevronRight size={13} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ─── COMPLETE USER PROFILE & SUBSCRIPTION INFO MODAL ─────────────────── */}
