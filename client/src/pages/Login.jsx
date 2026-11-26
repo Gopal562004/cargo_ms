@@ -164,7 +164,13 @@ export default function Login() {
           </div>
 
           {/* Dual Login Mode Tabs */}
-          <div className="grid grid-cols-2 gap-1 p-1 bg-slate-950/80 border border-slate-800 rounded text-xs font-mono">
+          <div
+            className={`grid grid-cols-2 gap-1 p-1 border rounded text-xs font-mono ${
+              theme === 'light'
+                ? 'bg-slate-100 border-slate-200'
+                : 'bg-slate-950/80 border-slate-800'
+            }`}
+          >
             <button
               type="button"
               onClick={() => {
@@ -174,6 +180,8 @@ export default function Login() {
               className={`py-1.5 rounded transition-all font-bold cursor-pointer ${
                 loginMode === 'CREDENTIALS'
                   ? 'bg-indigo-600 text-white shadow-xs'
+                  : theme === 'light'
+                  ? 'text-slate-600 hover:text-slate-900'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -188,6 +196,8 @@ export default function Login() {
               className={`py-1.5 rounded transition-all font-bold cursor-pointer ${
                 loginMode === 'LICENSE_KEY'
                   ? 'bg-indigo-600 text-white shadow-xs'
+                  : theme === 'light'
+                  ? 'text-slate-600 hover:text-slate-900'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -238,7 +248,11 @@ export default function Login() {
               </>
             ) : (
               <div>
-                <label className="text-xs font-mono font-medium text-slate-300 block mb-1">
+                <label
+                  className={`text-xs font-mono font-medium block mb-1 ${
+                    theme === 'light' ? 'text-slate-700' : 'text-slate-300'
+                  }`}
+                >
                   Product License Key
                 </label>
                 <div className="relative flex items-center">
@@ -249,13 +263,19 @@ export default function Login() {
                     value={licenseKey}
                     onChange={(e) => setLicenseKey(e.target.value)}
                     required
-                    className="w-full pl-9 pr-9 py-2 bg-slate-950 border border-slate-800 rounded text-xs text-slate-100 font-mono uppercase tracking-wider placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                    className={`w-full pl-9 pr-9 py-2 border rounded text-xs font-mono uppercase tracking-wider focus:outline-none focus:border-indigo-500 ${
+                      theme === 'light'
+                        ? 'bg-white border-slate-300 text-slate-900 placeholder-slate-400'
+                        : 'bg-slate-950 border-slate-800 text-slate-100 placeholder-slate-500'
+                    }`}
                   />
                   <button
                     type="button"
                     onClick={() => setShowLicenseKey(!showLicenseKey)}
                     tabIndex={-1}
-                    className="absolute right-2.5 text-slate-400 hover:text-slate-200 cursor-pointer"
+                    className={`absolute right-2.5 cursor-pointer ${
+                      theme === 'light' ? 'text-slate-500 hover:text-slate-800' : 'text-slate-400 hover:text-slate-200'
+                    }`}
                     title={showLicenseKey ? 'Hide key' : 'Show key'}
                   >
                     {showLicenseKey ? <EyeOff size={14} className="text-indigo-400" /> : <Eye size={14} />}

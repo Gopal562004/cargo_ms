@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
+import { useThemeStore } from '../../store/themeStore';
 
 /**
  * Standard, robust Input component with clear non-collapsing top label, icon support,
@@ -18,6 +19,8 @@ export default function Input({
   ...props
 }) {
   const [showPassword, setShowPassword] = useState(false);
+  const { theme } = useThemeStore();
+  const isLight = theme === 'light';
   const isPassword = type === 'password';
   const effectiveType = isPassword ? (showPassword ? 'text' : 'password') : type;
   const inputId = id || `input-${label?.toLowerCase().replace(/\s+/g, '-') || Math.random().toString(36).substring(2, 7)}`;
@@ -27,7 +30,9 @@ export default function Input({
       {label && (
         <label
           htmlFor={inputId}
-          className="text-xs font-mono font-medium text-slate-300 flex items-center justify-between"
+          className={`text-xs font-mono font-medium flex items-center justify-between ${
+            isLight ? 'text-slate-700' : 'text-slate-300'
+          }`}
         >
           <span>
             {label}
@@ -37,9 +42,13 @@ export default function Input({
       )}
 
       <div
-        className={`relative flex items-center bg-slate-950/60 border rounded transition-all ${
+        className={`relative flex items-center border rounded transition-all ${
+          isLight ? 'bg-white' : 'bg-slate-950/60'
+        } ${
           error
             ? 'border-rose-500/80 ring-1 ring-rose-500/20'
+            : isLight
+            ? 'border-slate-300 hover:border-slate-400 focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500/30'
             : 'border-slate-800 hover:border-slate-700 focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500/30'
         }`}
       >
@@ -55,7 +64,11 @@ export default function Input({
           disabled={disabled}
           required={required}
           placeholder={placeholder}
-          className={`w-full py-2.5 ${isPassword ? 'pr-1' : 'pr-3'} bg-transparent text-xs sm:text-sm text-slate-100 placeholder-slate-500 outline-none transition-colors ${
+          className={`w-full py-2.5 ${isPassword ? 'pr-1' : 'pr-3'} bg-transparent text-xs sm:text-sm outline-none transition-colors ${
+            isLight
+              ? 'text-slate-900 placeholder-slate-400'
+              : 'text-slate-100 placeholder-slate-500'
+          } ${
             icon ? 'pl-2.5' : 'pl-3'
           }`}
           {...props}
