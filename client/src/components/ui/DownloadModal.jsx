@@ -18,7 +18,7 @@ import { getApiBaseUrl } from '../../services/api';
 import BrandLogo from './BrandLogo';
 
 const GITHUB_REPO = 'Gopal562004/cargo_ms';
-const DEFAULT_VERSION = '1.0.9';
+const DEFAULT_VERSION = '1.0.10';
 const GITHUB_RELEASES_PAGE = `https://github.com/${GITHUB_REPO}/releases`;
 
 export default function DownloadModal({ isOpen, onClose }) {

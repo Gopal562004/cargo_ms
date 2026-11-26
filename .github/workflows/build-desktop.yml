@@ -49,9 +49,18 @@ jobs:
         env:
           DESKTOP_DATABASE_URL: "file:./desktop.db"
 
-      - name: Build & Publish Electron App
+      - name: Build Electron App
         run: |
-          npx electron-builder --publish always
+          npx electron-builder --publish never
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist-electron/CargoMS-Desktop-Setup-*.exe
+            dist-electron/CargoMS-Desktop-Setup-*.exe.blockmap
+            dist-electron/CargoMS-Desktop-*.exe
+            dist-electron/latest.yml
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
